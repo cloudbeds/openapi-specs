@@ -1,0 +1,3346 @@
+openapi: 3.0.0
+info:
+  title: 'Cloudbeds API'
+  description: '<p>Welcome to the documentation for <strong>Cloudbeds API Version v2</strong>! If you are looking to learn how to use the Cloudbeds API to access guest information, reservations, or similar data for your Cloudbeds customers, then you''ve come to the right place.</p><p>In this document you will find all the API methods we provide along with explanations for parameters and response examples.</p><p>If you have questions about different implementation steps (e.g. how to implement OAuth 2.0), please refer to our <a href=''https://integrations.cloudbeds.com/hc/en-us''>Integrations Portal</a>.</p><p>Be sure to <a href=''https://go.pardot.com/l/308041/2018-07-24/qb2lg''>subscribe</a> to the monthly Cloudbeds API announcement mailing list to receive information on new additions and improvements to the Cloudbeds API and related developer tools.</p><p><strong>Endpoint:</strong> https://api.cloudbeds.com/{method}</p><p><strong>HTTPS:</strong> Our API requires HTTPS. We''ll respond with an appropriate error if you''re not using it.</p><p><strong>Request Format:</strong> HTTP GET, POST and PUT (Content-Type: application/x-www-form-urlencoded)</p><p><strong>Response Format:</strong> JSON</p><p><strong>Response Header:</strong> X-Request-ID is added to response headers in all calls to help accelerate support and troubleshooting.</p><p><strong><a href=''https://integrations.cloudbeds.com/hc/en-us/articles/14104678058267-API-Documentation#postman-collection''><img src=''https://run.pstmn.io/button.svg'' alt=''Run in Postman''></a></strong> use this link to access our Public collection in Postman.</p>'
+  version: v2
+servers:
+  -
+    url: 'https://api.cloudbeds.com/'
+    description: 'Cloudbeds API'
+paths:
+  '/doorlock/v1/keys/{propertyId}':
+    get:
+      tags:
+        - doorlock-keys
+      summary: 'Get a list of doorlock keys for a specific app client and property.'
+      operationId: 'DoorLockKeyController::index'
+      parameters:
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+        -
+          name: reservationId
+          in: query
+          schema:
+            $ref: '#/components/schemas/DoorLockKeyListRequestSchema/properties/reservationId'
+        -
+          name: subReservationId
+          in: query
+          schema:
+            $ref: '#/components/schemas/DoorLockKeyListRequestSchema/properties/subReservationId'
+        -
+          name: keyIds
+          in: query
+          description: 'Comma separated list of key ids'
+          schema:
+            type: string
+          example: '1,2,3'
+      responses:
+        '200':
+          description: 'List of door lock keys.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoorLockKeyListResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:doorLockKey'
+  /doorlock/v1/keys:
+    post:
+      tags:
+        - doorlock-keys
+      summary: 'Create a new doorlock key.'
+      operationId: 'DoorLockKeyController::create'
+      requestBody:
+        description: 'Key data'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoorLockKeyCreateRequestSchema'
+      responses:
+        '201':
+          description: 'A key that was just created.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoorLockKeyResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '404':
+          description: 'Not found response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:doorLockKey'
+    delete:
+      tags:
+        - doorlock-keys
+      summary: 'Delete a list of doorlock keys.'
+      operationId: 'DoorLockKeyController::batchDelete'
+      parameters:
+        -
+          name: keyIds
+          in: query
+          required: true
+          schema:
+            type: string
+            example: '1,2'
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      responses:
+        '204':
+          description: 'Keys were cancelled.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '404':
+          description: 'Not found response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'delete:doorLockKey'
+  '/doorlock/v1/keys/{id}':
+    delete:
+      tags:
+        - doorlock-keys
+      summary: 'Delete a doorlock key.'
+      operationId: 'DoorLockKeyController::delete'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      responses:
+        '204':
+          description: 'A key that was just created.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '404':
+          description: 'Not found response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'delete:doorLockKey'
+    patch:
+      tags:
+        - doorlock-keys
+      summary: 'Update a doorlock key.'
+      operationId: 'DoorLockKeyController::update'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Key data'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoorLockKeyUpdateRequestSchema'
+      responses:
+        '200':
+          description: 'Updated key.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoorLockKeyResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '404':
+          description: 'Not found response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:doorLockKey'
+  '/doorlock/v1/settings/{propertyId}':
+    get:
+      tags:
+        - doorlock-settings
+      summary: 'Get doorlock settings for property for specific application client.'
+      operationId: 'DoorLockSettingsController::single'
+      parameters:
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: 'Doorlock settings for property for specific application client.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoorLockSettingsResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '404':
+          description: 'Not Found response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal Server Error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:doorLockKey'
+    put:
+      tags:
+        - doorlock-settings
+      summary: 'Upsert doorlock settings for property for specific application client.'
+      operationId: 'DoorLockSettingsController::upsert'
+      parameters:
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        description: 'Settings data'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoorLockSettingsCreateRequestSchema'
+      responses:
+        '201':
+          description: 'Empty response on successful create'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '500':
+          description: 'Internal Server Error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:doorLockKey'
+    delete:
+      tags:
+        - doorlock-settings
+      summary: 'Delete doorlock settings for property for specific application client.'
+      operationId: 'DoorLockSettingsController::delete'
+      parameters:
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '204':
+          description: 'Empty response on successful delete'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '404':
+          description: 'Not Found response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal Server Error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'delete:doorLockKey'
+  '/housekeeping/v1/inspections/{propertyId}':
+    get:
+      tags:
+        - housekeeping
+      summary: 'Housekeeping inspection list'
+      operationId: 27abd48cb30106ec3251cf3baf34174c
+      parameters:
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '100'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '0'
+        -
+          name: filters
+          in: query
+          description: 'This parameter should be formatted as a list of strings separated by ;'
+          required: false
+          schema:
+            $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+          example: 'field1:value;field2:operator:value'
+      responses:
+        '200':
+          description: 'A paged array of inspections'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionListResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+      security:
+        -
+          default:
+            - 'read:housekeeping'
+  /integration/v1/events:
+    get:
+      tags:
+        - integration-events
+      summary: 'Get a list of integration events for a specific property.'
+      operationId: 'IntegrationEventController::index'
+      parameters:
+        -
+          name: sort
+          in: query
+          description: 'A string specifying fields for sorting with optional directions (e.g., asc or desc).'
+          required: false
+          schema:
+            $ref: '#/components/schemas/QueryParameterSortSchema'
+          example: 'checkin_date:desc;checkout_date'
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '100'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '0'
+        -
+          name: filters
+          in: query
+          description: 'This parameter should be formatted as a list of strings separated by ;'
+          required: false
+          schema:
+            $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+          example: 'field1:value;field2:operator:value'
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      responses:
+        '200':
+          description: 'List of integration events.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventListResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default: []
+    post:
+      tags:
+        - integration-events
+      summary: 'Create a new integration event.'
+      operationId: 'IntegrationEventController::create'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Integration event data'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationEventCreateRequestSchema'
+      responses:
+        '201':
+          description: 'An integration event that was just created.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:appError'
+  '/integration/v1/events/{id}':
+    patch:
+      tags:
+        - integration-events
+      summary: 'Update an integration event.'
+      operationId: 'IntegrationEventController::update'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Integration event data'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationEventUpdateRequestSchema'
+      responses:
+        '200':
+          description: 'An integration event that was just updated.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:appError'
+  '/integration/v1/events/{id}/retry':
+    post:
+      tags:
+        - integration-events
+      summary: 'Retry an integration event.'
+      operationId: 'IntegrationEventController::retry'
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Integration event data'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationEventUpdateRequestSchema'
+      responses:
+        '202':
+          description: 'A request was sent to initiate integration event retry.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default: []
+  /market-segmentation/v1/groups:
+    get:
+      tags:
+        - market-segmentation-groups
+      summary: 'Get a list of Market Segmentation Groups.'
+      operationId: 'GroupController::index'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '0'
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '100'
+      responses:
+        '200':
+          description: 'List of Market Segmentation Groups.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupListResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:marketSegmentation'
+    post:
+      tags:
+        - market-segmentation-groups
+      summary: 'Create a new Market Segmentation Group.'
+      operationId: 'GroupController::create'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Group data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupCreateRequestSchema'
+      responses:
+        '201':
+          description: 'Created Market Segmentation Group.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:marketSegmentation'
+  '/market-segmentation/v1/groups/{id}':
+    get:
+      tags:
+        - market-segmentation-groups
+      summary: 'Get Market Segmentation Group data.'
+      operationId: 'GroupController::single'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Group ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/GroupSingleRequestSchema/properties/id'
+      responses:
+        '200':
+          description: 'Market Segmentation Group data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not Found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal Server Error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:marketSegmentation'
+    delete:
+      tags:
+        - market-segmentation-groups
+      summary: 'Delete a Market Segmentation Group.'
+      operationId: 'GroupController::delete'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Group ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/GroupDeleteRequestSchema/properties/id'
+      responses:
+        '204':
+          description: 'Market Segmentation Group was deleted.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'delete:marketSegmentation'
+    patch:
+      tags:
+        - market-segmentation-groups
+      summary: 'Update a Market Segmentation Group.'
+      operationId: 'GroupController::update'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Group ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/GroupUpdateRequestSchema/properties/id'
+      requestBody:
+        description: 'Group data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUpdateRequestSchema'
+      responses:
+        '200':
+          description: 'Updated Market Segmentation Group.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:marketSegmentation'
+  '/market-segmentation/v1/groups/{id}/enable':
+    post:
+      tags:
+        - market-segmentation-groups
+      summary: 'Enable a Market Segmentation Group.'
+      operationId: 'GroupController::enable'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Group ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/GroupEnableRequestSchema/properties/id'
+      responses:
+        '204':
+          description: 'Market Segmentation Group was enabled.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:marketSegmentation'
+  '/market-segmentation/v1/groups/{id}/disable':
+    post:
+      tags:
+        - market-segmentation-groups
+      summary: 'Disable a Market Segmentation Group.'
+      operationId: 'GroupController::disable'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Group ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/GroupDisableRequestSchema/properties/id'
+      responses:
+        '204':
+          description: 'Market Segmentation Group was disabled.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:marketSegmentation'
+  '/market-segmentation/v1/segments/{enabled}':
+    get:
+      tags:
+        - market-segmentation-segments
+      summary: 'Get a list of Market Segmentation Segments.'
+      operationId: 'SegmentController::index'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: enabled
+          in: path
+          description: 'List only enabled segments.'
+          required: true
+          schema:
+            type: boolean
+            example: 'false'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '0'
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '100'
+        -
+          name: filters
+          in: query
+          description: 'This parameter should be formatted as a list of strings separated by ;'
+          required: false
+          schema:
+            $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+          example: 'field1:value;field2:operator:value'
+      responses:
+        '200':
+          description: 'List of Market Segmentation Segments.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegmentListResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:marketSegmentation'
+  '/market-segmentation/v1/segments/{id}':
+    get:
+      tags:
+        - market-segmentation-segments
+      summary: 'Get Market Segmentation Segment data.'
+      operationId: 'SegmentController::single'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Segment ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/SegmentSingleRequestSchema/properties/id'
+      responses:
+        '200':
+          description: 'Market Segmentation Segment data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegmentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not Found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal Server Error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:marketSegmentation'
+    delete:
+      tags:
+        - market-segmentation-segments
+      summary: 'Delete a Market Segmentation Segment.'
+      operationId: 'SegmentController::delete'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Segment ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/SegmentDeleteRequestSchema/properties/id'
+      responses:
+        '204':
+          description: 'Market Segmentation Segment was deleted.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'delete:marketSegmentation'
+    patch:
+      tags:
+        - market-segmentation-segments
+      summary: 'Update a Market Segmentation Segment.'
+      operationId: 'SegmentController::update'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Segment ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/SegmentUpdateRequestSchema/properties/id'
+      requestBody:
+        description: 'Segment data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SegmentUpdateRequestSchema'
+      responses:
+        '200':
+          description: 'Updated Market Segmentation Segment.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegmentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:marketSegmentation'
+  '/market-segmentation/v1/segments/{id}/reservations/{active}':
+    get:
+      tags:
+        - market-segmentation-segments
+      summary: 'Get a list of reservations linked to a Market Segmentation Segment.'
+      operationId: 'SegmentController::reservations'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Segment ID.'
+          required: true
+          schema:
+            type: string
+            example: 1-b
+        -
+          name: active
+          in: path
+          description: 'List only active reservations.'
+          required: true
+          schema:
+            type: boolean
+            example: 'false'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '0'
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '100'
+      responses:
+        '200':
+          description: 'List of reservations linked to a Market Segmentation Segment.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegmentListReservationsResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:marketSegmentation'
+  /market-segmentation/v1/segments:
+    post:
+      tags:
+        - market-segmentation-segments
+      summary: 'Create a new Market Segmentation Segment.'
+      operationId: 'SegmentController::create'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Segment data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SegmentCreateRequestSchema'
+      responses:
+        '201':
+          description: 'Created Market Segmentation Segment.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegmentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:marketSegmentation'
+  '/market-segmentation/v1/segments/{id}/enable':
+    post:
+      tags:
+        - market-segmentation-segments
+      summary: 'Enable a Market Segmentation Segment.'
+      operationId: 'SegmentController::enable'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Segment ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/SegmentEnableRequestSchema/properties/id'
+      responses:
+        '204':
+          description: 'Market Segmentation Segment was enabled.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:marketSegmentation'
+  '/market-segmentation/v1/segments/{id}/disable':
+    post:
+      tags:
+        - market-segmentation-segments
+      summary: 'Disable a Market Segmentation Segment.'
+      operationId: 'SegmentController::disable'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Segment ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/SegmentDisableRequestSchema/properties/id'
+      responses:
+        '204':
+          description: 'Market Segmentation Segment was disabled.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:marketSegmentation'
+  '/market-segmentation/v1/segments/{id}/default':
+    post:
+      tags:
+        - market-segmentation-segments
+      summary: 'Set Market Segmentation Segment as Default.'
+      operationId: 'SegmentController::default'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Segment ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/SegmentEnableRequestSchema/properties/id'
+      responses:
+        '204':
+          description: 'Market Segmentation Segment was set as default.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:marketSegmentation'
+  '/rooms/v1/out-of-service/{roomId}':
+    post:
+      tags:
+        - rooms
+      summary: 'Room out of service'
+      operationId: 'OutOfServiceController::make'
+      parameters:
+        -
+          name: roomId
+          in: path
+          description: 'Room ID'
+          required: true
+          schema:
+            type: string
+          example: 1-b
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Out of service request body.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OutOfServiceRequestSchema'
+      responses:
+        '200':
+          description: 'Place room out of service.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutOfServiceResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:room'
+components:
+  schemas:
+    FeatureEnum:
+      description: 'The operator to use for the filter'
+      type: string
+      enum:
+        - feature.integrations.example
+        - feature.integrations.generate-dummy-doorlock-keys
+        - feature.distribution.market-segmentation
+        - feature.distribution.market-segmentation-enable-custom-group
+    DynamicFilterFieldSchema:
+      description: 'Represents a single filter condition'
+      properties:
+        field:
+          description: 'The field to apply the filter on'
+          type: string
+          example: checkin_date
+        operator:
+          $ref: '#/components/schemas/FilterOperatorEnumSchema'
+        value:
+          description: 'The value for the filter'
+          nullable: true
+          oneOf:
+            -
+              type: string
+              example: '2023-10-19T00:00:00'
+            -
+              type: string
+              format: date-time
+              example: '2023-10-19T00:00:00'
+            -
+              type: string
+              format: date
+              example: '2023-10-19'
+            -
+              type: integer
+              example: 42
+            -
+              type: boolean
+              example: true
+            -
+              type: array
+              items:
+                type: string
+              example:
+                - cancelled
+                - disabled
+            -
+              type: array
+              items:
+                type: integer
+              example:
+                - 1
+                - 2
+                - 3
+            -
+              type: array
+              items:
+                type: string
+                format: date
+              example:
+                - '2023-10-19'
+                - '2023-10-20'
+            -
+              type: array
+              items:
+                type: string
+                format: date-time
+              example:
+                - '2023-10-19T00:00:01'
+                - '2023-10-19T23:59:09'
+      type: object
+    DynamicFilterSchema:
+      description: 'Represents a logical group of filters with keys like ''and'' or ''or'''
+      properties:
+        and:
+          description: 'Logical operator grouping filters or nested logical groups'
+          type: array
+          items:
+            oneOf:
+              -
+                $ref: '#/components/schemas/DynamicFilterFieldSchema'
+              -
+                $ref: '#/components/schemas/DynamicFilterSchema'
+        or:
+          description: 'Logical operator grouping filters or nested logical groups'
+          type: array
+          items:
+            oneOf:
+              -
+                $ref: '#/components/schemas/DynamicFilterFieldSchema'
+              -
+                $ref: '#/components/schemas/DynamicFilterSchema'
+      type: object
+      example: "{\n        \"and\": [\n            {\n                \"field\": \"checkin_date\",\n                \"operator\": \"less_than_or_equal\",\n                \"value\": \"2023-12-01T00:00:00\"\n            },\n            {\n                \"or\": [\n                    {\n                        \"and\": [\n                            {\n                                \"field\": \"checkin_date\",\n                                \"operator\": \"less_than_or_equal\",\n                                \"value\": \"2023-12-01T00:00:00\"\n                            },\n                            {\n                                \"field\": \"guest_first_name\",\n                                \"operator\": \"starts_with\",\n                                \"value\": [\n                                    \"John\",\n                                    \"Doe\"\n                                ]\n                            }\n                        ]\n                    },\n                    {\n                        \"field\": \"guest_last_name\",\n                        \"operator\": \"ends_with\",\n                        \"value\": \"Doe\"\n                    },\n                    {\n                        \"field\": \"guest_name\",\n                        \"operator\": \"in\",\n                        \"value\": [\n                            \"John Smith\",\n                            \"Doe Family\"\n                        ]\n                    },\n                    {\n                        \"field\": \"guest_email\",\n                        \"operator\": \"not_in\",\n                        \"value\": [\n                            \"test@example.com\",\n                            \"fakeuser@example.org\"\n                        ]\n                    },\n                    {\n                        \"field\": \"status\",\n                        \"operator\": \"is_null\"\n                    },\n                    {\n                        \"field\": \"reservation_notes\",\n                        \"operator\": \"is_not_null\"\n                    }\n                ]\n            },\n            {\n                \"field\": \"room_price\",\n                \"operator\": \"equals\",\n                \"value\": 150\n            },\n            {\n                \"field\": \"discount_code\",\n                \"operator\": \"not_equals\",\n                \"value\": \"BLACKFRIDAY2024\"\n            },\n            {\n                \"field\": \"guest_comments\",\n                \"operator\": \"contains\",\n                \"value\": \"great service\"\n            },\n            {\n                \"field\": \"special_requests\",\n                \"operator\": \"not_contains\",\n                \"value\": \"late check-out\"\n            },\n            {\n                \"field\": \"property_name\",\n                \"operator\": \"starts_with\",\n                \"value\": \"Luxury\"\n            },\n            {\n                \"field\": \"property_location\",\n                \"operator\": \"not_starts_with\",\n                \"value\": \"Downtown\"\n            },\n            {\n                \"field\": \"booking_reference\",\n                \"operator\": \"ends_with\",\n                \"value\": \"-2023\"\n            },\n            {\n                \"field\": \"transaction_id\",\n                \"operator\": \"not_ends_with\",\n                \"value\": \"-VOID\"\n            },\n            {\n                \"field\": \"internal_notes\",\n                \"operator\": \"is_empty\"\n            },\n            {\n                \"field\": \"guest_feedback\",\n                \"operator\": \"is_not_empty\"\n            }\n        ]\n    }"
+    FilterOperatorEnumSchema:
+      description: 'The operator to use for the filter'
+      type: string
+      enum:
+        - greater_than_or_equal
+        - greater_than
+        - less_than_or_equal
+        - less_than
+        - equal
+        - in
+        - not_in
+        - is_null
+        - is_not_null
+        - equals
+        - not_equals
+        - contains
+        - not_contains
+        - starts_with
+        - not_starts_with
+        - ends_with
+        - not_ends_with
+        - is_empty
+        - is_not_empty
+    BodyDynamicFilterSchema:
+      properties:
+        filters:
+          oneOf:
+            -
+              $ref: '#/components/schemas/DynamicFilterSchema'
+          nullable: true
+          description: 'The filters for the query'
+      type: object
+    QueryParameterDynamicFilterSchema:
+      properties:
+        filters:
+          oneOf:
+            -
+              $ref: '#/components/schemas/DynamicFilterSchema'
+          nullable: true
+          description: 'This parameter should be formatted as a list of strings separated by ;'
+          example: 'field1:value;field2:operator:value'
+      type: object
+    CursorPaginationSchema:
+      properties:
+        limit:
+          description: 'The limit for the number of items to return (max 1000)'
+          type: integer
+          default: 5
+          example: 1
+        pageToken:
+          description: 'Token to retrieve the next page of results. It is returned in the response of the previous page.'
+          type: string
+          nullable: true
+      type: object
+    LimitOffsetPaginationSchema:
+      properties:
+        limit:
+          description: 'The limit for the number of items to return (max 500)'
+          type: integer
+          default: 100
+          example: 1
+        offset:
+          description: 'The offset for the current page of results'
+          type: integer
+          default: 0
+          example: 1
+      type: object
+    DirectionEnumSchema:
+      description: 'The direction of the sort'
+      type: string
+      enum:
+        - asc
+        - desc
+    BodySortSchema:
+      type: object
+    QueryParameterSortSchema:
+      properties:
+        sort:
+          $ref: '#/components/schemas/SortSchema'
+      type: object
+    SortFieldSchema:
+      description: 'Represents a sort field and its direction'
+      properties:
+        field:
+          description: 'The field to apply the sort on'
+          type: string
+          example: checkin_date
+        direction:
+          $ref: '#/components/schemas/DirectionEnumSchema'
+      type: object
+    SortSchema:
+      description: 'Represents a list of sort fields to apply to the request'
+      properties:
+        fields:
+          description: 'The list of fields to sort by'
+          type: array
+          items:
+            $ref: '#/components/schemas/SortFieldSchema'
+      type: object
+      example: "[\n        {\n            \"field\": \"checkin_date\",\n            \"direction\": \"desc\"\n        },\n        {\n            \"field\": \"checkout_date\"\n        }\n    ]"
+    AcceptedResponseSchema: {  }
+    BadRequestErrorItemSchema:
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+      type: object
+    BadRequestErrorListSchema:
+      type: array
+      items:
+        $ref: '#/components/schemas/BadRequestErrorItemSchema'
+    BadRequestResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        errors:
+          oneOf:
+            -
+              $ref: '#/components/schemas/BadRequestErrorListSchema'
+          nullable: true
+          description: 'The list of errors'
+      type: object
+    CreatedResponseSchema: {  }
+    ForbiddenResponseSchema:
+      properties:
+        message:
+          type: string
+      type: object
+    HttpErrorResponseSchema: {  }
+    InternalServerErrorResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    NoContentResponseSchema: {  }
+    NotFoundResponseSchema:
+      properties:
+        message:
+          type: string
+      type: object
+    GetDistributionSettingsRequestSchema: {  }
+    PatchDistributionSettingsRequestSchema:
+      required:
+        - settings
+      properties:
+        settings:
+          description: 'List of distribution settings to update.'
+          type: array
+          items:
+            required:
+              - key
+              - value
+            properties:
+              key:
+                description: 'Key of the setting to update. Must be one of the valid distribution setting keys.'
+                type: string
+                enum:
+                  - example_setting_key
+                example: example_setting_key
+              value:
+                description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting you are updating.'
+            type: object
+          example:
+            -
+              key: example_setting_key
+              value: true
+      type: object
+    GetDistributionSettingsResponseSchema:
+      required:
+        - settings
+      properties:
+        settings:
+          description: 'List of distribution settings with their values and permissions.'
+          type: array
+          items:
+            properties:
+              key:
+                type: string
+                enum:
+                  - example_setting_key
+                example: example_setting_key
+              value:
+                description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting.'
+                nullable: true
+              permission:
+                type: string
+                enum:
+                  - read
+                  - write
+                  - none
+                example: read
+            type: object
+          example:
+            -
+              key: example_setting_key
+              value: true
+              permission: read
+      type: object
+    PatchDistributionSettingsErrorResponseSchema:
+      required:
+        - code
+        - message
+        - errors
+      properties:
+        message:
+          description: 'Human-readable explanation of the error.'
+          type: string
+          example: 'One or more settings failed validation. No changes were applied.'
+        errors:
+          description: 'List of errors encountered during the update.'
+          type: array
+          items:
+            required:
+              - field
+              - message
+            properties:
+              field:
+                description: 'The setting key that caused the error.'
+                type: string
+                enum:
+                  - example_setting_key
+                example: example_setting_key
+              message:
+                description: 'The reason why the update failed.'
+                type: string
+                example: 'User does not have write permission for this setting.'
+            type: object
+          example:
+            -
+              field: example_setting_key
+              message: 'User does not have write permission for this setting.'
+            -
+              field: invalid_key
+              message: 'Setting key does not exist.'
+      type: object
+    DoorLockKeyBatchDeleteRequestSchema:
+      required:
+        - propertyId
+    DoorLockKeyCreateRequestSchema:
+      required:
+        - propertyId
+        - reservationId
+        - subReservationId
+        - issuerId
+        - startDateTime
+        - endDateTime
+        - keyType
+      properties:
+        propertyId:
+          type: string
+        reservationId:
+          description: 'Reservation identifier.'
+          type: string
+        subReservationId:
+          description: 'Sub-reservation identifier.'
+          type: string
+        issuerId:
+          type: string
+        startDateTime:
+          description: 'Start date and time of key.'
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+        endDateTime:
+          description: 'End date and time of key.'
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+        keyType:
+          description: 'Key type.'
+          type: string
+          enum:
+            - key_card
+            - access_code
+            - mobile_key
+        rooms:
+          description: 'List of common room IDs.'
+          type: array
+          items:
+            type: string
+          default: []
+          example:
+            - '1'
+            - '2'
+            - '3'
+        commonRooms:
+          description: 'List of common room ids.'
+          type: array
+          items:
+            type: string
+          default: []
+          example:
+            - '1'
+            - '2'
+            - '3'
+        externalId:
+          type: string
+          default: null
+          nullable: true
+        keyCode:
+          description: 'Custom key code.'
+          type: string
+          default: null
+          nullable: true
+        status:
+          description: 'Key status.'
+          type: string
+          default: processing
+          enum:
+            - processing
+            - completed
+        encoder:
+          type: string
+          default: null
+          nullable: true
+        mobileId:
+          type: string
+          default: null
+          nullable: true
+        guestId:
+          type: string
+          default: null
+          nullable: true
+      type: object
+    DoorLockKeyDeleteRequestSchema:
+      required:
+        - id
+        - propertyId
+    DoorLockKeyListRequestSchema:
+      required:
+        - propertyId
+      properties:
+        reservationId:
+          type: string
+          default: null
+          nullable: true
+        subReservationId:
+          type: string
+          default: null
+          nullable: true
+      type: object
+    DoorLockKeyUpdateRequestSchema:
+      required:
+        - propertyId
+        - id
+      properties:
+        status:
+          type: string
+          default: null
+          enum:
+            - processing
+            - completed
+            - failed
+            - deleted
+          nullable: true
+        keyCode:
+          type: string
+          default: null
+          nullable: true
+        errorMessage:
+          type: string
+          default: null
+          nullable: true
+      type: object
+    DoorLockKeyCollectionResponseSchema:
+      required:
+        - items
+      type: array
+      items:
+        $ref: '#/components/schemas/DoorLockKeyResponseSchema'
+    DoorLockKeyFailedToGenerateResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    DoorLockKeyListResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorLockKeyCollectionResponseSchema'
+          nullable: true
+      type: object
+    DoorLockKeyResponseSchema:
+      required:
+        - keyId
+        - propertyId
+        - reservationId
+        - subReservationId
+        - issuerId
+        - rooms
+        - commonRooms
+        - startDateTime
+        - endDateTime
+        - keyType
+        - status
+        - createdAt
+      properties:
+        keyId:
+          type: string
+        propertyId:
+          type: string
+        reservationId:
+          type: string
+        subReservationId:
+          type: string
+        issuerId:
+          type: string
+        guestId:
+          type: string
+          nullable: true
+        rooms:
+          type: array
+          items:
+            type: string
+        commonRooms:
+          type: array
+          items:
+            type: string
+        startDateTime:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+        endDateTime:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+        encoder:
+          type: string
+          nullable: true
+        keyCode:
+          type: string
+          nullable: true
+        keyType:
+          type: string
+        mobileId:
+          type: string
+          nullable: true
+        externalId:
+          type: string
+          nullable: true
+        status:
+          type: string
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+          nullable: true
+      type: object
+    DoorLockSettingsCommonRoomRequestSchema:
+      required:
+        - id
+        - name
+        - doors
+      properties:
+        id:
+          description: 'Common room ID.'
+          type: string
+        name:
+          description: 'Common room name.'
+          type: string
+        doors:
+          description: 'Common room doors.'
+          type: array
+          items:
+            type: string
+      type: object
+    DoorLockSettingsCreateRequestSchema:
+      required:
+        - encoders
+        - keyTypes
+        - commonRooms
+      properties:
+        encoders:
+          description: 'List of supported encoders.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorLockSettingsEncoderRequestSchema'
+          default: []
+        keyTypes:
+          description: 'List of supported key types.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorLockSettingsKeyTypeRequestSchema'
+          default: []
+        commonRooms:
+          description: 'List of common rooms.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorLockSettingsCommonRoomRequestSchema'
+          default: []
+      type: object
+    DoorLockSettingsDeleteRequestSchema: {  }
+    DoorLockSettingsEncoderRequestSchema:
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+    DoorLockSettingsKeyTypeRequestSchema:
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+    DoorLockSettingsSingleRequestSchema:
+      required:
+        - propertyId
+    DoorLockSettingsCommonRoomResponseSchema:
+      required:
+        - id
+        - name
+        - doors
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        doors:
+          description: $doors
+          type: array
+          items:
+            type: string
+      type: object
+    DoorLockSettingsEncoderResponseSchema:
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+    DoorLockSettingsKeyTypeResponseSchema:
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+    DoorLockSettingsResponseSchema:
+      required:
+        - keyTypes
+        - encoders
+        - commonRooms
+      properties:
+        keyTypes:
+          description: $keyTypes
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorLockSettingsKeyTypeResponseSchema'
+        encoders:
+          description: $encoders
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorLockSettingsEncoderResponseSchema'
+        commonRooms:
+          description: $commonRooms
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorLockSettingsCommonRoomResponseSchema'
+      type: object
+    InspectionItemSchema:
+      required:
+        - updatedDate
+        - roomTypeId
+        - roomId
+        - roomCondition
+        - roomBlocked
+        - frontdeskStatus
+        - housekeeperId
+        - doNotDisturb
+        - refusedService
+        - vacantPickup
+        - roomNote
+      properties:
+        updatedDate:
+          type: string
+        roomTypeId:
+          type: string
+        roomId:
+          type: string
+        roomCondition:
+          type: string
+        roomOccupied:
+          type: boolean
+        roomBlocked:
+          type: boolean
+        frontdeskStatus:
+          type: string
+        housekeeperId:
+          type: string
+        doNotDisturb:
+          type: boolean
+        refusedService:
+          type: boolean
+        vacantPickup:
+          type: boolean
+        roomNote:
+          type: string
+          nullable: true
+      type: object
+    InspectionListRequestSchema:
+      type: object
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+    InspectionListResponseSchema:
+      required:
+        - limit
+        - offset
+        - data
+      properties:
+        limit:
+          description: 'The limit for the number of items to return'
+          type: integer
+        offset:
+          description: 'The offset for the current page of results'
+          type: integer
+        data:
+          description: 'The list of data objects'
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionItemSchema'
+      type: object
+    InspectionListSchema:
+      type: array
+      items:
+        $ref: '#/components/schemas/InspectionItemSchema'
+    ImportTaskCreateRequestSchema:
+      required:
+        - type
+      properties:
+        type:
+          description: 'Import task type.'
+          type: string
+          enum:
+            - addon
+            - group
+            - item
+            - reservation
+            - room_type
+        priority:
+          description: 'Import task priority.'
+          type: string
+          enum:
+            - standard
+            - high
+      type: object
+    ImportTaskGetRecordListRequestSchema:
+      type: object
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          properties:
+            errorsOnly:
+              description: 'Get erroneous records if set to true.'
+              type: boolean
+              default: false
+              example: true
+              nullable: true
+          type: object
+    ImportTaskGetRequestSchema:
+      type: object
+    ImportTaskListRequestSchema:
+      type: object
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+        -
+          properties:
+            includeChildren:
+              description: 'Include child tasks.'
+              type: boolean
+              default: false
+              example: true
+              nullable: true
+          type: object
+    ImportTaskReimportRequestSchema:
+      properties:
+        priority:
+          description: 'Import task priority.'
+          type: string
+          enum:
+            - standard
+            - high
+          nullable: true
+        reprocessFailedRecords:
+          description: 'Re-process failed records of parent task.'
+          type: boolean
+          nullable: true
+      type: object
+    ImportFailedToCreateImportTaskSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    ImportFailedToPreProcessResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    ImportFailedToProcessCsvResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    ImportFailedToReprocessTaskResponse:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    ImportReprocessTaskResponse:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    ImportTaskGetResponseSchema:
+      required:
+        - id
+        - name
+        - source
+        - parsedRecordsCount
+        - importedRecordsCount
+        - type
+        - priority
+        - fileStatus
+        - importStatus
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        source:
+          type: string
+        parsedRecordsCount:
+          type: string
+        importedRecordsCount:
+          type: string
+        type:
+          description: 'Import task type.'
+          type: string
+          enum:
+            - addon
+            - item
+            - reservation
+            - room_type
+        priority:
+          description: 'Import task priority.'
+          type: string
+          enum:
+            - standard
+            - high
+        fileStatus:
+          type: string
+        importStatus:
+          description: 'Import task status.'
+          type: string
+          enum:
+            - uploaded
+            - parsing
+            - parsing_complete
+            - parsing_complete_with_errors
+            - updates_parsing_complete
+            - processing
+            - complete
+            - complete_with_errors
+            - error_file_handler
+            - error_file_resource
+            - error_file_parsing
+            - error_file_empty
+            - error_missing_columns
+        createdAt:
+          type: string
+        errors:
+          type: string
+          nullable: true
+      type: object
+    ImportTaskListFailedResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    ImportTaskListResponseSchema:
+      required:
+        - offset
+        - limit
+        - total
+        - data
+      properties:
+        offset:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        data:
+          description: 'Logical operator grouping filters or nested logical groups'
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportTaskGetResponseSchema'
+      type: object
+    ImportTaskRecordGetResponseSchema:
+      description: 'Import task record.'
+      required:
+        - id
+        - importId
+        - uuid
+        - createdAt
+        - propertyId
+        - objectId
+        - importStatus
+        - errors
+        - importAttemptedAt
+        - data
+      properties:
+        id:
+          type: string
+        importId:
+          type: string
+        uuid:
+          type: string
+        createdAt:
+          type: string
+        propertyId:
+          type: integer
+        objectId:
+          type: integer
+          nullable: true
+        importStatus:
+          description: 'Import task status.'
+          type: string
+          enum:
+            - uploaded
+            - parsing
+            - parsing_complete
+            - parsing_complete_with_errors
+            - processing
+            - complete
+            - complete_with_errors
+            - error_file_handler
+            - error_file_resource
+            - error_file_parsing
+            - error_file_empty
+            - error_missing_columns
+        errors:
+          type: string
+        importAttemptedAt:
+          type: string
+          nullable: true
+        data:
+          type: string
+      type: object
+    ImportTaskRecordListResponseSchema:
+      description: 'List of import task records.'
+      required:
+        - offset
+        - limit
+        - total
+        - data
+      properties:
+        offset:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        data:
+          description: 'List of import task records.'
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportTaskRecordGetResponseSchema'
+      type: object
+    ImportTaskResponseSchema:
+      required:
+        - id
+        - uploadUrl
+      properties:
+        id:
+          type: string
+        uploadUrl:
+          description: 'A temporary URL, valid for 10 minutes, used to upload the import file.'
+          type: string
+      type: object
+    IntegrationEventCreateRequestSchema:
+      required:
+        - propertyId
+        - objectType
+        - system
+        - status
+        - result
+      properties:
+        objectType:
+          description: 'Type of object related to the integration event.'
+          type: string
+          example: reservation
+        system:
+          description: 'System where the integration event occurred.'
+          type: string
+          example: gov
+        status:
+          description: 'Status of the integration event.'
+          type: string
+          enum:
+            - open
+            - completed
+          example: open
+        result:
+          description: 'Result of the integration event.'
+          type: string
+          enum:
+            - failure
+            - success
+          example: success
+        objectId:
+          description: 'ID of object related to the integration event.'
+          type: string
+          default: null
+          example: '1234567890'
+          nullable: true
+        description:
+          description: 'Description of the integration event. Required when result is failure.'
+          type: string
+          default: null
+          example: 'Integration event description'
+          nullable: true
+        details:
+          description: 'Details of the integration event, that usually contain instructions.'
+          type: string
+          default: null
+          example: 'You need to check room mappings.'
+          nullable: true
+        actionText:
+          description: 'Text to be displayed on the UI for the action.'
+          type: string
+          default: null
+          example: Retry
+          nullable: true
+        retryUrl:
+          description: 'URL that is used to retry the action.'
+          type: string
+          default: null
+          example: 'https://example.com/retry'
+          nullable: true
+      type: object
+    IntegrationEventListRequestSchema:
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterSortSchema'
+    IntegrationEventRetryRequestSchema: {  }
+    IntegrationEventUpdateRequestSchema:
+      required:
+        - status
+      properties:
+        status:
+          description: 'Status of the integration event.'
+          type: string
+          enum:
+            - open
+            - completed
+          example: open
+      type: object
+    IntegrationEventCollectionResponseSchema:
+      required:
+        - items
+      type: array
+      items:
+        $ref: '#/components/schemas/IntegrationEventResponseSchema'
+    IntegrationEventListResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/IntegrationEventCollectionResponseSchema'
+      type: object
+    IntegrationEventResponseSchema:
+      required:
+        - id
+        - propertyId
+        - objectType
+        - system
+        - status
+        - result
+        - createdAt
+      properties:
+        id:
+          description: 'Unique identifier for the integration event.'
+          type: string
+          example: '123456'
+        propertyId:
+          description: 'Unique identifier for the property.'
+          type: string
+          example: '123456'
+        objectId:
+          description: 'Unique identifier for the object associated with the integration event.'
+          type: string
+          example: '123456'
+          nullable: true
+        objectType:
+          description: 'Type of object associated with the integration event.'
+          type: string
+          example: reservation
+        system:
+          description: 'Type of system associated with the integration event.'
+          type: string
+          example: gov
+        status:
+          description: 'Status of the integration event.'
+          type: string
+          enum:
+            - open
+            - completed
+          example: open
+        result:
+          description: 'Result of the integration event.'
+          type: string
+          enum:
+            - failure
+            - success
+          example: success
+        description:
+          description: 'Short description of the integration event.'
+          type: string
+          example: 'Integration event description.'
+          nullable: true
+        details:
+          description: 'Detailed information about the integration event.'
+          type: string
+          example: 'Integration event details.'
+          nullable: true
+        actionText:
+          description: 'Text to be displayed for the action associated with the integration event.'
+          type: string
+          example: Retry
+          nullable: true
+        createdAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+          example: '2023-10-01T12:00:00Z'
+        updatedAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+          example: '2023-10-01T12:00:00Z'
+          nullable: true
+        retriedAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+          example: '2023-10-01T12:00:00Z'
+          nullable: true
+      type: object
+    GroupCreateRequestSchema:
+      required:
+        - name
+        - code
+        - description
+      properties:
+        name:
+          description: 'Group name.'
+          type: string
+          example: Abc
+        code:
+          description: 'Group code.'
+          type: string
+          maxLength: 16
+          example: '1000'
+        description:
+          description: 'Group description.'
+          type: string
+          example: 'This is a group'
+      type: object
+    GroupDeleteRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Group ID.'
+          type: string
+          example: 1-b
+      type: object
+    GroupDisableRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Group ID.'
+          type: string
+          example: 1-b
+      type: object
+    GroupEnableRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Group ID.'
+          type: string
+          example: 1-b
+      type: object
+    GroupSingleRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Group ID.'
+          type: string
+          example: 1-b
+      type: object
+    GroupUpdateRequestSchema:
+      required:
+        - id
+        - name
+        - code
+        - description
+      properties:
+        id:
+          description: 'Group ID.'
+          type: string
+          example: 1-b
+        name:
+          description: 'Group name.'
+          type: string
+          example: Abc
+        code:
+          description: 'Group code.'
+          type: string
+          maxLength: 16
+          example: '1000'
+        description:
+          description: 'Group description.'
+          type: string
+          example: 'This is a group'
+      type: object
+    SegmentCreateRequestSchema:
+      required:
+        - groupId
+        - name
+        - code
+        - description
+        - isEnabled
+        - ratePlanIds
+      properties:
+        groupId:
+          description: 'Group ID.'
+          type: string
+          example: 1-b
+        name:
+          description: 'Segment name.'
+          type: string
+          example: Abc
+        code:
+          description: 'Segment code.'
+          type: string
+          maxLength: 16
+          example: '1000'
+        description:
+          description: 'Segment description.'
+          type: string
+          example: 'This is a Segment'
+        isEnabled:
+          description: 'Is Segment enabled?.'
+          type: boolean
+          example: true
+        ratePlanIds:
+          description: 'List of Rate Plan IDs.'
+          type: array
+          items:
+            type: string
+          example:
+            - 1-a
+            - 2-b
+            - 3-c
+      type: object
+    SegmentDefaultRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Segment ID.'
+          type: string
+          example: 1-b
+      type: object
+    SegmentDeleteRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Segment ID.'
+          type: string
+          example: 1-b
+      type: object
+    SegmentDisableRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Segment ID.'
+          type: string
+          example: 1-b
+      type: object
+    SegmentEnableRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Segment ID.'
+          type: string
+          example: 1-b
+      type: object
+    SegmentListRequestSchema:
+      type: object
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+        -
+          properties:
+            enabled:
+              description: 'List only enabled segments.'
+              type: boolean
+              default: false
+              example: 'false'
+          type: object
+    SegmentListReservationsRequestSchema:
+      required:
+        - id
+      type: object
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          properties:
+            id:
+              description: 'Segment ID.'
+              type: string
+              example: 1-b
+            active:
+              description: 'List only active reservations.'
+              type: boolean
+          type: object
+    SegmentSingleRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Segment ID.'
+          type: string
+          example: 1-b
+      type: object
+    SegmentUpdateRequestSchema:
+      required:
+        - id
+        - groupId
+        - name
+        - code
+        - description
+        - isEnabled
+        - ratePlanIds
+      properties:
+        id:
+          description: 'Segment ID.'
+          type: string
+          example: 1-b
+        groupId:
+          description: 'Group ID.'
+          type: string
+          example: 1-b
+        name:
+          description: 'Segment name.'
+          type: string
+          example: Abc
+        code:
+          description: 'Segment code.'
+          type: string
+          maxLength: 16
+          example: '1000'
+        description:
+          description: 'Segment description.'
+          type: string
+          example: 'This is a Segment'
+        isEnabled:
+          description: 'Is Segment enabled?.'
+          type: boolean
+          example: true
+        ratePlanIds:
+          description: 'List of Rate Plan IDs.'
+          type: array
+          items:
+            type: string
+          example:
+            - 1-a
+            - 2-b
+            - 3-c
+      type: object
+    GroupListResponseSchema:
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupResponseSchema'
+          nullable: true
+      type: object
+    GroupResponseSchema:
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        canEdit:
+          type: array
+          items:
+            type: string
+        canDelete:
+          type: boolean
+        canDisable:
+          type: boolean
+        createdAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+        updatedAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+          nullable: true
+      type: object
+    SegmentListReservationsResponseSchema:
+      properties:
+        id:
+          type: string
+        limit:
+          type: integer
+        offset:
+          type: integer
+        reservationIds:
+          type: array
+          items:
+            type: string
+          nullable: true
+      type: object
+    SegmentListResponseSchema:
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SegmentResponseSchema'
+          nullable: true
+      type: object
+    SegmentResponseSchema:
+      properties:
+        id:
+          type: string
+        groupId:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        isEnabled:
+          type: boolean
+        isDefault:
+          type: boolean
+        ratePlanIds:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+        updatedAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+          nullable: true
+        canEdit:
+          type: array
+          items:
+            type: string
+        canDelete:
+          type: boolean
+        canDisable:
+          type: boolean
+      type: object
+    OutOfServiceRequestSchema:
+      required:
+        - fromDate
+        - toDate
+        - reason
+        - roomId
+      properties:
+        fromDate:
+          description: 'RFC3339 Date to start the out of service period'
+          type: string
+          example: '2025-04-25T00:00:00-06:00'
+        toDate:
+          description: 'RFC3339 Date to end the out of service period'
+          type: string
+          example: '2025-04-25T00:00:00-06:00'
+        reason:
+          description: 'Wny is the room out of service?'
+          type: string
+          example: 'Flooding in the room.'
+      type: object
+    OutOfServiceResponseSchema:
+      required:
+        - event_id
+        - code
+      properties:
+        event_id:
+          description: 'The status of the request'
+          type: boolean
+        message:
+          description: 'The event id of the request'
+          type: string
+        code:
+          description: 'The HTTP status code of the response'
+          type: integer
+          example: 201
+      type: object
+    RoomsFailedToMakeOutOfServiceResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+  parameters:
+    roomId:
+      name: roomId
+      in: path
+      description: 'Room ID'
+      required: true
+      schema:
+        type: string
+      example: 1-b
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: x-api-key
+      in: header
+    default:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: 'https://api.cloudbeds.com/auth/oauth/authorize'
+          tokenUrl: 'https://api.cloudbeds.com/auth/oauth/token'
+          scopes:
+            'read:doorLockKey': 'Read DoorLock keys and settings'
+            'write:doorLockKey': 'Write DoorLock keys and settings'
+            'delete:doorLockKey': 'Delete DoorLock keys and settings'
+            'read:housekeeping': 'Read Housekeeping inspections'
+            'read:marketSegmentation': 'Read Market Segmentation groups and segments'
+            'write:marketSegmentation': 'Write Market Segmentation groups and segments'
+            'delete:marketSegmentation': 'Delete Market Segmentation groups and segments'
+            'write:importTask': 'Create new data imports'
+            'read:importTask': 'Read data imports'
+            'hotel:read': 'Read Hotel information'
+            'hotel:write': 'Write Hotel information'
+            'hotel:delete': 'Delete Hotel information'
+            'write:appError': 'Write AppError information'
+tags:
+  -
+    name: doorlock-keys
+    description: doorlock-keys
+  -
+    name: doorlock-settings
+    description: doorlock-settings
+  -
+    name: housekeeping
+    description: housekeeping
+  -
+    name: integration-events
+    description: integration-events
+  -
+    name: market-segmentation-groups
+    description: market-segmentation-groups
+  -
+    name: market-segmentation-segments
+    description: market-segmentation-segments
+  -
+    name: rooms
+    description: rooms
