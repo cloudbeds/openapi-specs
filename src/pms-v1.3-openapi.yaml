@@ -1,57 +1,7 @@
 openapi: 3.0.1
 info:
     title: 'Cloudbeds API'
-    description: |-
-        <p>
-            Welcome to the documentation for <strong>Cloudbeds API Version v1.3</strong>!
-            If you are looking to learn how to use the Cloudbeds API to access guest information, reservations, or similar data
-            for your Cloudbeds customers, then you've come to the right place.
-        </p>
-
-        <p>
-            In this document you will find all the API methods we provide along with explanations for parameters and response
-            examples.
-        </p>
-
-        <p>
-            If you have questions about different implementation steps (e.g. how to implement OAuth 2.0), please refer to our
-            <a href="https://integrations.cloudbeds.com/hc/en-us">Integrations Portal</a>.
-        </p>
-
-        <p>
-            Be sure to <a href="https://go.pardot.com/l/308041/2018-07-24/qb2lg">subscribe</a> to the monthly
-            Cloudbeds API announcement mailing list to receive information on new additions and improvements to the
-            Cloudbeds API and related developer tools.
-        </p>
-
-        <p>
-            <strong>Endpoint:</strong> https://api.cloudbeds.com/api/v1.3/{method}
-        </p>
-
-        <p>
-            <strong>HTTPS:</strong> Our API requires HTTPS. We'll respond with an appropriate error if you're not using it.
-        </p>
-
-        <p>
-            <strong>Request Format:</strong> HTTP GET, POST and PUT (Content-Type: application/x-www-form-urlencoded)
-        </p>
-
-        <p>
-            <strong>Response Format:</strong> JSON
-        </p>
-
-        <p>
-            <strong>Response Header:</strong> X-Request-ID is added to response headers in all calls to help accelerate support
-            and troubleshooting.
-        </p>
-
-        <p>
-            <strong>
-                <a href="https://integrations.cloudbeds.com/hc/en-us/articles/14104678058267-API-Documentation#postman-collection">
-                    <img src="https://run.pstmn.io/button.svg" alt="Run in Postman">
-                </a>
-            </strong> use this link to access our Public collection in Postman.
-        </p>
+    description: "<p>\n    Welcome to the documentation for <strong>Cloudbeds API Version v1.3</strong>!\n    If you are looking to learn how to use the Cloudbeds API to access guest information, reservations, or similar data\n    for your Cloudbeds customers, then you've come to the right place.\n</p>\n\n<p>\n    In this document you will find all the API methods we provide along with explanations for parameters and response\n    examples.\n</p>\n\n<p>\n    If you have questions about different implementation steps (e.g. how to implement OAuth 2.0), please refer to our\n    <a href=\"https://integrations.cloudbeds.com/hc/en-us\">Integrations Portal</a>.\n</p>\n\n<p>\n    Be sure to <a href=\"https://go.pardot.com/l/308041/2018-07-24/qb2lg\">subscribe</a> to the monthly\n    Cloudbeds API announcement mailing list to receive information on new additions and improvements to the\n    Cloudbeds API and related developer tools.\n</p>\n\n<p>\n    <strong>Endpoint:</strong> https://api.cloudbeds.com/api/v1.3/{method}\n</p>\n\n<p>\n    <strong>HTTPS:</strong> Our API requires HTTPS. We'll respond with an appropriate error if you're not using it.\n</p>\n\n<p>\n    <strong>Request Format:</strong> HTTP GET, POST and PUT (Content-Type: application/x-www-form-urlencoded)\n</p>\n\n<p>\n    <strong>Response Format:</strong> JSON\n</p>\n\n<p>\n    <strong>Response Header:</strong> X-Request-ID is added to response headers in all calls to help accelerate support\n    and troubleshooting.\n</p>\n\n<p>\n    <strong>\n        <a href=\"https://integrations.cloudbeds.com/hc/en-us/articles/14104678058267-API-Documentation#postman-collection\">\n            <img src=\"https://run.pstmn.io/button.svg\" alt=\"Run in Postman\">\n        </a>\n    </strong> use this link to access our Public collection in Postman.\n</p>"
     version: v1.3
 servers:
     -
@@ -4127,181 +4077,6 @@ components:
                                         type: string
                                         nullable: true
                                 nullable: true
-        GetInvoiceResponse:
-            type: object
-            properties:
-                success:
-                    description: 'Returns if the request could be completed'
-                    type: boolean
-                data:
-                    description: 'Invoice details'
-                    type: object
-                    properties:
-                        invoiceID:
-                            description: 'Unique invoice ID'
-                            type: string
-                        userID:
-                            description: 'Unique ID of User who generated invoice'
-                            type: string
-                        reservationID:
-                            description: 'Reservation identifier'
-                            type: string
-                        prefix:
-                            description: 'Invoice ID prefix'
-                            type: string
-                        number:
-                            description: 'Invoice ID number'
-                            type: integer
-                        suffix:
-                            description: 'Invoice ID suffix'
-                            type: string
-                        documentIssueDate:
-                            description: 'Date and time when invoice was issued'
-                            type: string
-                        status:
-                            description: 'Invoice status'
-                            type: string
-                        billedTo:
-                            description: 'Information about who being billed'
-                            type: object
-                            properties:
-                                id:
-                                    description: 'Unique identifier of who being billed Additional information about who being billed could be retrieved via corresponding API e.g.: for a guest it could be [getGuest](#tag/Guest/paths/~1getGuest/get)'
-                                    type: string
-                                type:
-                                    description: 'Type of who being billed'
-                                    type: string
-                                    enum:
-                                        - guest
-                        items:
-                            description: 'Invoice items'
-                            type: array
-                            items:
-                                type: object
-                                properties:
-                                    description:
-                                        description: ''
-                                        type: string
-                                    type:
-                                        description: ''
-                                        type: string
-                                    quantity:
-                                        description: ''
-                                        type: integer
-                                    totalAmount:
-                                        description: ''
-                                        type: string
-                                    netAmount:
-                                        description: ''
-                                        type: string
-                                    currency:
-                                        description: ''
-                                        type: string
-                                    taxes:
-                                        description: ''
-                                        type: array
-                                        items:
-                                            type: object
-                                            properties:
-                                                name:
-                                                    description: ''
-                                                    type: string
-                                                amount:
-                                                    description: ''
-                                                    type: string
-                                                code:
-                                                    description: ''
-                                                    type: string
-                                                taxID:
-                                                    description: ''
-                                                    type: string
-                                    fees:
-                                        description: ''
-                                        type: array
-                                        items:
-                                            type: object
-                                            properties:
-                                                name:
-                                                    description: ''
-                                                    type: string
-                                                amount:
-                                                    description: ''
-                                                    type: string
-                                                code:
-                                                    description: ''
-                                                    type: string
-                                                feeID:
-                                                    description: ''
-                                                    type: string
-                        taxes:
-                            description: ''
-                            type: array
-                            items:
-                                type: object
-                                properties:
-                                    name:
-                                        description: ''
-                                        type: string
-                                    amount:
-                                        description: ''
-                                        type: string
-                                    code:
-                                        description: ''
-                                        type: string
-                                    taxID:
-                                        description: ''
-                                        type: string
-                        fees:
-                            description: ''
-                            type: array
-                            items:
-                                type: object
-                                properties:
-                                    name:
-                                        description: ''
-                                        type: string
-                                    amount:
-                                        description: ''
-                                        type: string
-                                    code:
-                                        description: ''
-                                        type: string
-                                    feeID:
-                                        description: ''
-                                        type: string
-        PostPatchInvoiceRequest:
-            type: object
-            properties:
-                propertyID:
-                    description: 'Property ID'
-                    type: string
-                    nullable: true
-                invoiceID:
-                    description: 'Invoice unique ID'
-                    type: string
-                status:
-                    description: 'Desired new invoice status'
-                    type: string
-                    enum:
-                        - open
-                        - paid
-                        - failed
-                        - voided
-                        - rejected
-                file:
-                    description: 'Form-based Credit Notes PDF File.<br/> Allowed file types: <code>*.pdf, *.rtf, *.doc, *.docx, *.txt, *.jpg, *.jpeg, *.png, *.gif, *.csv, *.xls, *.xlsx, *.xml</code><br/> Allowed max file size: 10MB<br/> <i>Not required for `failed` status</i>'
-                    type: string
-                    format: binary
-        PostPatchInvoiceResponse:
-            type: object
-            properties:
-                success:
-                    description: 'Returns if the request could be completed'
-                    type: boolean
-                message:
-                    description: 'To be used in case any error occurs (if success = false). If success = true, it does not exist.'
-                    type: string
-                    nullable: true
         GetItemResponse:
             type: object
             properties:
@@ -7745,356 +7520,6 @@ components:
                     description: 'To be used in case any error occurs (if success = false). If success = true, it does not exist.'
                     type: string
                     nullable: true
-        GetReservationInvoiceInformationResponse:
-            type: object
-            properties:
-                success:
-                    description: 'Returns if the request could be completed'
-                    type: boolean
-                data:
-                    description: 'Details for the rooms assigned on the selected date'
-                    type: array
-                    items:
-                        type: object
-                        properties:
-                            status:
-                                description: "Reservation status<br /> 'not_confirmed' - Reservation is pending confirmation<br /> 'confirmed' - Reservation is confirmed<br /> 'canceled' - Reservation is canceled<br /> 'checked_in' - Guest is in hotel<br /> 'checked_out' - Guest already left hotel<br /> 'no_show' - Guest didn't showed up on check-in date"
-                                type: string
-                                enum:
-                                    - confirmed
-                                    - not_confirmed
-                                    - canceled
-                                    - checked_in
-                                    - checked_out
-                                    - no_show
-                            customFields:
-                                description: 'Custom Fields related to the reservation'
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        customFieldName:
-                                            description: 'Custom Field Name'
-                                            type: string
-                                        customFieldValue:
-                                            description: 'Custom Field Value'
-                                            type: string
-                            mainGuestDetails:
-                                description: 'Details for the main guest of the reservation'
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        guestFirstName:
-                                            description: 'First Name'
-                                            type: string
-                                        guestLastName:
-                                            description: 'Last Name'
-                                            type: string
-                                        guestGender:
-                                            description: Gender
-                                            type: string
-                                            enum:
-                                                - M
-                                                - F
-                                                - N/A
-                                        guestEmail:
-                                            description: 'Email Address'
-                                            type: string
-                                        guestPhone:
-                                            description: 'Phone Number'
-                                            type: string
-                                        guestCellPhone:
-                                            description: 'Cell Phone Number'
-                                            type: string
-                                        guestAddress:
-                                            description: Adress
-                                            type: string
-                                        guestAddress2:
-                                            description: 'Address Line 2 (Complement)'
-                                            type: string
-                                        guestCity:
-                                            description: City
-                                            type: string
-                                        guestCountry:
-                                            description: Country
-                                            type: string
-                                        taxID:
-                                            description: 'Guest Tax Identifier Number'
-                                            type: string
-                                        companyTaxID:
-                                            description: 'Company Tax Identifier Number'
-                                            type: string
-                                        companyName:
-                                            description: 'Company Name'
-                                            type: string
-                                        guestState:
-                                            description: State
-                                            type: string
-                                        guestZip:
-                                            description: 'Zip code'
-                                            type: string
-                                        isAnonymyzed:
-                                            description: 'Flag indicating the guest data was removed upon request'
-                                            type: boolean
-                            reservationRooms:
-                                description: 'Booked rooms information'
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        roomTypeName:
-                                            description: 'Room type name'
-                                            type: string
-                                        guestName:
-                                            description: 'Assigned guest name'
-                                            type: string
-                                        startDate:
-                                            description: 'Check-in date'
-                                            type: string
-                                            format: date
-                                        endDate:
-                                            description: 'Check-out date'
-                                            type: string
-                                            format: date
-                                        adults:
-                                            description: 'Number of adults for the room'
-                                            type: integer
-                                        children:
-                                            description: 'Number of children for the room'
-                                            type: integer
-                                        nights:
-                                            description: 'Number of nights'
-                                            type: integer
-                                        roomTotal:
-                                            description: 'Total rate for the room'
-                                            type: number
-                                        roomID:
-                                            description: 'Unique ID of the room'
-                                            type: string
-                                        roomName:
-                                            description: 'Name of the room'
-                                            type: string
-                                        roomTypeID:
-                                            description: 'ID of the room type'
-                                            type: string
-                                        marketName:
-                                            description: 'Market segmentation name'
-                                            type: string
-                                        marketCode:
-                                            description: 'Market segmentation code'
-                                            type: string
-                            reservationRoomsTotal:
-                                description: 'Total rates for all rooms'
-                                type: number
-                            reservationAdjustments:
-                                description: 'Adjustments applied to the reservation'
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        adjustmentDescription:
-                                            description: Description
-                                            type: string
-                                        adjustmentRoomName:
-                                            description: 'Room name'
-                                            type: string
-                                        adjustmentDateTime:
-                                            description: 'Date and time of the adjustment'
-                                            type: string
-                                            format: date-time
-                                        adjustmentDateTimeUTC:
-                                            description: 'Date and time of the adjustment (UTC)'
-                                            type: string
-                                            format: date-time
-                                        adjustmentAmount:
-                                            description: Amount
-                                            type: number
-                            reservationAdjustmentsTotal:
-                                description: 'Total sum of adjustments'
-                                type: number
-                            reservationPayments:
-                                description: 'Payments made for this reservation'
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        paymentType:
-                                            description: Type
-                                            type: string
-                                        paymentDescription:
-                                            description: Description
-                                            type: string
-                                        paymentDateTime:
-                                            description: 'Date and time of the payment'
-                                            type: string
-                                            format: date-time
-                                        paymentDateTimeUTC:
-                                            description: 'Date and time of the payment (UTC)'
-                                            type: string
-                                            format: date-time
-                                        paymentAmount:
-                                            description: Amount
-                                            type: number
-                                        reservationPaymentsTotal:
-                                            description: 'Total sum of payments'
-                                            type: number
-                            reservationAdditionalProducts:
-                                description: 'Additional items (products or services)'
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        productID:
-                                            description: 'Internal product ID'
-                                            type: string
-                                        soldProductID:
-                                            description: 'ID of the sold product'
-                                            type: string
-                                        itemCode:
-                                            description: 'Code of the item'
-                                            type: string
-                                        productName:
-                                            description: Name
-                                            type: string
-                                        productPrice:
-                                            description: Price
-                                            type: number
-                                        productQuantity:
-                                            description: 'Quantity sold'
-                                            type: integer
-                                        productSubTotal:
-                                            description: 'Gross amount'
-                                            type: number
-                                        productFees:
-                                            description: 'Fees charged for this item'
-                                            type: number
-                                        productTaxes:
-                                            description: 'Taxes charged for this item'
-                                            type: number
-                                        productTotal:
-                                            description: 'Net amount'
-                                            type: number
-                                        productNote:
-                                            description: 'Product note'
-                                            type: number
-                                        transactionDateTime:
-                                            description: 'Date and time of the sale'
-                                            type: string
-                                            format: date-time
-                            reservationAdditionalProductsTotal:
-                                description: 'Total sum for additional items'
-                                type: number
-                            reservationAddOnProducts:
-                                description: Addons
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        soldProductID:
-                                            description: 'ID of the sold product'
-                                            type: string
-                                        productName:
-                                            description: Name
-                                            type: string
-                                        productPrice:
-                                            description: Price
-                                            type: number
-                                        productQuantity:
-                                            description: 'Quantity sold'
-                                            type: integer
-                                        productSubTotal:
-                                            description: 'Gross amount'
-                                            type: number
-                                        productFees:
-                                            description: 'Fees charged for this addon'
-                                            type: number
-                                        productTaxes:
-                                            description: 'Taxes charged for this addon'
-                                            type: number
-                                        productTotal:
-                                            description: 'Net amount'
-                                            type: number
-                                        transactionDateTime:
-                                            description: 'Date and time of the sale'
-                                            type: string
-                                            format: date-time
-                            reservationAddOnProductsTotal:
-                                description: 'Total sum for addons'
-                                type: number
-                            reservationTaxes:
-                                description: Taxes
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        taxName:
-                                            description: Name
-                                            type: string
-                                        taxAmount:
-                                            description: Amount
-                                            type: number
-                            reservationTaxesTotal:
-                                description: 'Total sum for taxes'
-                                type: number
-                            reservationFees:
-                                description: Fees
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        taxName:
-                                            description: Name
-                                            type: string
-                                        taxAmount:
-                                            description: Amount
-                                            type: number
-                            reservationFeesTotal:
-                                description: 'Total sum for fees'
-                                type: number
-                            balance:
-                                description: 'Balance currently owed'
-                                type: number
-                            balanceDetailed:
-                                description: 'Reservation balance detailed with the information available on PC app, describing the financial items calculated'
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        suggestedDeposit:
-                                            description: 'Suggested deposit value, calculated according to the hotel policies. Does not mean that it was effectively paid'
-                                            type: string
-                                        subTotal:
-                                            description: 'Sum of the room prices on the reservation'
-                                            type: number
-                                        additionalItems:
-                                            description: 'Sum of the additional items recorded on the reservation'
-                                            type: number
-                                        taxesFees:
-                                            description: 'Sum of taxes and fees on the reservation'
-                                            type: number
-                                        grandTotal:
-                                            description: 'Sum of sub.Total + additionalItems + taxesFees'
-                                            type: number
-                                        paid:
-                                            description: 'Amount paid (reservation deposit + any other extra payment)'
-                                            type: number
-                                        originalCurrencyCode:
-                                            description: 'The currency the booking was originally made in. Included only if different from property currency'
-                                            type: string
-                                        originalCurrencyRate:
-                                            description: 'The currency conversion rate used at the time of booking. Included only if originalCurrencyCode is different from property currency.'
-                                            type: number
-                            reservationOrigin:
-                                description: 'Reservation Origin'
-                                type: string
-                            reservationMealPlans:
-                                description: 'Reservation Meal Plans'
-                                type: string
-                message:
-                    description: 'To be used in case any error occurs (if success = false). If success = true, it does not exist.'
-                    type: string
-                    nullable: true
         PostReservationNoteRequest:
             type: object
             properties:
@@ -9558,6 +8983,7 @@ paths:
                 -
                     api_key:
                         - 'delete:adjustment'
+                -
                     OAuth2:
                         - 'delete:adjustment'
             parameters:
@@ -9599,6 +9025,7 @@ paths:
                 -
                     api_key:
                         - 'write:adjustment'
+                -
                     OAuth2:
                         - 'write:adjustment'
             requestBody:
@@ -9623,6 +9050,7 @@ paths:
                 -
                     api_key:
                         - 'write:allotmentBlock'
+                -
                     OAuth2:
                         - 'write:allotmentBlock'
             requestBody:
@@ -9647,6 +9075,7 @@ paths:
                 -
                     api_key:
                         - 'write:allotmentBlock'
+                -
                     OAuth2:
                         - 'write:allotmentBlock'
             requestBody:
@@ -9671,6 +9100,7 @@ paths:
                 -
                     api_key:
                         - 'read:allotmentBlock'
+                -
                     OAuth2:
                         - 'read:allotmentBlock'
             parameters:
@@ -9771,6 +9201,7 @@ paths:
                 -
                     api_key:
                         - 'write:allotmentBlock'
+                -
                     OAuth2:
                         - 'write:allotmentBlock'
             requestBody:
@@ -9795,6 +9226,7 @@ paths:
                 -
                     api_key:
                         - 'read:allotmentBlock'
+                -
                     OAuth2:
                         - 'read:allotmentBlock'
             requestBody:
@@ -9819,6 +9251,7 @@ paths:
                 -
                     api_key:
                         - 'read:allotmentBlock'
+                -
                     OAuth2:
                         - 'read:allotmentBlock'
             parameters:
@@ -9878,6 +9311,7 @@ paths:
                 -
                     api_key:
                         - 'read:allotmentBlock'
+                -
                     OAuth2:
                         - 'read:allotmentBlock'
             requestBody:
@@ -9902,6 +9336,7 @@ paths:
                 -
                     api_key:
                         - 'delete:appPropertySettings'
+                -
                     OAuth2:
                         - 'delete:appPropertySettings'
             requestBody:
@@ -9926,6 +9361,7 @@ paths:
                 -
                     api_key:
                         - 'read:appPropertySettings'
+                -
                     OAuth2:
                         - 'read:appPropertySettings'
             parameters:
@@ -9960,6 +9396,7 @@ paths:
                 -
                     api_key:
                         - 'write:appPropertySettings'
+                -
                     OAuth2:
                         - 'write:appPropertySettings'
             requestBody:
@@ -9984,6 +9421,7 @@ paths:
                 -
                     api_key:
                         - 'write:appPropertySettings'
+                -
                     OAuth2:
                         - 'write:appPropertySettings'
             requestBody:
@@ -10008,6 +9446,7 @@ paths:
                 -
                     api_key:
                         - 'read:currency'
+                -
                     OAuth2:
                         - 'read:currency'
             parameters:
@@ -10035,6 +9474,7 @@ paths:
                 -
                     api_key:
                         - 'read:customFields'
+                -
                     OAuth2:
                         - 'read:customFields'
             parameters:
@@ -10076,6 +9516,7 @@ paths:
                 -
                     api_key:
                         - 'write:customFields'
+                -
                     OAuth2:
                         - 'write:customFields'
             requestBody:
@@ -10100,6 +9541,7 @@ paths:
                 -
                     api_key:
                         - 'read:dashboard'
+                -
                     OAuth2:
                         - 'read:dashboard'
             parameters:
@@ -10135,6 +9577,7 @@ paths:
                 -
                     api_key:
                         - 'read:communication'
+                -
                     OAuth2:
                         - 'read:communication'
             parameters:
@@ -10162,6 +9605,7 @@ paths:
                 -
                     api_key:
                         - 'write:communication'
+                -
                     OAuth2:
                         - 'write:communication'
             requestBody:
@@ -10186,6 +9630,7 @@ paths:
                 -
                     api_key:
                         - 'read:communication'
+                -
                     OAuth2:
                         - 'read:communication'
             parameters:
@@ -10213,6 +9658,7 @@ paths:
                 -
                     api_key:
                         - 'write:communication'
+                -
                     OAuth2:
                         - 'write:communication'
             requestBody:
@@ -10237,6 +9683,7 @@ paths:
                 -
                     api_key:
                         - 'read:group'
+                -
                     OAuth2:
                         - 'read:group'
             parameters:
@@ -10285,6 +9732,7 @@ paths:
                 -
                     api_key:
                         - 'read:group'
+                -
                     OAuth2:
                         - 'read:group'
             parameters:
@@ -10371,6 +9819,7 @@ paths:
                 -
                     api_key:
                         - 'write:group'
+                -
                     OAuth2:
                         - 'write:group'
             requestBody:
@@ -10395,6 +9844,7 @@ paths:
                 -
                     api_key:
                         - 'write:group'
+                -
                     OAuth2:
                         - 'write:group'
             requestBody:
@@ -10419,6 +9869,7 @@ paths:
                 -
                     api_key:
                         - 'write:group'
+                -
                     OAuth2:
                         - 'write:group'
             requestBody:
@@ -10443,6 +9894,7 @@ paths:
                 -
                     api_key:
                         - 'read:guest'
+                -
                     OAuth2:
                         - 'read:guest'
             parameters:
@@ -10492,6 +9944,7 @@ paths:
                 -
                     api_key:
                         - 'read:guest'
+                -
                     OAuth2:
                         - 'read:guest'
             parameters:
@@ -10668,6 +10121,7 @@ paths:
                 -
                     api_key:
                         - 'read:guest'
+                -
                     OAuth2:
                         - 'read:guest'
             parameters:
@@ -10775,6 +10229,7 @@ paths:
                 -
                     api_key:
                         - 'read:guest'
+                -
                     OAuth2:
                         - 'read:guest'
             parameters:
@@ -10846,6 +10301,7 @@ paths:
                 -
                     api_key:
                         - 'read:guest'
+                -
                     OAuth2:
                         - 'read:guest'
             parameters:
@@ -10938,6 +10394,7 @@ paths:
                 -
                     api_key:
                         - 'write:guest'
+                -
                     OAuth2:
                         - 'write:guest'
             requestBody:
@@ -10962,6 +10419,7 @@ paths:
                 -
                     api_key:
                         - 'read:guest'
+                -
                     OAuth2:
                         - 'read:guest'
             parameters:
@@ -10996,6 +10454,7 @@ paths:
                 -
                     api_key:
                         - 'write:guest'
+                -
                     OAuth2:
                         - 'write:guest'
             requestBody:
@@ -11020,6 +10479,7 @@ paths:
                 -
                     api_key:
                         - 'write:guest'
+                -
                     OAuth2:
                         - 'write:guest'
             parameters:
@@ -11061,6 +10521,7 @@ paths:
                 -
                     api_key:
                         - 'write:guest'
+                -
                     OAuth2:
                         - 'write:guest'
             requestBody:
@@ -11085,6 +10546,7 @@ paths:
                 -
                     api_key:
                         - 'write:guest'
+                -
                     OAuth2:
                         - 'write:guest'
             requestBody:
@@ -11109,6 +10571,7 @@ paths:
                 -
                     api_key:
                         - 'write:guest'
+                -
                     OAuth2:
                         - 'write:guest'
             requestBody:
@@ -11133,6 +10596,7 @@ paths:
                 -
                     api_key:
                         - 'write:guest'
+                -
                     OAuth2:
                         - 'write:guest'
             requestBody:
@@ -11157,6 +10621,7 @@ paths:
                 -
                     api_key:
                         - 'write:guest'
+                -
                     OAuth2:
                         - 'write:guest'
             requestBody:
@@ -11181,6 +10646,7 @@ paths:
                 -
                     api_key:
                         - 'read:hotel'
+                -
                     OAuth2:
                         - 'read:hotel'
             parameters:
@@ -11238,6 +10704,7 @@ paths:
                 -
                     api_key:
                         - 'read:hotel'
+                -
                     OAuth2:
                         - 'read:hotel'
             parameters:
@@ -11265,6 +10732,7 @@ paths:
                 -
                     api_key:
                         - 'write:hotel'
+                -
                     OAuth2:
                         - 'write:hotel'
             requestBody:
@@ -11289,6 +10757,7 @@ paths:
                 -
                     api_key:
                         - 'read:hotel'
+                -
                     OAuth2:
                         - 'read:hotel'
             parameters:
@@ -11370,6 +10839,7 @@ paths:
                 -
                     api_key:
                         - 'read:houseAccount'
+                -
                     OAuth2:
                         - 'read:houseAccount'
             parameters:
@@ -11397,6 +10867,7 @@ paths:
                 -
                     api_key:
                         - 'write:houseAccount'
+                -
                     OAuth2:
                         - 'write:houseAccount'
             requestBody:
@@ -11421,6 +10892,7 @@ paths:
                 -
                     api_key:
                         - 'write:houseAccount'
+                -
                     OAuth2:
                         - 'write:houseAccount'
             requestBody:
@@ -11445,6 +10917,7 @@ paths:
                 -
                     api_key:
                         - 'read:housekeeping'
+                -
                     OAuth2:
                         - 'read:housekeeping'
             parameters:
@@ -11519,6 +10992,7 @@ paths:
                 -
                     api_key:
                         - 'write:housekeeping'
+                -
                     OAuth2:
                         - 'write:housekeeping'
             requestBody:
@@ -11543,6 +11017,7 @@ paths:
                 -
                     api_key:
                         - 'write:housekeeping'
+                -
                     OAuth2:
                         - 'write:housekeeping'
             requestBody:
@@ -11567,6 +11042,7 @@ paths:
                 -
                     api_key:
                         - 'write:housekeeping'
+                -
                     OAuth2:
                         - 'write:housekeeping'
             requestBody:
@@ -11591,6 +11067,7 @@ paths:
                 -
                     api_key:
                         - 'read:housekeeping'
+                -
                     OAuth2:
                         - 'read:housekeeping'
             parameters:
@@ -11634,6 +11111,7 @@ paths:
                 -
                     api_key:
                         - 'write:housekeeping'
+                -
                     OAuth2:
                         - 'write:housekeeping'
             requestBody:
@@ -11654,6 +11132,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetAppStateResponse'
+            security:
+                -
+                    api_key: []
+                -
+                    OAuth2: []
             parameters:
                 -
                     description: 'Property identifier to be queried'
@@ -11675,6 +11158,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/PostAppStateResponse'
+            security:
+                -
+                    api_key: []
+                -
+                    OAuth2: []
             requestBody:
                 content:
                     application/x-www-form-urlencoded:
@@ -11693,6 +11181,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/PostGovernmentReceiptResponse'
+            security:
+                -
+                    api_key: []
+                -
+                    OAuth2: []
             requestBody:
                 content:
                     application/x-www-form-urlencoded:
@@ -11711,6 +11204,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetAppSettingsResponse'
+            security:
+                -
+                    api_key: []
+                -
+                    OAuth2: []
             parameters:
                 -
                     description: 'Property identifier to be queried'
@@ -11736,6 +11234,7 @@ paths:
                 -
                     api_key:
                         - 'write:appError'
+                -
                     OAuth2:
                         - 'write:appError'
             requestBody:
@@ -11756,6 +11255,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/PostWebhookResponse'
+            security:
+                -
+                    api_key: []
+                -
+                    OAuth2: []
             requestBody:
                 content:
                     application/x-www-form-urlencoded:
@@ -11774,6 +11278,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/DeleteWebhookResponse'
+            security:
+                -
+                    api_key: []
+                -
+                    OAuth2: []
             parameters:
                 -
                     description: 'List of property IDs, comma-separated, i.e. 37,345,89'
@@ -11802,6 +11311,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetWebhooksResponse'
+            security:
+                -
+                    api_key: []
+                -
+                    OAuth2: []
             parameters:
                 -
                     description: 'Property ID'
@@ -11810,64 +11324,6 @@ paths:
                         type: string
                     required: false
                     in: query
-    /getInvoice:
-        get:
-            tags:
-                - Invoices
-            summary: getInvoice
-            description: 'Returns invoice data. This call is only available for third-party integration partners, and not for property client IDs.'
-            responses:
-                200:
-                    description: '200 Response'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GetInvoiceResponse'
-            security:
-                -
-                    api_key:
-                        - 'read:reservation'
-                    OAuth2:
-                        - 'read:reservation'
-            parameters:
-                -
-                    description: 'Property ID'
-                    name: propertyID
-                    schema:
-                        type: string
-                    required: false
-                    in: query
-                -
-                    description: 'Invoice ID'
-                    name: invoiceID
-                    schema:
-                        type: string
-                    required: true
-                    in: query
-    /patchInvoice:
-        post:
-            tags:
-                - Invoices
-            summary: patchInvoice
-            description: 'Update invoice state. This call is only available for third-party integration partners, and not for property client IDs.'
-            responses:
-                200:
-                    description: '200 Response'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/PostPatchInvoiceResponse'
-            security:
-                -
-                    api_key:
-                        - 'write:reservation'
-                    OAuth2:
-                        - 'write:reservation'
-            requestBody:
-                content:
-                    application/x-www-form-urlencoded:
-                        schema:
-                            $ref: '#/components/schemas/PostPatchInvoiceRequest'
     /getItem:
         get:
             tags:
@@ -11885,6 +11341,7 @@ paths:
                 -
                     api_key:
                         - 'read:item'
+                -
                     OAuth2:
                         - 'read:item'
             parameters:
@@ -11919,6 +11376,7 @@ paths:
                 -
                     api_key:
                         - 'write:item'
+                -
                     OAuth2:
                         - 'write:item'
             requestBody:
@@ -11943,6 +11401,7 @@ paths:
                 -
                     api_key:
                         - 'read:item'
+                -
                     OAuth2:
                         - 'read:item'
             parameters:
@@ -11977,6 +11436,7 @@ paths:
                 -
                     api_key:
                         - 'read:item'
+                -
                     OAuth2:
                         - 'read:item'
             parameters:
@@ -12004,6 +11464,7 @@ paths:
                 -
                     api_key:
                         - 'write:item'
+                -
                     OAuth2:
                         - 'write:item'
             requestBody:
@@ -12028,6 +11489,7 @@ paths:
                 -
                     api_key:
                         - 'write:item'
+                -
                     OAuth2:
                         - 'write:item'
             requestBody:
@@ -12052,6 +11514,7 @@ paths:
                 -
                     api_key:
                         - 'write:item'
+                -
                     OAuth2:
                         - 'write:item'
             requestBody:
@@ -12076,6 +11539,7 @@ paths:
                 -
                     api_key:
                         - 'write:item'
+                -
                     OAuth2:
                         - 'write:item'
             requestBody:
@@ -12100,6 +11564,7 @@ paths:
                 -
                     api_key:
                         - 'write:item'
+                -
                     OAuth2:
                         - 'write:item'
             requestBody:
@@ -12124,6 +11589,7 @@ paths:
                 -
                     api_key:
                         - 'write:item'
+                -
                     OAuth2:
                         - 'write:item'
             requestBody:
@@ -12148,6 +11614,7 @@ paths:
                 -
                     api_key:
                         - 'read:package'
+                -
                     OAuth2:
                         - 'read:package'
             parameters:
@@ -12175,6 +11642,7 @@ paths:
                 -
                     api_key:
                         - 'read:package'
+                -
                     OAuth2:
                         - 'read:package'
             parameters:
@@ -12202,6 +11670,7 @@ paths:
                 -
                     api_key:
                         - 'write:payment'
+                -
                     OAuth2:
                         - 'write:payment'
             requestBody:
@@ -12226,6 +11695,7 @@ paths:
                 -
                     api_key:
                         - 'write:payment'
+                -
                     OAuth2:
                         - 'write:payment'
             requestBody:
@@ -12250,6 +11720,7 @@ paths:
                 -
                     api_key:
                         - 'read:payment'
+                -
                     OAuth2:
                         - 'read:payment'
             parameters:
@@ -12289,6 +11760,7 @@ paths:
                 -
                     api_key:
                         - 'read:payment'
+                -
                     OAuth2:
                         - 'read:payment'
             parameters:
@@ -12316,6 +11788,7 @@ paths:
                 -
                     api_key:
                         - 'write:payment'
+                -
                     OAuth2:
                         - 'write:payment'
             requestBody:
@@ -12340,6 +11813,7 @@ paths:
                 -
                     api_key:
                         - 'write:payment'
+                -
                     OAuth2:
                         - 'write:payment'
             requestBody:
@@ -12364,6 +11838,7 @@ paths:
                 -
                     api_key:
                         - 'write:payment'
+                -
                     OAuth2:
                         - 'write:payment'
             requestBody:
@@ -12388,6 +11863,7 @@ paths:
                 -
                     api_key:
                         - 'read:rate'
+                -
                     OAuth2:
                         - 'read:rate'
             parameters:
@@ -12461,6 +11937,7 @@ paths:
                 -
                     api_key:
                         - 'read:rate'
+                -
                     OAuth2:
                         - 'read:rate'
             parameters:
@@ -12495,6 +11972,7 @@ paths:
                 -
                     api_key:
                         - 'read:rate'
+                -
                     OAuth2:
                         - 'read:rate'
             parameters:
@@ -12589,6 +12067,7 @@ paths:
                 -
                     api_key:
                         - 'write:rate'
+                -
                     OAuth2:
                         - 'write:rate'
             requestBody:
@@ -12613,6 +12092,7 @@ paths:
                 -
                     api_key:
                         - 'write:rate'
+                -
                     OAuth2:
                         - 'write:rate'
             requestBody:
@@ -12637,6 +12117,7 @@ paths:
                 -
                     api_key:
                         - 'read:reservation'
+                -
                     OAuth2:
                         - 'read:reservation'
             parameters:
@@ -12679,6 +12160,7 @@ paths:
                 -
                     api_key:
                         - 'write:reservation'
+                -
                     OAuth2:
                         - 'write:reservation'
             requestBody:
@@ -12703,6 +12185,7 @@ paths:
                 -
                     api_key:
                         - 'read:reservation'
+                -
                     OAuth2:
                         - 'read:reservation'
             parameters:
@@ -12930,6 +12413,7 @@ paths:
                 -
                     api_key:
                         - 'read:reservation'
+                -
                     OAuth2:
                         - 'read:reservation'
             parameters:
@@ -13074,6 +12558,7 @@ paths:
                 -
                     api_key:
                         - 'read:reservation'
+                -
                     OAuth2:
                         - 'read:reservation'
             parameters:
@@ -13092,40 +12577,6 @@ paths:
                         format: date
                     required: false
                     in: query
-    /getReservationInvoiceInformation:
-        get:
-            tags:
-                - Reservation
-            summary: getReservationInvoiceInformation
-            description: 'Returns information that can be used to create an invoice for the selected reservation'
-            responses:
-                200:
-                    description: '200 Response'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GetReservationInvoiceInformationResponse'
-            security:
-                -
-                    api_key:
-                        - 'read:reservation'
-                    OAuth2:
-                        - 'read:reservation'
-            parameters:
-                -
-                    description: 'Property ID'
-                    name: propertyID
-                    schema:
-                        type: string
-                    required: false
-                    in: query
-                -
-                    description: 'Reservation Unique Identifier'
-                    name: reservationID
-                    schema:
-                        type: string
-                    required: true
-                    in: query
     /postReservationNote:
         post:
             tags:
@@ -13143,6 +12594,7 @@ paths:
                 -
                     api_key:
                         - 'write:reservation'
+                -
                     OAuth2:
                         - 'write:reservation'
             requestBody:
@@ -13167,6 +12619,7 @@ paths:
                 -
                     api_key:
                         - 'read:reservation'
+                -
                     OAuth2:
                         - 'read:reservation'
             parameters:
@@ -13201,6 +12654,7 @@ paths:
                 -
                     api_key:
                         - 'write:reservation'
+                -
                     OAuth2:
                         - 'write:reservation'
             requestBody:
@@ -13225,6 +12679,7 @@ paths:
                 -
                     api_key:
                         - 'write:reservation'
+                -
                     OAuth2:
                         - 'write:reservation'
             parameters:
@@ -13266,6 +12721,7 @@ paths:
                 -
                     api_key:
                         - 'write:reservation'
+                -
                     OAuth2:
                         - 'write:reservation'
             requestBody:
@@ -13290,6 +12746,7 @@ paths:
                 -
                     api_key:
                         - 'write:reservation'
+                -
                     OAuth2:
                         - 'write:reservation'
             requestBody:
@@ -13314,6 +12771,7 @@ paths:
                 -
                     api_key:
                         - 'read:reservation'
+                -
                     OAuth2:
                         - 'read:reservation'
             parameters:
@@ -13341,6 +12799,7 @@ paths:
                 -
                     api_key:
                         - 'read:room'
+                -
                     OAuth2:
                         - 'read:room'
             parameters:
@@ -13398,6 +12857,7 @@ paths:
                 -
                     api_key:
                         - 'write:room'
+                -
                     OAuth2:
                         - 'write:room'
             requestBody:
@@ -13422,6 +12882,7 @@ paths:
                 -
                     api_key:
                         - 'write:room'
+                -
                     OAuth2:
                         - 'write:room'
             requestBody:
@@ -13446,6 +12907,7 @@ paths:
                 -
                     api_key:
                         - 'write:room'
+                -
                     OAuth2:
                         - 'write:room'
             requestBody:
@@ -13470,6 +12932,7 @@ paths:
                 -
                     api_key:
                         - 'read:room'
+                -
                     OAuth2:
                         - 'read:room'
             parameters:
@@ -13504,6 +12967,7 @@ paths:
                 -
                     api_key:
                         - 'write:roomblock'
+                -
                     OAuth2:
                         - 'write:roomblock'
             requestBody:
@@ -13528,6 +12992,7 @@ paths:
                 -
                     api_key:
                         - 'read:roomblock'
+                -
                     OAuth2:
                         - 'read:roomblock'
             parameters:
@@ -13610,6 +13075,7 @@ paths:
                 -
                     api_key:
                         - 'write:roomblock'
+                -
                     OAuth2:
                         - 'write:roomblock'
             requestBody:
@@ -13634,6 +13100,7 @@ paths:
                 -
                     api_key:
                         - 'delete:roomblock'
+                -
                     OAuth2:
                         - 'delete:roomblock'
             parameters:
@@ -13668,6 +13135,7 @@ paths:
                 -
                     api_key:
                         - 'read:room'
+                -
                     OAuth2:
                         - 'read:room'
             parameters:
@@ -13784,6 +13252,7 @@ paths:
                 -
                     api_key:
                         - 'read:room'
+                -
                     OAuth2:
                         - 'read:room'
             parameters:
@@ -13918,6 +13387,7 @@ paths:
                 -
                     api_key:
                         - 'read:room'
+                -
                     OAuth2:
                         - 'read:room'
             parameters:
@@ -13999,6 +13469,7 @@ paths:
                 -
                     api_key:
                         - 'read:room'
+                -
                     OAuth2:
                         - 'read:room'
             parameters:
@@ -14026,6 +13497,7 @@ paths:
                 -
                     api_key:
                         - 'read:taxesAndFees'
+                -
                     OAuth2:
                         - 'read:taxesAndFees'
             parameters:
@@ -14069,6 +13541,7 @@ paths:
                 -
                     api_key:
                         - 'read:user'
+                -
                     OAuth2:
                         - 'read:user'
             parameters:
