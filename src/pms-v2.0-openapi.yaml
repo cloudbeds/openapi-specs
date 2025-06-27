@@ -657,13 +657,6 @@ paths:
           schema:
             type: string
             example: '1,2,3'
-      requestBody:
-        description: 'Integration event data'
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/IntegrationEventUpdateRequestSchema'
       responses:
         '202':
           description: 'A request was sent to initiate integration event retry.'
@@ -2823,9 +2816,14 @@ components:
     IntegrationEventListResponseSchema:
       required:
         - data
+        - total
       properties:
         data:
           $ref: '#/components/schemas/IntegrationEventCollectionResponseSchema'
+        total:
+          description: 'The total number of items available'
+          type: integer
+          example: 100
       type: object
     IntegrationEventResponseSchema:
       required:
