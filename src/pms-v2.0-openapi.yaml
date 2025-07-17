@@ -1,17 +1,17 @@
 openapi: 3.0.0
 info:
-  title: 'Cloudbeds API'
+  title: 'Cloudbeds API v2'
   description: '<p>Welcome to the documentation for <strong>Cloudbeds API Version v2</strong>! If you are looking to learn how to use the Cloudbeds API to access guest information, reservations, or similar data for your Cloudbeds customers, then you''ve come to the right place.</p><p>In this document you will find all the API methods we provide along with explanations for parameters and response examples.</p><p>If you have questions about different implementation steps (e.g. how to implement OAuth 2.0), please refer to our <a href=''https://integrations.cloudbeds.com/hc/en-us''>Integrations Portal</a>.</p><p>Be sure to <a href=''https://go.pardot.com/l/308041/2018-07-24/qb2lg''>subscribe</a> to the monthly Cloudbeds API announcement mailing list to receive information on new additions and improvements to the Cloudbeds API and related developer tools.</p><p><strong>Endpoint:</strong> https://api.cloudbeds.com/{method}</p><p><strong>HTTPS:</strong> Our API requires HTTPS. We''ll respond with an appropriate error if you''re not using it.</p><p><strong>Request Format:</strong> HTTP GET, POST and PUT (Content-Type: application/x-www-form-urlencoded)</p><p><strong>Response Format:</strong> JSON</p><p><strong>Response Header:</strong> X-Request-ID is added to response headers in all calls to help accelerate support and troubleshooting.</p><p><strong><a href=''https://integrations.cloudbeds.com/hc/en-us/articles/14104678058267-API-Documentation#postman-collection''><img src=''https://run.pstmn.io/button.svg'' alt=''Run in Postman''></a></strong> use this link to access our Public collection in Postman.</p>'
   version: v2
 servers:
   -
     url: 'https://api.cloudbeds.com/'
-    description: 'Cloudbeds API'
+    description: 'Cloudbeds API v2'
 paths:
   '/doorlock/v1/keys/{propertyId}':
     get:
       tags:
-        - doorlock-keys
+        - 'Door Lock Keys'
       summary: 'Get a list of doorlock keys for a specific app client and property.'
       operationId: 'DoorLockKeyController::index'
       parameters:
@@ -66,7 +66,7 @@ paths:
   /doorlock/v1/keys:
     post:
       tags:
-        - doorlock-keys
+        - 'Door Lock Keys'
       summary: 'Create a new doorlock key.'
       operationId: 'DoorLockKeyController::create'
       requestBody:
@@ -107,7 +107,7 @@ paths:
             - 'write:doorLockKey'
     delete:
       tags:
-        - doorlock-keys
+        - 'Door Lock Keys'
       summary: 'Delete a list of doorlock keys.'
       operationId: 'DoorLockKeyController::batchDelete'
       parameters:
@@ -158,7 +158,7 @@ paths:
   '/doorlock/v1/keys/{id}':
     delete:
       tags:
-        - doorlock-keys
+        - 'Door Lock Keys'
       summary: 'Delete a doorlock key.'
       operationId: 'DoorLockKeyController::delete'
       parameters:
@@ -207,7 +207,7 @@ paths:
             - 'delete:doorLockKey'
     patch:
       tags:
-        - doorlock-keys
+        - 'Door Lock Keys'
       summary: 'Update a doorlock key.'
       operationId: 'DoorLockKeyController::update'
       parameters:
@@ -264,7 +264,7 @@ paths:
   '/doorlock/v1/settings/{propertyId}':
     get:
       tags:
-        - doorlock-settings
+        - 'Door Lock Settings'
       summary: 'Get doorlock settings for property for specific application client.'
       operationId: 'DoorLockSettingsController::single'
       parameters:
@@ -307,7 +307,7 @@ paths:
             - 'read:doorLockKey'
     put:
       tags:
-        - doorlock-settings
+        - 'Door Lock Settings'
       summary: 'Upsert doorlock settings for property for specific application client.'
       operationId: 'DoorLockSettingsController::upsert'
       parameters:
@@ -351,7 +351,7 @@ paths:
             - 'write:doorLockKey'
     delete:
       tags:
-        - doorlock-settings
+        - 'Door Lock Settings'
       summary: 'Delete doorlock settings for property for specific application client.'
       operationId: 'DoorLockSettingsController::delete'
       parameters:
@@ -395,7 +395,7 @@ paths:
   '/housekeeping/v1/inspections/{propertyId}':
     get:
       tags:
-        - housekeeping
+        - Housekeeping
       summary: 'Housekeeping inspection list'
       operationId: 27abd48cb30106ec3251cf3baf34174c
       parameters:
@@ -451,7 +451,7 @@ paths:
   /integration/v1/events:
     get:
       tags:
-        - integration-events
+        - 'Integration Events'
       summary: 'Get a list of integration events for a specific property.'
       operationId: 'IntegrationEventController::index'
       parameters:
@@ -531,7 +531,7 @@ paths:
           default: []
     post:
       tags:
-        - integration-events
+        - 'Integration Events'
       summary: 'Create a new integration event.'
       operationId: 'IntegrationEventController::create'
       parameters:
@@ -582,7 +582,7 @@ paths:
   '/integration/v1/events/{id}':
     patch:
       tags:
-        - integration-events
+        - 'Integration Events'
       summary: 'Update an integration event.'
       operationId: 'IntegrationEventController::update'
       parameters:
@@ -639,7 +639,7 @@ paths:
   '/integration/v1/events/{id}/retry':
     post:
       tags:
-        - integration-events
+        - 'Integration Events'
       summary: 'Retry an integration event.'
       operationId: 'IntegrationEventController::retry'
       parameters:
@@ -1967,6 +1967,10 @@ components:
                 type: string
                 enum:
                   - example_setting_key
+                  - is_channel_revenue_allocation_enabled
+                  - is_channel_derived_rate_plan_mapping_enabled
+                  - groups_data_sync_enabled_channels
+                  - full_reservation_sync_enabled_channels
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting you are updating.'
@@ -1989,6 +1993,10 @@ components:
                 type: string
                 enum:
                   - example_setting_key
+                  - is_channel_revenue_allocation_enabled
+                  - is_channel_derived_rate_plan_mapping_enabled
+                  - groups_data_sync_enabled_channels
+                  - full_reservation_sync_enabled_channels
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting.'
@@ -2030,6 +2038,10 @@ components:
                 type: string
                 enum:
                   - example_setting_key
+                  - is_channel_revenue_allocation_enabled
+                  - is_channel_derived_rate_plan_mapping_enabled
+                  - groups_data_sync_enabled_channels
+                  - full_reservation_sync_enabled_channels
                 example: example_setting_key
               message:
                 description: 'The reason why the update failed.'
@@ -2468,6 +2480,7 @@ components:
             - item
             - reservation
             - room_type
+            - rooming_list
         priority:
           description: 'Import task priority.'
           type: string
@@ -3322,17 +3335,17 @@ components:
             'write:appError': 'Write AppError information'
 tags:
   -
-    name: doorlock-keys
-    description: doorlock-keys
+    name: 'Door Lock Keys'
+    description: 'Door Lock Keys'
   -
-    name: doorlock-settings
-    description: doorlock-settings
+    name: 'Door Lock Settings'
+    description: 'Door Lock Settings'
   -
-    name: housekeeping
-    description: housekeeping
+    name: Housekeeping
+    description: Housekeeping
   -
-    name: integration-events
-    description: integration-events
+    name: 'Integration Events'
+    description: 'Integration Events'
   -
     name: market-segmentation-groups
     description: market-segmentation-groups
