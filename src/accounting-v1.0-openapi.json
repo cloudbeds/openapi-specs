@@ -41,20 +41,119 @@
     }
   ],
   "paths": {
-    "/accounting/v1.0/deposits/transfer": {
-      "post": {
+    "/accounting/v1.0/settings": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "description": "Get property settings by its ID",
+        "operationId": "getSettings",
         "parameters": [
           {
-            "$ref": "#/components/parameters/propertyIdHeader"
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
         "security": [
           {
             "bearerAuth": []
           }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Settings"
         ],
+        "description": "Update partially or create settings",
+        "operationId": "patchSettings",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/accounting/v1.0/deposits/transfer": {
+      "post": {
         "tags": [
           "Deposits"
+        ],
+        "operationId": "postDepositsTransfer",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
         ],
         "requestBody": {
           "content": {
@@ -66,7 +165,6 @@
           },
           "required": true
         },
-        "operationId": "postDepositsTransfer",
         "responses": {
           "200": {
             "description": "OK",
@@ -81,28 +179,41 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
-      }
-    },
-    "/accounting/v1.0/accounts-receivable-ledgers": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          },
-          {
-            "$ref": "#/components/parameters/accountsReceivableLedgerFilter"
-          }
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      }
+    },
+    "/accounting/v1.0/accounts-receivable-ledgers": {
+      "get": {
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgers",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/filter"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -117,21 +228,29 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
-      },
-      "post": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          }
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      },
+      "post": {
         "tags": [
           "Accounts Receivable Ledger"
+        ],
+        "operationId": "postAccountsReceivableLedger",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
         ],
         "requestBody": {
           "content": {
@@ -143,7 +262,6 @@
           },
           "required": true
         },
-        "operationId": "postAccountsReceivableLedger",
         "responses": {
           "200": {
             "description": "OK",
@@ -158,21 +276,29 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
-      },
-      "patch": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          }
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      },
+      "patch": {
         "tags": [
           "Accounts Receivable Ledger"
+        ],
+        "operationId": "patchAccountsReceivableLedger",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
         ],
         "requestBody": {
           "content": {
@@ -184,7 +310,6 @@
           },
           "required": true
         },
-        "operationId": "patchAccountsReceivableLedger",
         "responses": {
           "200": {
             "description": "OK",
@@ -199,28 +324,42 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
-      }
-    },
-    "/accounting/v1.0/accounts-receivable-ledgers/{accountsReceivableLedgerId}": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          },
-          {
-            "$ref": "#/components/parameters/accountsReceivableLedgerId"
-          }
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      }
+    },
+    "/accounting/v1.0/accounts-receivable-ledgers/{accountsReceivableLedgerId}": {
+      "get": {
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgerById",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "accountsReceivableLedgerId",
+            "in": "path",
+            "description": "Accounts Receivable ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -238,52 +377,69 @@
           "404": {
             "$ref": "#/components/responses/404"
           }
-        }
-      }
-    },
-    "/accounting/v1.0/accounts-receivable-ledgers/{accountsReceivableLedgerId}/transactions": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          },
-          {
-            "$ref": "#/components/parameters/accountsReceivableLedgerId"
-          },
-          {
-            "$ref": "#/components/parameters/TransactionState"
-          },
-          {
-            "name": "pageToken",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "description": "page token"
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Size of the page"
-          },
-          {
-            "$ref": "#/components/parameters/accountsReceivableLedgerTransactionsFilter"
-          }
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      }
+    },
+    "/accounting/v1.0/accounts-receivable-ledgers/{accountsReceivableLedgerId}/transactions": {
+      "get": {
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgerTransactions",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "accountsReceivableLedgerId",
+            "in": "path",
+            "description": "Accounts Receivable ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "description": "page token",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Size of the page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/filter_1"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -298,28 +454,41 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
-      }
-    },
-    "/accounting/v1.0/accounts-receivable-ledgers/totals": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          },
-          {
-            "$ref": "#/components/parameters/GetAccountsReceivableLedgerTotalsFilterParameter"
-          }
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      }
+    },
+    "/accounting/v1.0/accounts-receivable-ledgers/totals": {
+      "get": {
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgerTotals",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/filter_2"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -334,31 +503,52 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/accounting/v1.0/accounts-receivable-ledgers/{accountsReceivableLedgerId}/reservation/{reservationId}/balance-transfer": {
       "post": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          },
-          {
-            "$ref": "#/components/parameters/accountsReceivableLedgerId"
-          },
-          {
-            "$ref": "#/components/parameters/reservationId"
-          }
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "postAccountsReceivableLedgerReservationBalanceTransfer",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "accountsReceivableLedgerId",
+            "in": "path",
+            "description": "Accounts Receivable ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "reservationId",
+            "in": "path",
+            "description": "Reservation ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -376,29 +566,50 @@
           "404": {
             "$ref": "#/components/responses/404"
           }
-        }
-      },
-      "delete": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          },
-          {
-            "$ref": "#/components/parameters/accountsReceivableLedgerId"
-          },
-          {
-            "$ref": "#/components/parameters/reservationId"
-          }
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      },
+      "delete": {
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "deleteAccountsReceivableLedgerReservationBalanceTransfer",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "accountsReceivableLedgerId",
+            "in": "path",
+            "description": "Accounts Receivable ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "reservationId",
+            "in": "path",
+            "description": "Reservation ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -416,28 +627,42 @@
           "404": {
             "$ref": "#/components/responses/404"
           }
-        }
-      }
-    },
-    "/accounting/v1.0/accounts-receivable-ledgers/reservation/{reservationId}/balance-transfer": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          },
-          {
-            "$ref": "#/components/parameters/reservationId"
-          }
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      }
+    },
+    "/accounting/v1.0/accounts-receivable-ledgers/reservation/{reservationId}/balance-transfer": {
+      "get": {
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgerReservationBalanceTransfer",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "reservationId",
+            "in": "path",
+            "description": "Reservation ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -452,24 +677,31 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
-      }
-    },
-    "/accounting/v1.0/custom-general-ledger-codes": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          }
-        ],
-        "operationId": "getCustomGeneralLedgerCodes",
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      }
+    },
+    "/accounting/v1.0/custom-general-ledger-codes": {
+      "get": {
         "tags": [
           "Custom General Ledger Codes"
+        ],
+        "operationId": "getCustomGeneralLedgerCodes",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -488,13 +720,29 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "put": {
+        "tags": [
+          "Custom General Ledger Codes"
+        ],
         "description": "Create or update General Ledger Codes.\n",
+        "operationId": "putCustomGeneralLedgerCodes",
         "parameters": [
           {
-            "$ref": "#/components/parameters/propertyIdHeader"
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "requestBody": {
@@ -507,15 +755,6 @@
           },
           "required": true
         },
-        "operationId": "putCustomGeneralLedgerCodes",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "tags": [
-          "Custom General Ledger Codes"
-        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -523,24 +762,31 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
-      }
-    },
-    "/accounting/v1.0/custom-transaction-codes": {
-      "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          }
-        ],
-        "operationId": "getCustomTransactionCodes",
+        },
         "security": [
           {
             "bearerAuth": []
           }
-        ],
+        ]
+      }
+    },
+    "/accounting/v1.0/custom-transaction-codes": {
+      "get": {
         "tags": [
           "Custom Transaction Codes"
+        ],
+        "operationId": "getCustomTransactionCodes",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -559,13 +805,29 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       },
       "put": {
+        "tags": [
+          "Custom Transaction Codes"
+        ],
         "description": "Update custom transaction code mappings. Optional custom general ledger code can also be assigned.\n",
+        "operationId": "putCustomTransactionCodes",
         "parameters": [
           {
-            "$ref": "#/components/parameters/propertyIdHeader"
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "requestBody": {
@@ -578,15 +840,6 @@
           },
           "required": true
         },
-        "operationId": "putCustomTransactionCodes",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "tags": [
-          "Custom Transaction Codes"
-        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -594,25 +847,32 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/accounting/v1.0/custom-transaction-codes/initialize": {
       "description": "Before transaction custom codes can be retrieved and modified, they must be initialized. This process generates transaction custom code records without any mapping. Once the initialization is complete, the codes can be retrieved and modified.\n",
       "post": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          }
-        ],
-        "operationId": "initializeCustomTransactionCodes",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "tags": [
           "Custom Transaction Codes"
+        ],
+        "operationId": "initializeCustomTransactionCodes",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -621,15 +881,31 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/accounting/v1.0/transactions": {
       "post": {
-        "description": "Supported fields for filtering:\n  - id\n  - internal_code\n  - custom_code\n  - transaction_datetime\n  - customer_id\n  - source_id\n  - source_kind\n  - external_relation_id\n  - external_relation_kind\n  - origin_id\n  - routed_from\n  - created_at\n  - parent_id\n  - folio_id\n  - custom_code\n  - account_category\n  - chart_of_account_type\n\nSupported fields for sorting:\n  - id\n  - internal_code\n  - transaction_datetime\n  - source_id\n  - created_at\n\nExample request:\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11t08:59:00z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"equals\",\n              \"value\": \"1\",\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"2\",\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"3\",\n              \"field\": \"customer_id\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n```\n",
+        "tags": [
+          "Transactions"
+        ],
+        "description": "Supported fields for filtering:\n  - account_category\n  - chart_of_account_type\n  - created_at - Same as `transaction_datetime`\n  - customer_id\n  - custom_code\n  - external_relation_id\n  - external_relation_kind\n  - folio_id\n  - id\n  - internal_code\n  - origin_id\n  - parent_id\n  - routed_from\n  - source_id\n  - source_identifier\n  - source_kind\n  - transaction_datetime\n  - trial_balance_id\n  - service_date\n\nSupported fields for sorting:\n  - created_at - Same as `transaction_datetime`\n  - id\n  - internal_code\n  - source_id\n  - transaction_datetime\n  - service_date\n\nExample request:\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11t08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n\nThe API has certain constraints for filters so that the system is able to efficiently query the data. Filters must include on of the following:\n  - filter by 'id' with condition 'equals' or 'in'\n  - filter by both 'source_id' and 'source_kind'\n  - filter by both 'external_relation_id' and 'external_relation_kind'\n  - filter by transaction_datetime\n```\n",
+        "operationId": "listTransactions",
         "parameters": [
           {
-            "$ref": "#/components/parameters/propertyIdHeader"
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "requestBody": {
@@ -642,15 +918,6 @@
           },
           "required": true
         },
-        "operationId": "listTransactions",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "tags": [
-          "Transactions"
-        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -665,24 +932,31 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/accounting/v1.0/trial-balance/configuration/status": {
       "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          }
-        ],
-        "operationId": "isTrialBalanceConfigured",
-        "description": "Returns information if property has configured trial balance report.\n",
         "tags": [
           "Trial balance"
         ],
-        "security": [
+        "description": "Returns information if property has configured trial balance report.\n",
+        "operationId": "isTrialBalanceConfigured",
+        "parameters": [
           {
-            "bearerAuth": []
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
@@ -696,24 +970,31 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/accounting/v1.0/trial-balance/configuration/calculate": {
       "post": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          }
-        ],
-        "operationId": "calculateTrialBalance",
-        "description": "Get initial Trial Balance based transaction records (till end of yesterday in property time)\n",
         "tags": [
           "Trial balance"
         ],
-        "security": [
+        "description": "Get initial Trial Balance based transaction records (till end of yesterday in property time)\n",
+        "operationId": "calculateTrialBalance",
+        "parameters": [
           {
-            "bearerAuth": []
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
@@ -727,24 +1008,31 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/accounting/v1.0/trial-balance/configuration": {
       "get": {
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          }
-        ],
-        "operationId": "getTrialBalanceConfiguration",
-        "description": "Get configured trial balance.\n",
         "tags": [
           "Trial balance"
         ],
-        "security": [
+        "description": "Get configured trial balance.\n",
+        "operationId": "getTrialBalanceConfiguration",
+        "parameters": [
           {
-            "bearerAuth": []
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
@@ -758,22 +1046,29 @@
               }
             }
           }
-        }
-      },
-      "post": {
-        "operationId": "setTrialBalance",
-        "description": "Configure trial balance for property by saving opening balances for today.\nFail if trial balance configuration already exists.\n",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/propertyIdHeader"
-          }
-        ],
-        "tags": [
-          "Trial balance"
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Trial balance"
+        ],
+        "description": "Configure trial balance for property by saving opening balances for today.\nFail if trial balance configuration already exists.\n",
+        "operationId": "setTrialBalance",
+        "parameters": [
+          {
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "requestBody": {
@@ -799,14 +1094,31 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/accounting/v1.0/deposits/balance": {
       "get": {
+        "tags": [
+          "Deposits"
+        ],
+        "description": "Get Deposit Balance For Source or Property\n",
+        "operationId": "getDepositBalance",
         "parameters": [
           {
-            "$ref": "#/components/parameters/propertyIdHeader"
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           },
           {
             "name": "sourceId",
@@ -814,8 +1126,8 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int64",
-              "description": "Source Id"
+              "description": "Source Id",
+              "format": "int64"
             }
           },
           {
@@ -825,16 +1137,6 @@
             "schema": {
               "$ref": "#/components/schemas/SourceKind"
             }
-          }
-        ],
-        "operationId": "getDepositBalance",
-        "description": "Get Deposit Balance For Source or Property\n",
-        "tags": [
-          "Deposits"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
           }
         ],
         "responses": {
@@ -848,54 +1150,58 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/accounting/v1.0/deposits/transactions": {
       "get": {
+        "tags": [
+          "Deposits"
+        ],
+        "description": "Get Deposit Transactions\n",
+        "operationId": "getDepositTransactions",
         "parameters": [
           {
-            "$ref": "#/components/parameters/propertyIdHeader"
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           },
           {
             "name": "pageToken",
             "in": "query",
+            "description": "page token",
             "required": false,
             "schema": {
               "type": "string"
-            },
-            "description": "page token"
+            }
           },
           {
             "name": "pageSize",
             "in": "query",
+            "description": "Size of the page",
             "required": false,
             "schema": {
               "type": "integer"
-            },
-            "description": "Size of the page"
+            }
           },
           {
-            "name": "showAll",
+            "name": "filter",
             "in": "query",
-            "required": true,
+            "required": false,
+            "explode": true,
             "schema": {
-              "type": "boolean"
-            },
-            "description": "If set to false consumed and voided transactions won't be shown"
-          },
-          {
-            "$ref": "#/components/parameters/depositTransactionsFilter"
-          }
-        ],
-        "operationId": "getDepositTransactions",
-        "description": "Get Deposit Transactions\n",
-        "tags": [
-          "Deposits"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
+              "$ref": "#/components/schemas/filter_3"
+            }
           }
         ],
         "responses": {
@@ -912,14 +1218,31 @@
           "400": {
             "$ref": "#/components/responses/400"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/accounting/v1.0/trial-balance/report": {
       "get": {
+        "tags": [
+          "Trial balance"
+        ],
+        "description": "Get Trial Balance Report for specific date\n",
+        "operationId": "getTrialBalanceReport",
         "parameters": [
           {
-            "$ref": "#/components/parameters/propertyIdHeader"
+            "name": "X-Property-ID",
+            "in": "header",
+            "description": "Property id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           },
           {
             "name": "date",
@@ -927,20 +1250,9 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "2024-07-21T00:00:00.000Z",
               "description": "Requested date",
               "format": "date"
             }
-          }
-        ],
-        "operationId": "getTrialBalanceReport",
-        "description": "Get Trial Balance Report for specific date\n",
-        "tags": [
-          "Trial balance"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
           }
         ],
         "responses": {
@@ -954,20 +1266,20 @@
               }
             }
           }
-        }
-      }
-    },
-    "/accounting/v1.0/internal-transaction-codes": {
-      "get": {
-        "operationId": "getInternalTransactionCodes",
-        "tags": [
-          "Internal transaction codes"
-        ],
+        },
         "security": [
           {
             "bearerAuth": []
           }
+        ]
+      }
+    },
+    "/accounting/v1.0/internal-transaction-codes": {
+      "get": {
+        "tags": [
+          "Internal transaction codes"
         ],
+        "operationId": "getInternalTransactionCodes",
         "responses": {
           "200": {
             "description": "OK",
@@ -979,351 +1291,51 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     }
   },
   "components": {
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
-      }
-    },
-    "parameters": {
-      "GetAccountsReceivableLedgerTotalsFilterParameter": {
-        "name": "filter",
-        "in": "query",
-        "required": false,
-        "explode": true,
-        "schema": {
-          "type": "object",
-          "properties": {
-            "status": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/AccountsReceivableLedgerStatus"
-              }
-            }
-          }
-        }
-      },
-      "accountsReceivableLedgerFilter": {
-        "name": "filter",
-        "in": "query",
-        "required": false,
-        "explode": true,
-        "schema": {
-          "type": "object",
-          "properties": {
-            "searchQuery": {
-              "type": "string",
-              "minLength": 1
-            },
-            "createdDateTimeFrom": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "createdDateTimeTo": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "balanceFrom": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "balanceTo": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "totalFrom": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "totalTo": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "paidFrom": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "paidTo": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "status": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/AccountsReceivableLedgerStatus"
-              }
-            },
-            "sortBy": {
-              "type": "string",
-              "enum": [
-                "status",
-                "name",
-                "created_at",
-                "balance",
-                "paid",
-                "total"
-              ],
-              "x-enum-varnames": [
-                "status",
-                "name",
-                "created_at",
-                "balance",
-                "paid",
-                "total"
-              ],
-              "description": "Sort field"
-            },
-            "sortDirection": {
-              "$ref": "#/components/schemas/sortDirection"
-            },
-            "pageToken": {
-              "type": "string"
-            },
-            "pageSize": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        }
-      },
-      "accountsReceivableLedgerTransactionsFilter": {
-        "name": "filter",
-        "in": "query",
-        "required": false,
-        "explode": true,
-        "schema": {
-          "type": "object",
-          "properties": {
-            "searchQuery": {
-              "type": "string",
-              "minLength": 3
-            },
-            "transactionDateFrom": {
-              "type": "string",
-              "format": "date"
-            },
-            "transactionDateTo": {
-              "type": "string",
-              "format": "date"
-            },
-            "checkinDateFrom": {
-              "type": "string",
-              "format": "date"
-            },
-            "checkinDateTo": {
-              "type": "string",
-              "format": "date"
-            },
-            "checkoutDateFrom": {
-              "type": "string",
-              "format": "date"
-            },
-            "checkoutDateTo": {
-              "type": "string",
-              "format": "date"
-            },
-            "transactionType": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "description": "Enum of transaction types",
-                "enum": [
-                  "TRANSFER",
-                  "UNDO_TRANSFER",
-                  "PAYMENT"
-                ]
-              }
-            },
-            "userId": {
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "int64"
-              }
-            },
-            "sortBy": {
-              "type": "string",
-              "enum": [
-                "CHECKOUT_DATE",
-                "CHECKIN_DATE",
-                "TRANSACTION_DATE",
-                "AMOUNT"
-              ],
-              "description": "Sort field"
-            },
-            "sortDirection": {
-              "$ref": "#/components/schemas/sortDirection"
-            }
-          }
-        }
-      },
-      "depositTransactionsFilter": {
-        "name": "filter",
-        "in": "query",
-        "required": false,
-        "explode": true,
-        "schema": {
-          "type": "object",
-          "properties": {
-            "reservationId": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "transactionDateFrom": {
-              "type": "string",
-              "format": "date"
-            },
-            "transactionDateTo": {
-              "type": "string",
-              "format": "date"
-            },
-            "checkinDateFrom": {
-              "type": "string",
-              "format": "date"
-            },
-            "checkinDateTo": {
-              "type": "string",
-              "format": "date"
-            },
-            "checkoutDateFrom": {
-              "type": "string",
-              "format": "date"
-            },
-            "checkoutDateTo": {
-              "type": "string",
-              "format": "date"
-            },
-            "reservationStatus": {
-              "$ref": "#/components/schemas/ReservationStatus"
-            },
-            "userId": {
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "int64"
-              }
-            },
-            "sortBy": {
-              "type": "string",
-              "enum": [
-                "CHECKOUT_DATE",
-                "CHECKIN_DATE",
-                "TRANSACTION_DATE",
-                "AMOUNT",
-                "RESERVATION_STATUS"
-              ],
-              "description": "Sort field"
-            },
-            "sortDirection": {
-              "$ref": "#/components/schemas/sortDirection"
-            }
-          }
-        }
-      },
-      "propertyId": {
-        "name": "propertyId",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "description": "Property id"
-      },
-      "propertyIdHeader": {
-        "name": "X-Property-ID",
-        "in": "header",
-        "required": true,
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "description": "Property id"
-      },
-      "apiVersion": {
-        "name": "apiVersion",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string",
-          "enum": [
-            "v1.0"
-          ]
-        },
-        "description": "API Version"
-      },
-      "accountsReceivableLedgerId": {
-        "name": "accountsReceivableLedgerId",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "description": "Accounts Receivable ID"
-      },
-      "reservationId": {
-        "name": "reservationId",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "description": "Reservation ID"
-      },
-      "TransactionState": {
-        "name": "transactionStates",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/TransactionState"
-          }
-        },
-        "description": "transaction states"
-      }
-    },
-    "responses": {
-      "400": {
-        "description": "Bad Request",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ApiAccountingError"
-            }
-          }
-        }
-      },
-      "403": {
-        "description": "Access denied",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ApiAccountingError"
-            }
-          }
-        }
-      },
-      "404": {
-        "description": "Not found",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ApiAccountingError"
-            }
-          }
-        }
-      }
-    },
     "schemas": {
+      "DepositConsumptionEnum": {
+        "type": "string",
+        "enum": [
+          "MANUAL",
+          "CHECK_IN"
+        ]
+      },
+      "SettingValues": {
+        "type": "object",
+        "properties": {
+          "depositConsumption": {
+            "$ref": "#/components/schemas/DepositConsumptionEnum"
+          }
+        }
+      },
+      "SettingPatchRequest": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "$ref": "#/components/schemas/SettingValues"
+          }
+        }
+      },
+      "SettingResponse": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "$ref": "#/components/schemas/SettingValues"
+          }
+        }
+      },
+      "AnyValue": {
+        "description": "Can be any of supported OpenApi types."
+      },
       "ApiAccountingError": {
         "type": "object",
         "properties": {
@@ -1357,14 +1369,14 @@
         ]
       },
       "AccountsReceivableLedgerName": {
-        "type": "string",
+        "maxLength": 50,
         "minLength": 1,
-        "maxLength": 50
+        "type": "string"
       },
       "AccountsReceivableLedgerDescription": {
-        "type": "string",
+        "maxLength": 200,
         "minLength": 0,
-        "maxLength": 200
+        "type": "string"
       },
       "ApiErrorCode": {
         "type": "string",
@@ -1385,15 +1397,15 @@
       },
       "sortDirection": {
         "type": "string",
-        "enum": [
-          "asc",
-          "desc"
-        ],
+        "description": "Direction for sort - asc or desc",
         "x-enum-varnames": [
           "asc",
           "desc"
         ],
-        "description": "Direction for sort - asc or desc"
+        "enum": [
+          "asc",
+          "desc"
+        ]
       },
       "Actions": {
         "type": "array",
@@ -1411,10 +1423,10 @@
           },
           "parameters": {
             "type": "object",
-            "description": "Parameters required for the action, can be any object.\n",
             "additionalProperties": {
               "type": "string"
-            }
+            },
+            "description": "Parameters required for the action, can be any object.\n"
           }
         }
       },
@@ -1439,21 +1451,21 @@
           },
           "type": {
             "type": "string",
+            "description": "REAL_USER - user was found, UNKNOWN_USER - user was not found, SYSTEM_USER - user_id = 0 OR null",
             "enum": [
               "REAL_USER",
               "SYSTEM_USER",
               "UNKNOWN_USER"
-            ],
-            "description": "REAL_USER - user was found, UNKNOWN_USER - user was not found, SYSTEM_USER - user_id = 0 OR null"
+            ]
           }
         }
       },
       "CustomGeneralLedgerCodeModel": {
-        "type": "object",
         "required": [
           "code",
           "name"
         ],
+        "type": "object",
         "properties": {
           "id": {
             "type": "string"
@@ -1462,12 +1474,12 @@
             "type": "integer"
           },
           "name": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "code": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "group": {
             "type": "string",
@@ -1479,17 +1491,17 @@
             ]
           },
           "archived": {
-            "default": false,
-            "type": "boolean"
+            "type": "boolean",
+            "default": false
           }
         }
       },
       "CustomTransactionCodesModel": {
-        "type": "object",
         "required": [
           "code",
           "name"
         ],
+        "type": "object",
         "properties": {
           "id": {
             "type": "string"
@@ -1498,16 +1510,16 @@
             "type": "integer"
           },
           "name": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "code": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "sku": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "itemGroup": {
             "type": "string",
@@ -1516,7 +1528,8 @@
               "reservations",
               "taxes_fees",
               "payments",
-              "accrual_accounting"
+              "accrual_accounting",
+              "custom_item"
             ]
           },
           "customGeneralLedgerCodeId": {
@@ -1525,17 +1538,17 @@
         }
       },
       "CustomTransactionCodesUpdateModel": {
-        "type": "object",
         "required": [
           "code"
         ],
+        "type": "object",
         "properties": {
           "id": {
             "type": "string"
           },
           "code": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "customGeneralLedgerCodeId": {
             "type": "string"
@@ -1565,11 +1578,11 @@
         }
       },
       "TransactionItemMappingModel": {
-        "type": "object",
         "required": [
           "code",
           "name"
         ],
+        "type": "object",
         "properties": {
           "id": {
             "type": "string"
@@ -1578,16 +1591,16 @@
             "type": "integer"
           },
           "name": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "code": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "sku": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "itemGroup": {
             "type": "string",
@@ -1596,7 +1609,8 @@
               "reservations",
               "taxes_fees",
               "payments",
-              "accrual_accounting"
+              "accrual_accounting",
+              "custom_item"
             ]
           },
           "accountId": {
@@ -1611,8 +1625,8 @@
             "type": "string"
           },
           "code": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "accountId": {
             "type": "string"
@@ -1631,10 +1645,10 @@
         }
       },
       "ListTransactionsRequest": {
-        "type": "object",
         "required": [
           "filters"
         ],
+        "type": "object",
         "properties": {
           "filters": {
             "$ref": "#/components/schemas/Filters"
@@ -1643,10 +1657,10 @@
             "type": "string"
           },
           "limit": {
-            "description": "Optional parameter. Default value is 100, maximum value is 1100.",
-            "default": 100,
             "type": "integer",
-            "format": "int32"
+            "description": "Optional parameter. Default value is 100, maximum value is 1100.",
+            "format": "int32",
+            "default": 100
           },
           "sort": {
             "type": "array",
@@ -1677,14 +1691,14 @@
             "type": "string"
           },
           "name": {
-            "type": "string",
+            "maxLength": 50,
             "minLength": 1,
-            "maxLength": 50
+            "type": "string"
           },
           "description": {
-            "type": "string",
+            "maxLength": 200,
             "minLength": 0,
-            "maxLength": 200
+            "type": "string"
           },
           "status": {
             "$ref": "#/components/schemas/AccountsReceivableLedgerStatus"
@@ -1703,21 +1717,21 @@
           },
           "createdAt": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
-            "description": "Created datetime (ISO 8601) in UTC"
+            "description": "Created datetime (ISO 8601) in UTC",
+            "example": "2017-07-21T17:32:28.000Z"
           },
           "updatedAt": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
-            "description": "Updated datetime (ISO 8601) in UTC"
+            "description": "Updated datetime (ISO 8601) in UTC",
+            "example": "2017-07-21T17:32:28.000Z"
           }
         }
       },
       "AccountsReceivableLedgerPostRequest": {
-        "type": "object",
         "required": [
           "name"
         ],
+        "type": "object",
         "properties": {
           "name": {
             "$ref": "#/components/schemas/AccountsReceivableLedgerName"
@@ -1728,10 +1742,10 @@
         }
       },
       "AccountsReceivableLedgerPatchRequest": {
-        "type": "object",
         "required": [
           "id"
         ],
+        "type": "object",
         "properties": {
           "id": {
             "type": "integer",
@@ -1789,6 +1803,10 @@
             "type": "number",
             "description": "Amount of the transaction."
           },
+          "currencyScale": {
+            "type": "integer",
+            "description": "Number of decimal places for the currency."
+          },
           "currency": {
             "type": "string",
             "description": "Currency (ISO code) applied to the amount of the transaction."
@@ -1825,6 +1843,7 @@
           },
           "externalRelationKind": {
             "type": "string",
+            "description": "Kind of the external relation id, for example if transaction is a payment it will contain PAYMENT.",
             "enum": [
               "ROOM",
               "PAYMENT",
@@ -1838,8 +1857,7 @@
               "FEE",
               "ADJUSTMENT",
               "PAYMENT_FEE"
-            ],
-            "description": "Kind of the external relation id, for example if transaction is a payment it will contain PAYMENT."
+            ]
           },
           "originId": {
             "type": "string",
@@ -1851,8 +1869,8 @@
           },
           "quantity": {
             "type": "integer",
-            "format": "int32",
-            "description": "Amount of items purchased."
+            "description": "Amount of items purchased.",
+            "format": "int32"
           },
           "description": {
             "type": "string",
@@ -1864,15 +1882,15 @@
           },
           "sourceDatetime": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
             "description": "Date time the source was created. (ISO 8601) in UTC",
-            "format": "date-time"
+            "format": "date-time",
+            "example": "2017-07-21T17:32:28Z"
           },
           "transactionDatetime": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
             "description": "Date time when the transaction should be created at. (ISO 8601) in UTC",
-            "format": "date-time"
+            "format": "date-time",
+            "example": "2017-07-21T17:32:28Z"
           },
           "transactionDatetimePropertyTime": {
             "type": "string",
@@ -1881,15 +1899,24 @@
           },
           "serviceDate": {
             "type": "string",
-            "example": "2017-07-21T00:00:00.000Z",
             "description": "Date when the posted transaction was created (property time).",
             "format": "date"
           },
           "createdAt": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
             "description": "Date time when the transaction was inserted on the database. (ISO 8601) in UTC",
-            "format": "date-time"
+            "format": "date-time",
+            "example": "2017-07-21T17:32:28Z"
+          },
+          "sourceIdentifier": {
+            "type": "string",
+            "description": "If source_kind = RESERVATION, this field will contain a reservation identifier. For a transaction with source_kind = GROUP_PROFILE, this field will contain a group code. For source_king = HOUSE_ACCOUNT it will be null.",
+            "example": "38883261663"
+          },
+          "subSourceIdentifier": {
+            "type": "string",
+            "description": "identifier of a booking room",
+            "example": "38883261663-2"
           }
         }
       },
@@ -1925,13 +1952,13 @@
           },
           "checkinDate": {
             "type": "string",
-            "format": "date",
-            "description": "Check in date."
+            "description": "Check in date.",
+            "format": "date"
           },
           "checkoutDate": {
             "type": "string",
-            "format": "date",
-            "description": "Check out date."
+            "description": "Check out date.",
+            "format": "date"
           },
           "amount": {
             "type": "number",
@@ -1965,12 +1992,19 @@
             "type": "string",
             "enum": [
               "VOIDED",
-              "TRANSFERRED"
+              "TRANSFERRED",
+              "CANCELLED",
+              "REFUNDED",
+              "DELETED"
             ]
           },
           "currency": {
             "type": "string",
             "description": "Currency ISO code"
+          },
+          "currencyScale": {
+            "type": "integer",
+            "description": "Number of decimal places for the currency."
           },
           "reservationStatus": {
             "$ref": "#/components/schemas/ReservationStatus"
@@ -1990,9 +2024,13 @@
       "DepositBalanceResponse": {
         "type": "object",
         "properties": {
-          "balance": {
+          "postedBalance": {
             "type": "number",
-            "description": "Balance in smallest unit according to the currency."
+            "description": "Posted balance in smallest unit according to the currency."
+          },
+          "pendingBalance": {
+            "type": "number",
+            "description": "Pending balance in smallest unit according to the currency."
           }
         }
       },
@@ -2014,16 +2052,7 @@
         "type": "object",
         "properties": {
           "transaction": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "Posted transaction id"
-              },
-              "amount": {
-                "type": "number"
-              }
-            }
+            "$ref": "#/components/schemas/AccountsReceivableLedgerReservationBalanceTransferResponse_transaction"
           },
           "accountsReceivableId": {
             "type": "string"
@@ -2034,8 +2063,8 @@
         "type": "object",
         "properties": {
           "transaction_ids": {
-            "type": "array",
             "minItems": 1,
+            "type": "array",
             "items": {
               "type": "string",
               "description": "List of transaction ids for transferring a deposit"
@@ -2077,33 +2106,34 @@
       },
       "SourceKind": {
         "type": "string",
+        "description": "Source Kind. At the moment only available RESERVATION | GROUP_PROFILE | HOUSE_ACCOUNT | ACCOUNTS_RECEIVABLE.",
         "enum": [
           "RESERVATION",
           "HOUSE_ACCOUNT",
           "GROUP_PROFILE",
           "ACCOUNTS_RECEIVABLE_LEDGER"
-        ],
-        "description": "Source Kind. At the moment only available RESERVATION | GROUP_PROFILE | HOUSE_ACCOUNT | ACCOUNTS_RECEIVABLE."
+        ]
       },
       "AccountCategory": {
         "type": "string",
+        "description": "Account category",
         "enum": [
           "DEPOSITS"
-        ],
-        "description": "Account category"
+        ]
       },
       "ChartOfAccountType": {
         "type": "string",
+        "description": "Chart of account type",
         "enum": [
           "LIABILITIES",
           "REVENUE",
           "ASSETS",
           "EQUITY",
           "EXPENSES"
-        ],
-        "description": "Chart of account type"
+        ]
       },
       "InternalTransactionCodeGroupEnum": {
+        "type": "string",
         "enum": [
           "ROOM_REVENUE_RATE",
           "ROOM_REVENUE_MANUAL",
@@ -2149,6 +2179,11 @@
         }
       },
       "TrialBalanceRequest": {
+        "required": [
+          "accountsReceivableLedgerOpeningBalance",
+          "depositsLedgerOpeningBalance",
+          "guestLedgerOpeningBalance"
+        ],
         "type": "object",
         "properties": {
           "depositsLedgerOpeningBalance": {
@@ -2160,12 +2195,7 @@
           "guestLedgerOpeningBalance": {
             "type": "number"
           }
-        },
-        "required": [
-          "depositsLedgerOpeningBalance",
-          "accountsReceivableLedgerOpeningBalance",
-          "guestLedgerOpeningBalance"
-        ]
+        }
       },
       "TrialBalanceResponse": {
         "type": "object",
@@ -2194,8 +2224,8 @@
         "properties": {
           "configuredAt": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
-            "description": "Configured datetime (ISO 8601) in UTC"
+            "description": "Configured datetime (ISO 8601) in UTC",
+            "example": "2017-07-21T17:32:28.000Z"
           },
           "configured": {
             "type": "boolean",
@@ -2206,6 +2236,9 @@
       "TrialBalanceReportResponse": {
         "type": "object",
         "properties": {
+          "trialBalanceId": {
+            "type": "string"
+          },
           "summary": {
             "$ref": "#/components/schemas/TrialBalanceReportSummary"
           },
@@ -2226,13 +2259,32 @@
           "transactionsTotalAmount": {
             "type": "number"
           },
+          "ledgerActivity": {
+            "type": "number"
+          },
           "depositActivity": {
             "type": "number"
           },
           "arPayments": {
+            "type": "number",
+            "deprecated": true
+          },
+          "depositTransfers": {
+            "type": "number"
+          },
+          "arActivity": {
             "type": "number"
           },
           "closingBalance": {
+            "type": "number"
+          },
+          "arTransfers": {
+            "type": "number"
+          },
+          "hotelOpeningBalance": {
+            "type": "number"
+          },
+          "hotelClosingBalance": {
             "type": "number"
           }
         }
@@ -2296,27 +2348,40 @@
             "enum": [
               "RATE",
               "RATE_A",
+              "RATE_V",
               "ROOM_REVENUE",
               "ROOM_REVENUE_A",
+              "ROOM_REVENUE_V",
               "CANCELLATION",
               "CANCELLATION_A",
+              "CANCELLATION_V",
               "NO_SHOW",
               "NO_SHOW_A",
+              "NO_SHOW_V",
               "ITEM_SERVICE",
               "ITEM_SERVICE_A",
+              "ITEM_SERVICE_V",
               "ADDON",
               "ADDON_A",
+              "ADDON_V",
               "CUSTOM_ITEM_POS",
               "CUSTOM_ITEM_POS_A",
+              "CUSTOM_ITEM_POS_V",
               "FEE",
               "FEE_A",
+              "FEE_V",
               "TAX",
               "TAX_A",
+              "TAX_V",
               "PAYMENT",
+              "PAYMENT_V",
               "PAYMENT_R",
               "PAYMENT_CASH",
+              "PAYMENT_CASH_V",
               "PAYMENT_BANK",
+              "PAYMENT_BANK_V",
               "PAYMENT_CARD",
+              "PAYMENT_CARD_V",
               "REFUND",
               "REFUND_CASH",
               "REFUND_BANK",
@@ -2333,6 +2398,7 @@
               "AR_BALANCE",
               "AR_BALANCE_PREVIOUS_DAY",
               "AR_TRANSFER_IN",
+              "AR_TRANSFER_OUT",
               "AR_PAYMENTS"
             ]
           },
@@ -2344,12 +2410,12 @@
       },
       "LogicalOperator": {
         "type": "string",
-        "default": "and",
-        "enum": [
+        "x-enum-varnames": [
           "and",
           "or"
         ],
-        "x-enum-varnames": [
+        "default": "and",
+        "enum": [
           "and",
           "or"
         ]
@@ -2357,7 +2423,7 @@
       "ReservationStatus": {
         "type": "string",
         "description": "Enum of reservation statuses",
-        "enum": [
+        "x-enum-varnames": [
           "checked_out",
           "checked_in",
           "confirmed",
@@ -2367,7 +2433,7 @@
           "deleted",
           "no_show"
         ],
-        "x-enum-varnames": [
+        "enum": [
           "checked_out",
           "checked_in",
           "confirmed",
@@ -2380,7 +2446,7 @@
       },
       "ConditionalOperator": {
         "type": "string",
-        "enum": [
+        "x-enum-varnames": [
           "greater_than_or_equal",
           "greater_than",
           "less_than_or_equal",
@@ -2394,7 +2460,7 @@
           "is_null",
           "not_null"
         ],
-        "x-enum-varnames": [
+        "enum": [
           "greater_than_or_equal",
           "greater_than",
           "less_than_or_equal",
@@ -2410,17 +2476,17 @@
         ]
       },
       "FieldFilter": {
-        "type": "object",
         "required": [
-          "operator",
-          "field"
+          "field",
+          "operator"
         ],
+        "type": "object",
         "properties": {
           "operator": {
             "$ref": "#/components/schemas/ConditionalOperator"
           },
           "value": {
-            "type": "object"
+            "$ref": "#/components/schemas/AnyValue"
           },
           "field": {
             "type": "string"
@@ -2470,11 +2536,11 @@
         }
       },
       "Sort": {
-        "type": "object",
         "required": [
-          "field",
-          "direction"
+          "direction",
+          "field"
         ],
+        "type": "object",
         "properties": {
           "field": {
             "type": "string"
@@ -2500,6 +2566,376 @@
       "NextPageToken": {
         "type": "string",
         "description": "Token for fetching the next page of results"
+      },
+      "filter": {
+        "type": "object",
+        "properties": {
+          "searchQuery": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "createdDateTimeFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdDateTimeTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "balanceFrom": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "balanceTo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalFrom": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalTo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paidFrom": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paidTo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountsReceivableLedgerStatus"
+            }
+          },
+          "sortBy": {
+            "type": "string",
+            "description": "Sort field",
+            "x-enum-varnames": [
+              "status",
+              "name",
+              "created_at",
+              "balance",
+              "paid",
+              "total"
+            ],
+            "enum": [
+              "status",
+              "name",
+              "created_at",
+              "balance",
+              "paid",
+              "total"
+            ]
+          },
+          "sortDirection": {
+            "$ref": "#/components/schemas/sortDirection"
+          },
+          "pageToken": {
+            "type": "string"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "filter_1": {
+        "type": "object",
+        "properties": {
+          "transactionStates": {
+            "type": "array",
+            "description": "transaction states",
+            "items": {
+              "$ref": "#/components/schemas/TransactionState"
+            }
+          },
+          "searchQuery": {
+            "minLength": 3,
+            "type": "string"
+          },
+          "transactionDateFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "transactionDateTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkinDateFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkinDateTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkoutDateFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkoutDateTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "transactionType": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Enum of transaction types",
+              "enum": [
+                "TRANSFER",
+                "UNDO_TRANSFER",
+                "PAYMENT"
+              ]
+            }
+          },
+          "userId": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "sortBy": {
+            "type": "string",
+            "description": "Sort field",
+            "enum": [
+              "CHECKOUT_DATE",
+              "CHECKIN_DATE",
+              "TRANSACTION_DATE",
+              "AMOUNT"
+            ]
+          },
+          "sortDirection": {
+            "$ref": "#/components/schemas/sortDirection"
+          }
+        }
+      },
+      "filter_2": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountsReceivableLedgerStatus"
+            }
+          }
+        }
+      },
+      "filter_3": {
+        "type": "object",
+        "properties": {
+          "transactionStates": {
+            "type": "array",
+            "description": "transaction states",
+            "items": {
+              "$ref": "#/components/schemas/TransactionState"
+            }
+          },
+          "includeInactive": {
+            "type": "boolean",
+            "description": "Include inactive transactions (voided, consumed, cancelled, deleted)",
+            "default": true
+          },
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transactionDateFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "transactionDateTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkinDateFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkinDateTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkoutDateFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkoutDateTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "reservationStatus": {
+            "$ref": "#/components/schemas/ReservationStatus"
+          },
+          "userId": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "sortBy": {
+            "type": "string",
+            "description": "Sort field",
+            "enum": [
+              "CHECKOUT_DATE",
+              "CHECKIN_DATE",
+              "TRANSACTION_DATE",
+              "AMOUNT",
+              "RESERVATION_STATUS"
+            ]
+          },
+          "sortDirection": {
+            "$ref": "#/components/schemas/sortDirection"
+          }
+        }
+      },
+      "AccountsReceivableLedgerReservationBalanceTransferResponse_transaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Posted transaction id"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "responses": {
+      "400": {
+        "description": "Bad Request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiAccountingError"
+            }
+          }
+        }
+      },
+      "403": {
+        "description": "Access denied",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiAccountingError"
+            }
+          }
+        }
+      },
+      "404": {
+        "description": "Not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiAccountingError"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "GetAccountsReceivableLedgerTotalsFilterParameter": {
+        "name": "filter",
+        "in": "query",
+        "required": false,
+        "explode": true,
+        "schema": {
+          "$ref": "#/components/schemas/filter_2"
+        }
+      },
+      "accountsReceivableLedgerFilter": {
+        "name": "filter",
+        "in": "query",
+        "required": false,
+        "explode": true,
+        "schema": {
+          "$ref": "#/components/schemas/filter"
+        }
+      },
+      "accountsReceivableLedgerTransactionsFilter": {
+        "name": "filter",
+        "in": "query",
+        "required": false,
+        "explode": true,
+        "schema": {
+          "$ref": "#/components/schemas/filter_1"
+        }
+      },
+      "depositTransactionsFilter": {
+        "name": "filter",
+        "in": "query",
+        "required": false,
+        "explode": true,
+        "schema": {
+          "$ref": "#/components/schemas/filter_3"
+        }
+      },
+      "propertyId": {
+        "name": "propertyId",
+        "in": "path",
+        "description": "Property id",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "propertyIdHeader": {
+        "name": "X-Property-ID",
+        "in": "header",
+        "description": "Property id",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "apiVersion": {
+        "name": "apiVersion",
+        "in": "path",
+        "description": "API Version",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "v1.0"
+          ]
+        }
+      },
+      "accountsReceivableLedgerId": {
+        "name": "accountsReceivableLedgerId",
+        "in": "path",
+        "description": "Accounts Receivable ID",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "reservationId": {
+        "name": "reservationId",
+        "in": "path",
+        "description": "Reservation ID",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
     }
   }
