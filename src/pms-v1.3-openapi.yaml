@@ -4096,6 +4096,7 @@ components:
                             enum:
                                 - product
                                 - service
+                                - mealplan
                         sku:
                             description: 'Item SKU'
                             type: string
@@ -4278,6 +4279,7 @@ components:
                                 enum:
                                     - product
                                     - service
+                                    - mealplan
                             sku:
                                 description: 'Item SKU'
                                 type: string
@@ -7737,6 +7739,11 @@ components:
                                 description: 'Rate ID for the room. Optional.'
                                 type: string
                                 nullable: true
+                            adjustPrice:
+                                description: 'Whether to adjust pricing when changing room types. If false, preserves existing rates. Default is true.'
+                                type: boolean
+                                nullable: true
+                                default: true
                     nullable: true
                 dateCreated:
                     description: 'Date reservation was made. Do not change if omitted.'
@@ -8099,11 +8106,12 @@ components:
                     type: string
                     nullable: true
                 roomBlockType:
-                    description: 'Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block'
+                    description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold block."
                     type: string
                     enum:
                         - blocked
                         - out_of_service
+                        - courtesy_hold
                 roomBlockReason:
                     description: 'Room block reason'
                     type: string
@@ -8127,6 +8135,26 @@ components:
                             roomTypeID:
                                 description: 'Room type ID'
                                 type: string
+                firstName:
+                    description: 'First name - for courtesy hold updates'
+                    type: string
+                    nullable: true
+                lastName:
+                    description: 'Last name - for courtesy hold updates'
+                    type: string
+                    nullable: true
+                lengthOfHoldInHours:
+                    description: 'Length of hold in hours - for courtesy hold updates'
+                    type: integer
+                    nullable: true
+                email:
+                    description: 'Email address - for courtesy hold updates'
+                    type: string
+                    nullable: true
+                phone:
+                    description: 'Phone number - for courtesy hold updates'
+                    type: string
+                    nullable: true
         PostRoomBlockResponse:
             type: object
             properties:
@@ -8140,11 +8168,12 @@ components:
                     description: 'Room block ID'
                     type: string
                 roomBlockType:
-                    description: 'Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block'
+                    description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold block."
                     type: string
                     enum:
                         - blocked
                         - out_of_service
+                        - courtesy_hold
                 roomBlockReason:
                     description: 'Room block reason'
                     type: string
@@ -8186,12 +8215,6 @@ components:
                             roomBlockID:
                                 description: 'Room block ID'
                                 type: string
-                            roomBlockType:
-                                description: 'Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block'
-                                type: string
-                                enum:
-                                    - blocked
-                                    - out_of_service
                             roomBlockReason:
                                 description: 'Room block reason'
                                 type: string
@@ -8218,6 +8241,13 @@ components:
                             count:
                                 description: 'Number of results (properties) returned.'
                                 type: integer
+                roomBlockType:
+                    description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold block."
+                    type: string
+                    enum:
+                        - blocked
+                        - out_of_service
+                        - courtesy_hold
                 message:
                     description: 'To be used in case any error occurs (if success = false).  If success = true, it does not exist.'
                     type: string
@@ -8260,6 +8290,26 @@ components:
                                 type: string
                                 nullable: true
                     nullable: true
+                firstName:
+                    description: 'First name - for courtesy hold updates'
+                    type: string
+                    nullable: true
+                lastName:
+                    description: 'Last name - for courtesy hold updates'
+                    type: string
+                    nullable: true
+                lengthOfHoldInHours:
+                    description: 'Length of hold in hours - for courtesy hold updates'
+                    type: integer
+                    nullable: true
+                email:
+                    description: 'Email address - for courtesy hold updates'
+                    type: string
+                    nullable: true
+                phone:
+                    description: 'Phone number - for courtesy hold updates'
+                    type: string
+                    nullable: true
         PutRoomBlockResponse:
             type: object
             properties:
@@ -8272,8 +8322,8 @@ components:
                 roomBlockID:
                     description: 'Room block ID'
                     type: string
-                roomBlockType:
-                    description: 'Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block'
+                '"courtesy_hold"}':
+                    description: "roomBlockType Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold."
                     type: string
                     enum:
                         - blocked
@@ -8709,6 +8759,10 @@ components:
                             code:
                                 description: Code
                                 type: string
+                            kind:
+                                description: 'Tax kind. Currently supports "vat" or null. Only exists if type = tax.'
+                                type: string
+                                nullable: true
                             amount:
                                 description: Amount
                                 type: string
@@ -8951,6 +9005,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetUserinfoResponse'
+            security:
+                -
+                    api_key: []
+                -
+                    OAuth2: []
             parameters:
                 -
                     description: 'Specify a property ID when using role_details'

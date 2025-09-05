@@ -8,6 +8,119 @@ servers:
     url: 'https://api.cloudbeds.com/'
     description: 'Cloudbeds API v2'
 paths:
+  /integration/v1/connected-applications:
+    get:
+      tags:
+        - Applications
+      summary: 'Get all connected API clients for a property'
+      operationId: 'ApiClientController::connectedApiClients'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: scopes
+          in: query
+          description: 'List of OAuth scopes to filter by. Only API clients that have all specified scopes will be returned.'
+          required: false
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - 'delete:appPropertySettings'
+                - 'delete:doorLockKey'
+                - 'delete:item'
+                - 'delete:marketsegment'
+                - 'delete:roomblock'
+                - 'read:adjustment'
+                - 'read:allotmentBlock'
+                - 'read:appPropertySettings'
+                - 'read:communication'
+                - 'read:currency'
+                - 'read:customFields'
+                - 'read:dashboard'
+                - 'read:dataInsightsFinancialTransactions'
+                - 'read:dataInsightsGuests'
+                - 'read:dataInsightsInvoices'
+                - 'read:dataInsightsOccupancy'
+                - 'read:dataInsightsPayments'
+                - 'read:dataInsightsReservations'
+                - 'read:doorLockKey'
+                - 'read:externalOffer'
+                - 'read:group'
+                - 'read:guest'
+                - 'read:hotel'
+                - 'read:houseAccount'
+                - 'read:housekeeping'
+                - 'read:item'
+                - 'read:marketsegment'
+                - 'read:nightAudit'
+                - 'read:package'
+                - 'read:payment'
+                - 'read:rate'
+                - 'read:reservation'
+                - 'read:room'
+                - 'read:roomblock'
+                - 'read:taxesAndFees'
+                - 'read:user'
+                - 'write:adjustment'
+                - 'write:allotmentBlock'
+                - 'write:appError'
+                - 'write:appPropertySettings'
+                - 'write:communication'
+                - 'write:customFields'
+                - 'write:doorLockKey'
+                - 'write:externalOffer'
+                - 'write:group'
+                - 'write:guest'
+                - 'write:hotel'
+                - 'write:houseAccount'
+                - 'write:housekeeping'
+                - 'write:item'
+                - 'write:marketsegment'
+                - 'write:payment'
+                - 'write:rate'
+                - 'write:reservation'
+                - 'write:room'
+                - 'write:roomblock'
+          example:
+            - 'read:reservation,write:appError'
+      responses:
+        '200':
+          description: 'List of connected API clients'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationListResponseSchema'
+        '400':
+          description: 'Bad request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default: []
   '/doorlock/v1/keys/{propertyId}':
     get:
       tags:
@@ -691,6 +804,80 @@ paths:
       security:
         -
           default: []
+  /item/v1/custom-items:
+    get:
+      tags:
+        - Items
+      summary: 'Get a list of custom items for a specific property.'
+      operationId: 'CustomItemController::index'
+      parameters:
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '100'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '0'
+        -
+          name: filters
+          in: query
+          description: 'This parameter should be formatted as a list of strings separated by ;'
+          required: false
+          schema:
+            $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+          example: 'field1:value;field2:operator:value'
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      responses:
+        '200':
+          description: 'List of custom items.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomItemListResponseSchema'
+        '400':
+          description: 'Bad Request response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:item'
   /market-segmentation/v1/groups:
     get:
       tags:
@@ -750,7 +937,7 @@ paths:
       security:
         -
           default:
-            - 'read:marketSegmentation'
+            - 'read:marketsegment'
     post:
       tags:
         - market-segmentation-groups
@@ -806,7 +993,7 @@ paths:
       security:
         -
           default:
-            - 'write:marketSegmentation'
+            - 'write:marketsegment'
   '/market-segmentation/v1/groups/{id}':
     get:
       tags:
@@ -863,7 +1050,7 @@ paths:
       security:
         -
           default:
-            - 'read:marketSegmentation'
+            - 'read:marketsegment'
     delete:
       tags:
         - market-segmentation-groups
@@ -919,7 +1106,7 @@ paths:
       security:
         -
           default:
-            - 'delete:marketSegmentation'
+            - 'delete:marketsegment'
     patch:
       tags:
         - market-segmentation-groups
@@ -982,7 +1169,7 @@ paths:
       security:
         -
           default:
-            - 'write:marketSegmentation'
+            - 'write:marketsegment'
   '/market-segmentation/v1/groups/{id}/enable':
     post:
       tags:
@@ -1039,7 +1226,7 @@ paths:
       security:
         -
           default:
-            - 'write:marketSegmentation'
+            - 'write:marketsegment'
   '/market-segmentation/v1/groups/{id}/disable':
     post:
       tags:
@@ -1096,7 +1283,7 @@ paths:
       security:
         -
           default:
-            - 'write:marketSegmentation'
+            - 'write:marketsegment'
   '/market-segmentation/v1/segments/{enabled}':
     get:
       tags:
@@ -1172,7 +1359,7 @@ paths:
       security:
         -
           default:
-            - 'read:marketSegmentation'
+            - 'read:marketsegment'
   '/market-segmentation/v1/segments/{id}':
     get:
       tags:
@@ -1229,7 +1416,7 @@ paths:
       security:
         -
           default:
-            - 'read:marketSegmentation'
+            - 'read:marketsegment'
     delete:
       tags:
         - market-segmentation-segments
@@ -1285,7 +1472,7 @@ paths:
       security:
         -
           default:
-            - 'delete:marketSegmentation'
+            - 'delete:marketsegment'
     patch:
       tags:
         - market-segmentation-segments
@@ -1348,7 +1535,7 @@ paths:
       security:
         -
           default:
-            - 'write:marketSegmentation'
+            - 'write:marketsegment'
   '/market-segmentation/v1/segments/{id}/reservations/{active}':
     get:
       tags:
@@ -1424,7 +1611,7 @@ paths:
       security:
         -
           default:
-            - 'read:marketSegmentation'
+            - 'read:marketsegment'
   /market-segmentation/v1/segments:
     post:
       tags:
@@ -1481,7 +1668,7 @@ paths:
       security:
         -
           default:
-            - 'write:marketSegmentation'
+            - 'write:marketsegment'
   '/market-segmentation/v1/segments/{id}/enable':
     post:
       tags:
@@ -1538,7 +1725,7 @@ paths:
       security:
         -
           default:
-            - 'write:marketSegmentation'
+            - 'write:marketsegment'
   '/market-segmentation/v1/segments/{id}/disable':
     post:
       tags:
@@ -1595,7 +1782,7 @@ paths:
       security:
         -
           default:
-            - 'write:marketSegmentation'
+            - 'write:marketsegment'
   '/market-segmentation/v1/segments/{id}/default':
     post:
       tags:
@@ -1652,22 +1839,73 @@ paths:
       security:
         -
           default:
-            - 'write:marketSegmentation'
-  '/rooms/v1/out-of-service/{roomId}':
-    post:
+            - 'write:marketsegment'
+  /rates/v1/rate-plans:
+    get:
       tags:
-        - rooms
-      summary: 'Room out of service'
-      operationId: 'OutOfServiceController::make'
+        - 'Rate Plans'
+      summary: 'Get a list of Rates Plans.'
+      operationId: 'RatePlanController::index'
       parameters:
         -
-          name: roomId
-          in: path
-          description: 'Room ID'
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
           required: true
           schema:
             type: string
-          example: 1-b
+            example: '1,2,3'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '0'
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '100'
+      responses:
+        '200':
+          description: 'List of Rates Plans.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlanListResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:rates'
+    post:
+      tags:
+        - 'Rate Plans'
+      summary: 'Create a new Rate Plan.'
+      operationId: 'RatePlanController::create'
+      parameters:
         -
           name: x-property-id
           in: header
@@ -1677,21 +1915,245 @@ paths:
             type: string
             example: '1,2,3'
       requestBody:
+        description: 'Rate Plan data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatePlanCreateRequestSchema'
+      responses:
+        '201':
+          description: 'Created Rate Plan.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlanResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:rates'
+  '/rates/v1/rate-plans/{id}':
+    get:
+      tags:
+        - 'Rate Plans'
+      summary: 'Get Rate Plan data.'
+      operationId: 'RatePlanController::single'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Rate Plan ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/RatePlanSingleRequestSchema/properties/id'
+      responses:
+        '200':
+          description: 'Rate Plan data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlanResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not Found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal Server Error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:rates'
+    delete:
+      tags:
+        - 'Rate Plans'
+      summary: 'Delete a Rate Plan.'
+      operationId: 'RatePlanController::delete'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Rate Plan ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/RatePlanDeleteRequestSchema/properties/id'
+      responses:
+        '204':
+          description: 'Rate Plan was deleted.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'delete:rates'
+    patch:
+      tags:
+        - 'Rate Plans'
+      summary: 'Update an existing Rate Plan.'
+      operationId: 'RatePlanController::update'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Rate Plan ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/RatePlanUpdateRequestSchema/properties/id'
+      requestBody:
+        description: 'Rate Plan data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatePlanUpdateRequestSchema'
+      responses:
+        '200':
+          description: 'Updated Rate Plan.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlanResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:rates'
+  /rooms/v1/out-of-service:
+    post:
+      tags:
+        - rooms
+      summary: 'Room out of service'
+      operationId: 'OutOfServiceController::make'
+      requestBody:
         description: 'Out of service request body.'
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OutOfServiceRequestSchema'
+              $ref: '#/components/schemas/PlaceRoomsOutOfServiceRequest'
       responses:
-        '200':
-          description: 'Place room out of service.'
+        '201':
+          description: 'Rooms were placed out of service successfully'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/OutOfServiceResponseSchema'
         '400':
-          description: 'Bad Request response'
+          description: 'At least one of the rooms could not be placed out of service'
           content:
             application/json:
               schema:
@@ -1716,6 +2178,54 @@ components:
         - feature.integrations.generate-dummy-doorlock-keys
         - feature.distribution.market-segmentation
         - feature.distribution.market-segmentation-enable-custom-group
+        - feature.inventory.rate-plans
+    ConnectedApplicationListRequestSchema:
+      type: object
+    ApplicationCollectionResponseSchema:
+      required:
+        - items
+      type: array
+      items:
+        $ref: '#/components/schemas/ApplicationResponseSchema'
+    ApplicationListResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ApplicationCollectionResponseSchema'
+      type: object
+    ApplicationResponseSchema:
+      required:
+        - id
+        - name
+        - oauthScopes
+        - applicationTypes
+      properties:
+        id:
+          description: 'Application ID'
+          type: string
+          example: app_123456
+        name:
+          description: 'Application name'
+          type: string
+          example: 'Example PMS Application'
+        oauthScopes:
+          description: 'OAuth scopes'
+          type: array
+          items:
+            type: string
+          example:
+            - reservation.read
+            - reservation.write
+        applicationTypes:
+          description: 'Application types'
+          type: array
+          items:
+            type: string
+          example:
+            - 'Mobile App'
+            - Accounting
+      type: object
     DynamicFilterFieldSchema:
       description: 'Represents a single filter condition'
       properties:
@@ -1943,6 +2453,16 @@ components:
         message:
           type: string
       type: object
+    MoneySchema:
+      required:
+        - amount
+        - currencyCode
+      properties:
+        amount:
+          type: string
+        currencyCode:
+          type: string
+      type: object
     NoContentResponseSchema: {  }
     NotFoundResponseSchema:
       properties:
@@ -1971,6 +2491,7 @@ components:
                   - is_channel_derived_rate_plan_mapping_enabled
                   - groups_data_sync_enabled_channels
                   - full_reservation_sync_enabled_channels
+                  - is_distribution_enabled
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting you are updating.'
@@ -1997,6 +2518,7 @@ components:
                   - is_channel_derived_rate_plan_mapping_enabled
                   - groups_data_sync_enabled_channels
                   - full_reservation_sync_enabled_channels
+                  - is_distribution_enabled
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting.'
@@ -2042,6 +2564,7 @@ components:
                   - is_channel_derived_rate_plan_mapping_enabled
                   - groups_data_sync_enabled_channels
                   - full_reservation_sync_enabled_channels
+                  - is_distribution_enabled
                 example: example_setting_key
               message:
                 description: 'The reason why the update failed.'
@@ -2494,14 +3017,7 @@ components:
         -
           $ref: '#/components/schemas/LimitOffsetPaginationSchema'
         -
-          properties:
-            errorsOnly:
-              description: 'Get erroneous records if set to true.'
-              type: boolean
-              default: false
-              example: true
-              nullable: true
-          type: object
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
     ImportTaskGetRequestSchema:
       type: object
     ImportTaskListRequestSchema:
@@ -2534,6 +3050,30 @@ components:
           type: boolean
           nullable: true
       type: object
+    ImportTaskToggleProcessingRequestSchema:
+      properties:
+        action:
+          description: 'Action to perform on the import task'
+          type: string
+          enum:
+            - start
+            - stop
+          example: start
+      type: object
+    ImportChangeStatusTaskResponse:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    ImportFailedChangeStatusTaskResponse:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
     ImportFailedToCreateImportTaskSchema:
       required:
         - message
@@ -2549,20 +3089,6 @@ components:
           type: string
       type: object
     ImportFailedToProcessCsvResponseSchema:
-      required:
-        - message
-      properties:
-        message:
-          type: string
-      type: object
-    ImportFailedToReprocessTaskResponse:
-      required:
-        - message
-      properties:
-        message:
-          type: string
-      type: object
-    ImportReprocessTaskResponse:
       required:
         - message
       properties:
@@ -2913,6 +3439,81 @@ components:
           example: '2023-10-01T12:00:00Z'
           nullable: true
       type: object
+    CustomItemListRequestSchema:
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterSortSchema'
+    CustomItemCollectionResponseSchema:
+      required:
+        - items
+      type: array
+      items:
+        $ref: '#/components/schemas/CustomItemResponseSchema'
+    CustomItemListResponseSchema:
+      required:
+        - data
+        - total
+      properties:
+        data:
+          $ref: '#/components/schemas/CustomItemCollectionResponseSchema'
+        total:
+          description: 'Total number of items'
+          type: integer
+          example: 100
+      type: object
+    CustomItemResponseSchema:
+      required:
+        - id
+        - propertyId
+        - sourceId
+        - sourceName
+        - appItemId
+        - name
+      properties:
+        id:
+          description: 'Unique identifier for the custom item'
+          type: string
+          example: '123456'
+        name:
+          description: 'Item name'
+          type: string
+          example: Coffee
+        propertyId:
+          description: 'Property ID'
+          type: string
+          example: '123456'
+        sourceId:
+          description: 'Source ID (POS app ID)'
+          type: string
+          example: '123456'
+        sourceName:
+          description: 'Source name (POS app name)'
+          type: string
+          example: 'Restaurant POS'
+        appItemId:
+          description: 'App item ID'
+          type: string
+          example: ITEM-001
+        sku:
+          description: SKU
+          type: string
+          example: SKU123
+          nullable: true
+        categoryName:
+          description: 'Category name'
+          type: string
+          example: Beverages
+          nullable: true
+        description:
+          description: 'Item description'
+          type: string
+          example: 'Fresh brewed coffee'
+          nullable: true
+      type: object
     GroupCreateRequestSchema:
       required:
         - name
@@ -3256,6 +3857,642 @@ components:
         canDisable:
           type: boolean
       type: object
+    RatePlanAddonRequestSchema:
+      required:
+        - addonId
+        - settings
+      properties:
+        addonId:
+          description: 'The addon ID.'
+          type: string
+        settings:
+          description: 'The addon settings.'
+          type: string
+          enum:
+            - package_inclusive
+            - show_as_combined
+            - show_as_separate
+          example: package_inclusive
+      type: object
+    RatePlanCreateRequestSchema:
+      required:
+        - isActive
+        - roomTypeId
+        - name
+        - description
+        - namePrivate
+      properties:
+        isActive:
+          description: 'The status of the rate plan.'
+          type: boolean
+          example: true
+        roomTypeId:
+          description: 'The room type ID assigned to this rate plan.'
+          type: integer
+          example: true
+        name:
+          description: 'Name in multiple languages.'
+          type: object
+          example:
+            en: 'Standard Rate'
+            es: 'Tarifa Estándar'
+          additionalProperties:
+            type: string
+        description:
+          description: 'Description in multiple languages.'
+          type: object
+          example:
+            en: 'Our standard rate plan'
+            es: 'Nuestro plan de tarifas estándar'
+          additionalProperties:
+            type: string
+        namePrivate:
+          description: 'Internal name in multiple languages.'
+          type: object
+          example:
+            en: 'Standard Internal'
+            es: 'Estándar Interno'
+          additionalProperties:
+            type: string
+        allotmentBlockId:
+          description: 'The allotment block''s ID this rate belongs to.'
+          type: string
+          example: '4567'
+          nullable: true
+        promoCode:
+          description: 'Promotional code for the rate plan.'
+          type: string
+          maxLength: 50
+          example: SUMMER2023
+          nullable: true
+        sources:
+          description: 'List of sources for the rate plan.'
+          type: array
+          items:
+            type: string
+          example:
+            - source1
+            - source2
+          nullable: true
+        derivedValue:
+          description: 'Value for the derived rate plan.'
+          type: number
+          format: float
+          default: 0
+          example: 150.5
+          nullable: true
+        derivedRatePlanId:
+          description: 'Derived rate plan ID.'
+          type: integer
+          example: 456
+          nullable: true
+        derivedType:
+          description: 'Rate plan derived type.'
+          type: string
+          default: fixed
+          enum:
+            - fixed
+            - percentage
+        terms:
+          description: 'Terms and conditions in multiple languages.'
+          type: object
+          example:
+            en: 'Standard terms apply'
+            es: 'Se aplican términos estándar'
+          nullable: true
+          additionalProperties:
+            type: string
+        intervals:
+          description: 'List of rate plan intervals.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanIntervalRequestSchema'
+          nullable: true
+        addons:
+          description: 'List of addons.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanAddonRequestSchema'
+          nullable: true
+      type: object
+    RatePlanDeleteRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Rate Plan ID.'
+          type: string
+          example: '123'
+      type: object
+    RatePlanIntervalRequestSchema:
+      required:
+        - startDate
+        - endDate
+        - name
+      properties:
+        startDate:
+          description: 'Start date of the interval.'
+          type: string
+          format: date
+          example: '2025-01-27'
+        endDate:
+          description: 'End date of the interval.'
+          type: string
+          format: date
+          example: '2025-02-27'
+        name:
+          description: 'Name of the interval.'
+          type: string
+          example: 'Winter Season'
+        roomTypeId:
+          description: 'Room type ID.'
+          type: string
+          example: '82828'
+        minOverlap:
+          description: 'Minimum overlap.'
+          type: integer
+          example: 1
+          nullable: true
+        maxOverlap:
+          description: 'Maximum overlap.'
+          type: integer
+          example: 10
+          nullable: true
+        groupCode:
+          description: 'Group code.'
+          type: string
+          example: '990'
+          nullable: true
+        days:
+          description: 'Days of the week pricing (0=Sunday, 1=Monday, etc.).'
+          type: object
+          example:
+            - 65.5
+            - 50
+            - 50
+            - 50
+            - 50
+            - 70
+            - 70.5
+          nullable: true
+          additionalProperties:
+            type: number
+            format: float
+        adultDays:
+          description: 'Extra adults pricing (0=Sunday, 1=Monday, etc.).'
+          type: object
+          example:
+            -
+              '3': 35
+              '4': 35
+            -
+              '3': 20
+              '4': 20
+            -
+              '3': 20
+              '4': 20
+            -
+              '3': 20
+              '4': 20
+            -
+              '3': 20
+              '4': 20
+            -
+              '3': 35
+              '4': 35
+            -
+              '3': 40
+              '4': 40
+          nullable: true
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: number
+              format: float
+        childDays:
+          description: 'Extra children pricing (0=Sunday, 1=Monday, etc.).'
+          type: object
+          example:
+            -
+              '1': 10
+              '2': 15
+            -
+              '1': 5
+              '2': 10
+            -
+              '1': 5
+              '2': 10
+            -
+              '1': 5
+              '2': 10
+            -
+              '1': 5
+              '2': 10
+            -
+              '1': 10
+              '2': 15
+            -
+              '1': 12
+              '2': 18
+          nullable: true
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: number
+              format: float
+      type: object
+    RatePlanSingleRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Rate Plan ID.'
+          type: string
+          example: '123'
+      type: object
+    RatePlanUpdateRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Rate Plan ID.'
+          type: string
+          example: '123'
+        isActive:
+          description: 'Whether the rate plan is active.'
+          type: boolean
+          example: true
+        promoCode:
+          description: 'Promotional code for the rate plan.'
+          type: string
+          default: true
+          maxLength: 50
+          example: SUMMER2023
+          nullable: true
+        sources:
+          description: 'List of sources for the rate plan.'
+          type: array
+          items:
+            type: string
+          example:
+            - source1
+            - source2
+          nullable: true
+        derivedValue:
+          description: 'Value for the derived rate plan.'
+          type: number
+          format: float
+          default: 0
+          example: 150.5
+          nullable: true
+        derivedRatePlanId:
+          description: 'Derived rate plan ID.'
+          type: integer
+          example: 456
+          nullable: true
+        derivedType:
+          description: 'Rate plan derived type.'
+          type: string
+          default: fixed
+          enum:
+            - fixed
+            - percentage
+        name:
+          description: 'Name in multiple languages.'
+          type: object
+          example:
+            en: 'Standard Rate'
+            es: 'Tarifa Estándar'
+          nullable: true
+          additionalProperties:
+            type: string
+        description:
+          description: 'Description in multiple languages.'
+          type: object
+          example:
+            en: 'Our standard rate plan'
+            es: 'Nuestro plan de tarifas estándar'
+          nullable: true
+          additionalProperties:
+            type: string
+        namePrivate:
+          description: 'Internal name in multiple languages.'
+          type: object
+          example:
+            en: 'Standard Internal'
+            es: 'Estándar Interno'
+          nullable: true
+          additionalProperties:
+            type: string
+        terms:
+          description: 'Terms and conditions in multiple languages.'
+          type: object
+          example:
+            en: 'Standard terms apply'
+            es: 'Se aplican términos estándar'
+          nullable: true
+          additionalProperties:
+            type: string
+        addons:
+          description: 'List of addons for the rate plan.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanAddonRequestSchema'
+          nullable: true
+      type: object
+    RatePlanAddonResponseSchema:
+      required:
+        - id
+        - addonId
+        - settings
+      properties:
+        id:
+          type: string
+          example: '1234567'
+          nullable: true
+        addonId:
+          type: string
+          example: '4674899'
+          nullable: true
+        settings:
+          type: string
+          example: package_inclusive
+          nullable: true
+      type: object
+    RatePlanIntervalResponseSchema:
+      required:
+        - ratePlanId
+        - roomTypeId
+        - startDate
+        - endDate
+        - days
+      properties:
+        name:
+          type: string
+          example: BaseRate1
+          nullable: true
+        ratePlanId:
+          type: integer
+          example: 123
+          nullable: true
+        roomTypeId:
+          type: integer
+          example: 456
+          nullable: true
+        startDate:
+          type: string
+          format: date-time
+          example: '2025-07-03'
+          nullable: true
+        endDate:
+          type: string
+          format: date-time
+          example: '2025-07-10'
+          nullable: true
+        minOverlap:
+          type: integer
+          example: 1
+          nullable: true
+        maxOverlap:
+          type: integer
+          example: 0
+          nullable: true
+        days:
+          type: object
+          example:
+            - 60
+            - 50
+            - 50
+            - 50
+            - 50
+            - 65.99
+            - 65.99
+          nullable: true
+        adultDays:
+          description: 'Extra adults pricing (0=Sunday, 1=Monday, etc.).'
+          type: object
+          example:
+            -
+              '3': 35
+              '4': 35
+            -
+              '3': 20
+              '4': 20
+            -
+              '3': 20
+              '4': 20
+            -
+              '3': 20
+              '4': 20
+            -
+              '3': 20
+              '4': 20
+            -
+              '3': 35
+              '4': 35
+            -
+              '3': 40
+              '4': 40
+          nullable: true
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: number
+              format: float
+        childDays:
+          description: 'Extra children pricing (0=Sunday, 1=Monday, etc.).'
+          type: object
+          example:
+            -
+              '1': 10
+              '2': 15
+            -
+              '1': 5
+              '2': 10
+            -
+              '1': 5
+              '2': 10
+            -
+              '1': 5
+              '2': 10
+            -
+              '1': 5
+              '2': 10
+            -
+              '1': 10
+              '2': 15
+            -
+              '1': 12
+              '2': 18
+          nullable: true
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: number
+              format: float
+      type: object
+    RatePlanListResponseSchema:
+      required:
+        - limit
+        - offset
+        - data
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanResponseSchema'
+          nullable: true
+      type: object
+    RatePlanResponseSchema:
+      properties:
+        id:
+          type: string
+        isActive:
+          type: boolean
+          example: true
+        isDeleted:
+          type: boolean
+          example: false
+        derivedRatePlanId:
+          type: string
+          example: '456'
+          nullable: true
+        isDerived:
+          type: boolean
+          example: true
+        derivedType:
+          type: string
+          example: fixed
+          nullable: true
+        derivedValue:
+          type: number
+          format: float
+          example: 150.5
+          nullable: true
+        addons:
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanAddonResponseSchema'
+          nullable: true
+        promoCode:
+          type: string
+          example: SUMMER2023
+          nullable: true
+        sources:
+          type: array
+          items:
+            type: string
+          example:
+            - source1
+            - source2
+          nullable: true
+        name:
+          type: object
+          example:
+            en: 'Standard Rate'
+            es: 'Tarifa Estándar'
+          nullable: true
+          additionalProperties:
+            type: string
+        description:
+          type: object
+          example:
+            en: 'Our standard rate plan'
+            es: 'Nuestro plan de tarifas estándar'
+          nullable: true
+          additionalProperties:
+            type: string
+        namePrivate:
+          type: object
+          example:
+            en: 'Standard Internal'
+            es: 'Estándar Interno'
+          nullable: true
+          additionalProperties:
+            type: string
+        terms:
+          type: object
+          example:
+            en: 'Standard terms apply'
+            es: 'Se aplican términos estándar'
+          nullable: true
+          additionalProperties:
+            type: string
+        intervals:
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanIntervalResponseSchema'
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2023-10-01 12:00:00'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2023-10-01 12:00:00'
+      type: object
+    ReservationCommissionRequestSchema:
+      required:
+        - reservationId
+      properties:
+        reservationId:
+          type: string
+      type: object
+    ReservationCommissionResponseSchema:
+      required:
+        - id
+        - propertyId
+        - reservationId
+        - effectiveCommission
+        - effectiveCommissionType
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        propertyId:
+          type: string
+        reservationId:
+          type: string
+        effectiveCommission:
+          $ref: '#/components/schemas/MoneySchema'
+        effectiveCommissionType:
+          type: string
+        estimatedCommissionFromSource:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+        estimatedCommissionableRevenue:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+        channelCommission:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+        channelCommissionType:
+          type: string
+          nullable: true
+        sourceCommissionPercentage:
+          type: number
+          format: float
+          nullable: true
+        createdAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+        updatedAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+          nullable: true
+      type: object
     OutOfServiceRequestSchema:
       required:
         - fromDate
@@ -3270,34 +4507,44 @@ components:
         toDate:
           description: 'RFC3339 Date to end the out of service period'
           type: string
-          example: '2025-04-25T00:00:00-06:00'
+          example: '2025-04-26T00:00:00-06:00'
         reason:
           description: 'Wny is the room out of service?'
           type: string
           example: 'Flooding in the room.'
       type: object
-    OutOfServiceResponseSchema:
+    PlaceRoomsOutOfServiceRequest:
+      properties:
+        items:
+          description: 'List of rooms to be placed out of service.'
+          type: array
+          items:
+            $ref: '#/components/schemas/OutOfServiceRequestSchema'
+      type: object
+    OutOfServiceResponseItemSchema:
       required:
         - event_id
         - code
       properties:
         event_id:
-          description: 'The status of the request'
-          type: boolean
-        message:
           description: 'The event id of the request'
+          type: string
+        message:
+          description: 'Response message'
           type: string
         code:
           description: 'The HTTP status code of the response'
           type: integer
           example: 201
       type: object
-    RoomsFailedToMakeOutOfServiceResponseSchema:
+    OutOfServiceResponseSchema:
       required:
-        - message
+        - items
       properties:
-        message:
-          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutOfServiceResponseItemSchema'
       type: object
   parameters:
     roomId:
@@ -3324,9 +4571,9 @@ components:
             'write:doorLockKey': 'Write DoorLock keys and settings'
             'delete:doorLockKey': 'Delete DoorLock keys and settings'
             'read:housekeeping': 'Read Housekeeping inspections'
-            'read:marketSegmentation': 'Read Market Segmentation groups and segments'
-            'write:marketSegmentation': 'Write Market Segmentation groups and segments'
-            'delete:marketSegmentation': 'Delete Market Segmentation groups and segments'
+            'read:marketsegment': 'Read Market Segmentation groups and segments'
+            'write:marketsegment': 'Write Market Segmentation groups and segments'
+            'delete:marketsegment': 'Delete Market Segmentation groups and segments'
             'write:importTask': 'Create new data imports'
             'read:importTask': 'Read data imports'
             'hotel:read': 'Read Hotel information'
@@ -3334,6 +4581,9 @@ components:
             'hotel:delete': 'Delete Hotel information'
             'write:appError': 'Write AppError information'
 tags:
+  -
+    name: Applications
+    description: Applications
   -
     name: 'Door Lock Keys'
     description: 'Door Lock Keys'
@@ -3347,11 +4597,17 @@ tags:
     name: 'Integration Events'
     description: 'Integration Events'
   -
+    name: Items
+    description: Items
+  -
     name: market-segmentation-groups
     description: market-segmentation-groups
   -
     name: market-segmentation-segments
     description: market-segmentation-segments
+  -
+    name: 'Rate Plans'
+    description: 'Rate Plans'
   -
     name: rooms
     description: rooms
