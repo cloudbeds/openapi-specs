@@ -1287,7 +1287,7 @@ paths:
   '/market-segmentation/v1/segments/{enabled}':
     get:
       tags:
-        - market-segmentation-segments
+        - 'Market Segmentation'
       summary: 'Get a list of Market Segmentation Segments.'
       operationId: 'SegmentController::index'
       parameters:
@@ -4602,9 +4602,6 @@ tags:
   -
     name: 'Market Segmentation'
     description: 'Market Segmentation'
-  -
-    name: market-segmentation-segments
-    description: market-segmentation-segments
   -
     name: 'Rate Plans'
     description: 'Rate Plans'
