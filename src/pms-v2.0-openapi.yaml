@@ -124,7 +124,7 @@ paths:
   '/doorlock/v1/keys/{propertyId}':
     get:
       tags:
-        - 'Door Lock Keys'
+        - 'Door Locks'
       summary: 'Get a list of doorlock keys for a specific app client and property.'
       operationId: 'DoorLockKeyController::index'
       parameters:
@@ -179,7 +179,7 @@ paths:
   /doorlock/v1/keys:
     post:
       tags:
-        - 'Door Lock Keys'
+        - 'Door Locks'
       summary: 'Create a new doorlock key.'
       operationId: 'DoorLockKeyController::create'
       requestBody:
@@ -220,7 +220,7 @@ paths:
             - 'write:doorLockKey'
     delete:
       tags:
-        - 'Door Lock Keys'
+        - 'Door Locks'
       summary: 'Delete a list of doorlock keys.'
       operationId: 'DoorLockKeyController::batchDelete'
       parameters:
@@ -271,7 +271,7 @@ paths:
   '/doorlock/v1/keys/{id}':
     delete:
       tags:
-        - 'Door Lock Keys'
+        - 'Door Locks'
       summary: 'Delete a doorlock key.'
       operationId: 'DoorLockKeyController::delete'
       parameters:
@@ -320,7 +320,7 @@ paths:
             - 'delete:doorLockKey'
     patch:
       tags:
-        - 'Door Lock Keys'
+        - 'Door Locks'
       summary: 'Update a doorlock key.'
       operationId: 'DoorLockKeyController::update'
       parameters:
@@ -377,7 +377,7 @@ paths:
   '/doorlock/v1/settings/{propertyId}':
     get:
       tags:
-        - 'Door Lock Settings'
+        - 'Door Locks'
       summary: 'Get doorlock settings for property for specific application client.'
       operationId: 'DoorLockSettingsController::single'
       parameters:
@@ -420,7 +420,7 @@ paths:
             - 'read:doorLockKey'
     put:
       tags:
-        - 'Door Lock Settings'
+        - 'Door Locks'
       summary: 'Upsert doorlock settings for property for specific application client.'
       operationId: 'DoorLockSettingsController::upsert'
       parameters:
@@ -464,7 +464,7 @@ paths:
             - 'write:doorLockKey'
     delete:
       tags:
-        - 'Door Lock Settings'
+        - 'Door Locks'
       summary: 'Delete doorlock settings for property for specific application client.'
       operationId: 'DoorLockSettingsController::delete'
       parameters:
@@ -4585,11 +4585,8 @@ tags:
     name: Applications
     description: Applications
   -
-    name: 'Door Lock Keys'
-    description: 'Door Lock Keys'
-  -
-    name: 'Door Lock Settings'
-    description: 'Door Lock Settings'
+    name: 'Door Locks'
+    description: 'Door Locks'
   -
     name: Housekeeping
     description: Housekeeping
