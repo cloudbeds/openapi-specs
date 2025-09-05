@@ -9214,6 +9214,13 @@ paths:
                     required: false
                     in: query
                 -
+                    description: 'Filters allotment blocks with the supplied Room Type ID.'
+                    name: roomTypeID
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
                     description: 'Number of allotment blocks to return per page (min: 1, max: 100)'
                     name: pageSize
                     schema:
@@ -12359,6 +12366,13 @@ paths:
                     required: false
                     in: query
                 -
+                    description: 'Filters reservation with the supplied Room Type ID.'
+                    name: roomTypeID
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
                     description: 'If guests details should be included or not'
                     name: includeGuestsDetails
                     schema:
@@ -12582,6 +12596,13 @@ paths:
                     schema:
                         type: boolean
                         default: false
+                    required: false
+                    in: query
+                -
+                    description: 'Filters reservations with the supplied Guest ID (Including additional guests).'
+                    name: guestID
+                    schema:
+                        type: string
                     required: false
                     in: query
                 -
@@ -13294,6 +13315,13 @@ paths:
                         default: 20
                     required: false
                     in: query
+                -
+                    description: 'Sorting rules, semicolon-separated. Format: `field[:direction]`, where `direction` is `asc` or `desc`, defaults to `asc` if not provided. Valid fields: `sorting_position`. Examples: - `sort=sorting_position` - `sort=sorting_position:desc`'
+                    name: sort
+                    schema:
+                        type: string
+                    required: false
+                    in: query
     /getAvailableRoomTypes:
         get:
             tags:
@@ -13509,6 +13537,13 @@ paths:
                     schema:
                         type: integer
                         default: 20
+                    required: false
+                    in: query
+                -
+                    description: 'Sorting rules, semicolon-separated. Format: `field[:direction]`, where `direction` is `asc` or `desc`, defaults to `asc` if not provided. Valid fields: `room_position`, `sorting_position`. Examples: - `sort=room_position;sorting_position` - `sort=room_position:asc;sorting_position:desc`'
+                    name: sort
+                    schema:
+                        type: string
                     required: false
                     in: query
     /getRoomsUnassigned:

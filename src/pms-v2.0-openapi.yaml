@@ -881,7 +881,7 @@ paths:
   /market-segmentation/v1/groups:
     get:
       tags:
-        - market-segmentation-groups
+        - 'Market Segmentation'
       summary: 'Get a list of Market Segmentation Groups.'
       operationId: 'GroupController::index'
       parameters:
@@ -940,7 +940,7 @@ paths:
             - 'read:marketsegment'
     post:
       tags:
-        - market-segmentation-groups
+        - 'Market Segmentation'
       summary: 'Create a new Market Segmentation Group.'
       operationId: 'GroupController::create'
       parameters:
@@ -997,7 +997,7 @@ paths:
   '/market-segmentation/v1/groups/{id}':
     get:
       tags:
-        - market-segmentation-groups
+        - 'Market Segmentation'
       summary: 'Get Market Segmentation Group data.'
       operationId: 'GroupController::single'
       parameters:
@@ -1053,7 +1053,7 @@ paths:
             - 'read:marketsegment'
     delete:
       tags:
-        - market-segmentation-groups
+        - 'Market Segmentation'
       summary: 'Delete a Market Segmentation Group.'
       operationId: 'GroupController::delete'
       parameters:
@@ -1109,7 +1109,7 @@ paths:
             - 'delete:marketsegment'
     patch:
       tags:
-        - market-segmentation-groups
+        - 'Market Segmentation'
       summary: 'Update a Market Segmentation Group.'
       operationId: 'GroupController::update'
       parameters:
@@ -1173,7 +1173,7 @@ paths:
   '/market-segmentation/v1/groups/{id}/enable':
     post:
       tags:
-        - market-segmentation-groups
+        - 'Market Segmentation'
       summary: 'Enable a Market Segmentation Group.'
       operationId: 'GroupController::enable'
       parameters:
@@ -1230,7 +1230,7 @@ paths:
   '/market-segmentation/v1/groups/{id}/disable':
     post:
       tags:
-        - market-segmentation-groups
+        - 'Market Segmentation'
       summary: 'Disable a Market Segmentation Group.'
       operationId: 'GroupController::disable'
       parameters:
@@ -1363,7 +1363,7 @@ paths:
   '/market-segmentation/v1/segments/{id}':
     get:
       tags:
-        - market-segmentation-segments
+        - 'Market Segmentation'
       summary: 'Get Market Segmentation Segment data.'
       operationId: 'SegmentController::single'
       parameters:
@@ -1419,7 +1419,7 @@ paths:
             - 'read:marketsegment'
     delete:
       tags:
-        - market-segmentation-segments
+        - 'Market Segmentation'
       summary: 'Delete a Market Segmentation Segment.'
       operationId: 'SegmentController::delete'
       parameters:
@@ -1475,7 +1475,7 @@ paths:
             - 'delete:marketsegment'
     patch:
       tags:
-        - market-segmentation-segments
+        - 'Market Segmentation'
       summary: 'Update a Market Segmentation Segment.'
       operationId: 'SegmentController::update'
       parameters:
@@ -1539,7 +1539,7 @@ paths:
   '/market-segmentation/v1/segments/{id}/reservations/{active}':
     get:
       tags:
-        - market-segmentation-segments
+        - 'Market Segmentation'
       summary: 'Get a list of reservations linked to a Market Segmentation Segment.'
       operationId: 'SegmentController::reservations'
       parameters:
@@ -1615,7 +1615,7 @@ paths:
   /market-segmentation/v1/segments:
     post:
       tags:
-        - market-segmentation-segments
+        - 'Market Segmentation'
       summary: 'Create a new Market Segmentation Segment.'
       operationId: 'SegmentController::create'
       parameters:
@@ -1672,7 +1672,7 @@ paths:
   '/market-segmentation/v1/segments/{id}/enable':
     post:
       tags:
-        - market-segmentation-segments
+        - 'Market Segmentation'
       summary: 'Enable a Market Segmentation Segment.'
       operationId: 'SegmentController::enable'
       parameters:
@@ -1729,7 +1729,7 @@ paths:
   '/market-segmentation/v1/segments/{id}/disable':
     post:
       tags:
-        - market-segmentation-segments
+        - 'Market Segmentation'
       summary: 'Disable a Market Segmentation Segment.'
       operationId: 'SegmentController::disable'
       parameters:
@@ -1786,7 +1786,7 @@ paths:
   '/market-segmentation/v1/segments/{id}/default':
     post:
       tags:
-        - market-segmentation-segments
+        - 'Market Segmentation'
       summary: 'Set Market Segmentation Segment as Default.'
       operationId: 'SegmentController::default'
       parameters:
@@ -2135,7 +2135,7 @@ paths:
   /rooms/v1/out-of-service:
     post:
       tags:
-        - rooms
+        - Rooms
       summary: 'Room out of service'
       operationId: 'OutOfServiceController::make'
       requestBody:
@@ -4600,8 +4600,8 @@ tags:
     name: Items
     description: Items
   -
-    name: market-segmentation-groups
-    description: market-segmentation-groups
+    name: 'Market Segmentation'
+    description: 'Market Segmentation'
   -
     name: market-segmentation-segments
     description: market-segmentation-segments
@@ -4609,5 +4609,5 @@ tags:
     name: 'Rate Plans'
     description: 'Rate Plans'
   -
-    name: rooms
-    description: rooms
+    name: Rooms
+    description: Rooms
