@@ -1,1 +1,493 @@
-{"openapi":"3.0.1","info":{"title":"Pay by Link","version":"v0"},"servers":[{"url":"https://api.cloudbeds.com/payments/v2","description":"Generated server url"}],"paths":{"/pay-by-link":{"post":{"tags":["Pay By Link"],"summary":"Create a Pay By Link","operationId":"create","parameters":[{"name":"X-Property-Id","in":"header","description":"The property ID of the client","required":true,"schema":{"type":"string"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/PblCreateRequest"}}},"required":true},"responses":{"400":{"description":"Bad Request","content":{"*/*":{"schema":{"$ref":"#/components/schemas/ResponseError"}}}},"200":{"description":"OK","content":{"application/json":{"schema":{"type":"object"}}}}}}},"/pay-by-link/{uuid}":{"get":{"tags":["Pay By Link"],"summary":"Retrieve a Pay By Link","operationId":"getUrl","parameters":[{"name":"uuid","in":"path","description":"The pay by link UUID.","required":true,"schema":{"type":"string"}}],"responses":{"400":{"description":"Pay By Link not found","content":{"*/*":{"schema":{"$ref":"#/components/schemas/ResponseError"}}}},"500":{"description":"Internal Server Error","content":{"application/json":{"schema":{"type":"object"}}}},"200":{"description":"The pay by link associated to the UUID","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PblGetResponse"}}}},"401":{"description":"Unauthorized","content":{"application/json":{"schema":{"type":"object"}}}}}}}},"components":{"schemas":{"ResponseError":{"type":"object","properties":{"timestamp":{"type":"integer","format":"int64"},"errors":{"type":"object","additionalProperties":{"uniqueItems":true,"type":"array","items":{"type":"string"}}}}},"InventoryObjectCreateRequest":{"required":["id","type"],"type":"object","properties":{"type":{"type":"string","description":"The inventory object type. This may be `confirmation_number`, `group_profile`, `house_account`,\n`reservation`, or `reservation_room`.\n\n`confirmation_number` should be used when referencing the external reservation ID from the Cloudbeds API.\n"},"id":{"type":"string","description":"The ID of the inventory object.\n"}}},"PblCreateRequest":{"required":["inventoryObject","paid"],"type":"object","properties":{"paid":{"minimum":0.0,"exclusiveMinimum":true,"type":"number","description":"The amount the pay by link should charge.\n","format":"double"},"description":{"type":"string","description":"The description of the charge. Can be used to show the customer what the pay by link is for.\n"},"inventoryObject":{"$ref":"#/components/schemas/InventoryObjectCreateRequest"},"propertyId":{"type":"string","description":"The property ID associated with the InventoryObject\n"},"folio_id":{"minimum":0,"type":"integer","description":"The folio ID to associate this pay by link to.\nIf not provided, then the pay by link will be associated to the default folio.\n","format":"int64"},"expires_after":{"maximum":30,"minimum":0,"type":"integer","description":"The number of days the pay by link should be valid for.\nPay by links may be valid up to 30 days.\n","format":"int32"},"auth_payment":{"type":"boolean","description":"If set to true, the payment will be authorized first and then captured at a later time.\n"}}},"CaptureMethod":{"type":"object","properties":{"paymentMethod":{"type":"string"},"captureMethod":{"type":"string"}},"description":"The capture method of the pay by link. May be `charge` or `auth`\n"},"Money":{"type":"object","properties":{"value":{"type":"number","format":"double"},"currency":{"type":"string"}},"description":"The amount and currency the pay by link is for.\n"},"PblGetResponse":{"type":"object","properties":{"id":{"type":"string","description":"The UUID of the pay by link\n"},"propertyId":{"type":"integer","description":"The property ID this pay by link is associated to\n","format":"int64"},"folioId":{"type":"integer","description":"The folio ID this pay by link is associated to.\n    May be null, or 0 if not set, or associated to the default folio\n","format":"int64"},"payByLinkStatus":{"type":"string","description":"The status of the pay by link. May be `sent`, `viewed`, `paid`,\n    `expired`, `cancelled`, or `3DSProcessing`\n"},"completedAt":{"type":"string","description":"If the pay by link has been completed, null otherwise\n","format":"date-time"},"expiresAt":{"type":"string","description":"When the pay by link is set to expire\n","format":"date-time"},"createdAt":{"type":"string","description":"When the pay by link was created\n","format":"date-time"},"captureMethod":{"$ref":"#/components/schemas/CaptureMethod"},"cost":{"$ref":"#/components/schemas/Money"},"notes":{"type":"string","description":"The description set on the pay by link\n"},"expired":{"type":"boolean","description":"`true` if the pay by link is expired and `false` otherwise\n"},"paid":{"type":"boolean","description":"`true` if the pay by link has been paid and `false` otherwise\n"},"readyForPayment":{"type":"boolean","description":"`true` if the pay by link is ready for payment\n"}}}}}}
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Pay By Link API",
+    "description": "API for creating and managing payment links",
+    "version": "2.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.cloudbeds.com/payments/v2",
+      "description": "Production server"
+    },
+    {
+      "url": "https://api.cloudbeds-stage.com/payments/v2",
+      "description": "Staging server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/pay-by-link": {
+      "post": {
+        "tags": [
+          "Pay By Link"
+        ],
+        "summary": "Create a Pay By Link",
+        "operationId": "create",
+        "parameters": [
+          {
+            "name": "X-Property-Id",
+            "in": "header",
+            "description": "The property ID of the client",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PblCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "text/plain": {}
+            }
+          },
+          "200": {
+            "description": "Successfully created pay by link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PblCreateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/pay-by-link/{uuid}": {
+      "get": {
+        "tags": [
+          "Pay By Link"
+        ],
+        "summary": "Retrieve a Pay By Link",
+        "operationId": "getUrl",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "description": "The pay by link UUID.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Pay By Link not found",
+            "content": {
+              "text/plain": {}
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "The pay by link associated to the UUID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PblGetResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ResponseError": {
+        "required": [
+          "errors",
+          "timestamp"
+        ],
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "integer",
+            "description": "Unix timestamp in milliseconds when the error occurred",
+            "format": "int64",
+            "example": 1698765432100
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "uniqueItems": true,
+              "type": "array",
+              "description": "Map of error messages grouped by field name or error key. Each key represents a field or error category with associated error messages",
+              "example": {
+                "amount": [
+                  "Amount must be greater than zero"
+                ],
+                "propertyId": [
+                  "Property ID is required"
+                ],
+                "validation": [
+                  "Invalid request format"
+                ]
+              },
+              "items": {
+                "type": "string",
+                "description": "Map of error messages grouped by field name or error key. Each key represents a field or error category with associated error messages",
+                "example": "{\"amount\":[\"Amount must be greater than zero\"],\"propertyId\":[\"Property ID is required\"],\"validation\":[\"Invalid request format\"]}"
+              }
+            },
+            "description": "Map of error messages grouped by field name or error key. Each key represents a field or error category with associated error messages",
+            "example": {
+              "amount": [
+                "Amount must be greater than zero"
+              ],
+              "propertyId": [
+                "Property ID is required"
+              ],
+              "validation": [
+                "Invalid request format"
+              ]
+            }
+          }
+        },
+        "description": "Standard error response for Pay-by-Link API endpoints",
+        "example": {
+          "timestamp": 1698765432100,
+          "errors": {
+            "amount": [
+              "Amount must be greater than zero",
+              "Amount cannot exceed limit"
+            ],
+            "propertyId": [
+              "Property ID is required"
+            ]
+          }
+        }
+      },
+      "InventoryObjectCreateRequest": {
+        "required": [
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The inventory object type. This may be `confirmation_number`, `group_profile`, `house_account`,\n`reservation`, or `reservation_room`.\n\n`confirmation_number` should be used when referencing the external reservation ID from the Cloudbeds API.\n",
+            "example": "confirmation_number"
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the inventory object.\n",
+            "example": "123456"
+          }
+        },
+        "description": "Inventory object that the payment is associated with."
+      },
+      "PblCreateRequest": {
+        "required": [
+          "inventoryObject",
+          "paid"
+        ],
+        "type": "object",
+        "properties": {
+          "paid": {
+            "minimum": 0.0,
+            "exclusiveMinimum": true,
+            "type": "number",
+            "description": "The amount to charge via the payment link. Must be greater than 0",
+            "format": "double",
+            "example": 100.0
+          },
+          "description": {
+            "maxLength": 255,
+            "type": "string",
+            "description": "Description of the created payment posted to folio. Explains what the payment is for",
+            "nullable": true,
+            "example": "Balance for your stay at Hotel California"
+          },
+          "inventoryObject": {
+            "$ref": "#/components/schemas/InventoryObjectCreateRequest"
+          },
+          "propertyId": {
+            "type": "string",
+            "description": "The property ID associated with the inventory object. Must be a valid Cloudbeds property ID",
+            "example": "210643"
+          },
+          "folio_id": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "The folio ID to associate the payment created with this pay by link to. If not provided, the payment will be associated to the default folio",
+            "format": "int64",
+            "nullable": true,
+            "example": 123456
+          },
+          "expires_after": {
+            "maximum": 30,
+            "minimum": 0,
+            "type": "integer",
+            "description": "Number of days the payment link remains valid. Maximum 30 days",
+            "format": "int32",
+            "example": 7,
+            "default": 7
+          },
+          "auth_payment": {
+            "type": "boolean",
+            "description": "Payment capture method. Set to false for immediate payment collection, true for card authorization only (capture later via PMS UI)",
+            "example": false,
+            "default": false
+          }
+        },
+        "description": "Request model for creating a new pay-by-link payment request",
+        "example": {
+          "folio_id": 123456,
+          "paid": 150.5,
+          "expires_after": 7,
+          "description": "Balance for your stay at Hotel California",
+          "auth_payment": false,
+          "inventoryObject": {
+            "type": "reservation",
+            "id": "789012"
+          },
+          "propertyId": "210643"
+        }
+      },
+      "PblCreateResponse": {
+        "required": [
+          "expires_at",
+          "id",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The payment link URL to send to the customer. This URL directs them to the secure payment page",
+            "format": "uri",
+            "example": "https://pay-by-link.cloudbeds.com/#/payment/123e4567-e89b-12d3-a456-426614174000"
+          },
+          "id": {
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "type": "string",
+            "description": "Unique identifier (UUID) for the created payment link. Use this to track and manage the payment link",
+            "format": "uuid",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "expires_at": {
+            "type": "string",
+            "description": "Expiration date and time for the payment link. After this time, the link will no longer accept payments",
+            "format": "date-time"
+          }
+        },
+        "description": "Response model returned after successfully creating a pay-by-link payment request",
+        "example": {
+          "url": "https://pay-by-link.cloudbeds.com/#/payment/123e4567-e89b-12d3-a456-426614174000",
+          "id": "123e4567-e89b-12d3-a456-426614174000",
+          "expires_at": "2024-12-31T23:59:59"
+        }
+      },
+      "CaptureMethod": {
+        "type": "object",
+        "properties": {
+          "paymentMethod": {
+            "type": "string"
+          },
+          "captureMethod": {
+            "type": "string"
+          }
+        },
+        "description": "Payment capture method. `charge` for immediate payment, `auth` for authorization only",
+        "example": "charge",
+        "enum": [
+          "charge",
+          "auth"
+        ]
+      },
+      "Money": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "description": "Payment amount and currency details"
+      },
+      "PblGetResponse": {
+        "required": [
+          "captureMethod",
+          "cost",
+          "createdAt",
+          "expired",
+          "expiresAt",
+          "id",
+          "paid",
+          "payByLinkStatus",
+          "propertyId",
+          "readyForPayment"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier (UUID) of the payment link",
+            "format": "uuid",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "propertyId": {
+            "type": "integer",
+            "description": "The Cloudbeds property ID this payment link is associated with",
+            "format": "int64",
+            "example": 210643
+          },
+          "folioId": {
+            "type": "integer",
+            "description": "The folio ID this payment link is associated with. May be null, 0, or indicate the default folio",
+            "format": "int64",
+            "nullable": true,
+            "example": 123456
+          },
+          "payByLinkStatus": {
+            "type": "string",
+            "description": "Current status of the payment link",
+            "example": "SENT",
+            "enum": [
+              "SENT",
+              "VIEWED",
+              "PAID",
+              "EXPIRED",
+              "CANCELLED",
+              "3DSPROCESSING"
+            ]
+          },
+          "completedAt": {
+            "type": "string",
+            "description": "Timestamp when the payment was completed. Null if payment is not yet complete",
+            "format": "date-time",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "Timestamp when the payment link will expire and no longer accept payments",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Timestamp when the payment link was created",
+            "format": "date-time"
+          },
+          "captureMethod": {
+            "$ref": "#/components/schemas/CaptureMethod"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "notes": {
+            "maxLength": 255,
+            "type": "string",
+            "description": "Description of the created payment posted to folio. Explains what the payment is for",
+            "nullable": true,
+            "example": "Balance for your stay at Hotel California"
+          },
+          "expired": {
+            "type": "boolean",
+            "description": "Indicates whether the payment link has expired",
+            "example": false
+          },
+          "paid": {
+            "type": "boolean",
+            "description": "Indicates whether the payment has been completed",
+            "example": false
+          },
+          "readyForPayment": {
+            "type": "boolean",
+            "description": "Indicates whether the payment link is active and ready to accept payments",
+            "example": true
+          }
+        },
+        "description": "Response model containing detailed information about a pay-by-link payment request",
+        "example": {
+          "id": "123e4567-e89b-12d3-a456-426614174000",
+          "propertyId": 210643,
+          "folioId": 123456,
+          "payByLinkStatus": "SENT",
+          "completedAt": null,
+          "expiresAt": "2024-12-31T23:59:59",
+          "createdAt": "2024-11-01T10:00:00",
+          "captureMethod": "charge",
+          "cost": {
+            "amount": 150.5,
+            "currency": "USD"
+          },
+          "notes": "Balance for stay",
+          "expired": false,
+          "paid": false,
+          "readyForPayment": true
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "JWT Bearer token authentication",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
