@@ -56,16 +56,6 @@
               "text/plain": {}
             }
           },
-          "200": {
-            "description": "Successfully created pay by link",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PblCreateResponse"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -80,6 +70,16 @@
             "description": "Internal Server Error",
             "content": {
               "text/plain": {}
+            }
+          },
+          "200": {
+            "description": "Successfully created pay by link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PblCreateResponse"
+                }
+              }
             }
           }
         },
@@ -125,6 +125,12 @@
               }
             }
           },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {}
+            }
+          },
           "200": {
             "description": "The pay by link associated to the UUID",
             "content": {
@@ -133,12 +139,6 @@
                   "$ref": "#/components/schemas/PblGetResponse"
                 }
               }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "text/plain": {}
             }
           }
         },
@@ -285,7 +285,7 @@
           },
           "auth_payment": {
             "type": "boolean",
-            "description": "Payment capture method. Set to false for immediate payment collection, true for card authorization only (capture later via PMS UI)",
+            "description": "The parameter is used to determine if the pay by link is supposed to collect a payment immediately using `false`, OR run an authorization on the card [that can be captured from our within PMS UI later on] using `true`.",
             "example": false,
             "default": false
           }
