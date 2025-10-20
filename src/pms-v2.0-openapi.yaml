@@ -26,7 +26,7 @@ paths:
         -
           name: scopes
           in: query
-          description: 'List of OAuth scopes to filter by.  Only API clients that have all specified scopes will be returned.'
+          description: 'List of OAuth scopes to filter by. Only API clients that have all specified scopes will be returned.'
           required: false
           style: form
           explode: false
@@ -1840,12 +1840,12 @@ paths:
         -
           default:
             - 'write:marketsegment'
-  /rates/v1/rate-plans:
+  /property/v1/system:
     get:
       tags:
-        - 'Rate Plans'
-      summary: 'Get a list of Rates Plans.'
-      operationId: 'RatePlanController::index'
+        - Property
+      summary: 'Retrieves the property''s system component versions'
+      operationId: 'SystemController::getSystem'
       parameters:
         -
           name: x-property-id
@@ -1855,99 +1855,39 @@ paths:
           schema:
             type: string
             example: '1,2,3'
-        -
-          name: offset
-          in: query
-          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
-          required: false
-          schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
-          example: '0'
-        -
-          name: limit
-          in: query
-          description: 'The maximum number of items to return in the response. Default is 100.'
-          required: false
-          schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
-          example: '100'
       responses:
         '200':
-          description: 'List of Rates Plans.'
+          description: 'Successfully retrieved property features'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RatePlanListResponseSchema'
+                $ref: '#/components/schemas/SystemResponseSchema'
         '400':
-          description: 'Bad request response.'
+          description: 'Bad Request - Invalid input parameters or business rule violation'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestResponseSchema'
-        '403':
-          description: 'Forbidden response.'
+        '401':
+          description: 'Unauthorized - Invalid or missing authentication'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenResponseSchema'
-        '500':
-          description: 'Internal server error.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
-      security:
-        -
-          default:
-            - 'read:rates'
-    post:
-      tags:
-        - 'Rate Plans'
-      summary: 'Create a new Rate Plan.'
-      operationId: 'RatePlanController::create'
-      parameters:
-        -
-          name: x-property-id
-          in: header
-          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
-          required: true
-          schema:
-            type: string
-            example: '1,2,3'
-      requestBody:
-        description: 'Rate Plan data.'
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RatePlanCreateRequestSchema'
-      responses:
-        '201':
-          description: 'Created Rate Plan.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RatePlanResponseSchema'
-        '400':
-          description: 'Bad request response.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BadRequestResponseSchema'
         '403':
-          description: 'Forbidden response.'
+          description: 'Forbidden - Insufficient permissions'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenResponseSchema'
         '404':
-          description: 'Not found response.'
+          description: 'Not Found - Property not found'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundResponseSchema'
         '500':
-          description: 'Internal server error.'
+          description: 'Internal Server Error'
           content:
             application/json:
               schema:
@@ -1955,125 +1895,14 @@ paths:
       security:
         -
           default:
-            - 'write:rates'
-  '/rates/v1/rate-plans/{id}':
-    get:
-      tags:
-        - 'Rate Plans'
-      summary: 'Get Rate Plan data.'
-      operationId: 'RatePlanController::single'
-      parameters:
-        -
-          name: x-property-id
-          in: header
-          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
-          required: true
-          schema:
-            type: string
-            example: '1,2,3'
-        -
-          name: id
-          in: path
-          description: 'Rate Plan ID.'
-          required: true
-          schema:
-            $ref: '#/components/schemas/RatePlanSingleRequestSchema/properties/id'
-      responses:
-        '200':
-          description: 'Rate Plan data.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RatePlanResponseSchema'
-        '400':
-          description: 'Bad request response.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BadRequestResponseSchema'
-        '403':
-          description: 'Forbidden response.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForbiddenResponseSchema'
-        '404':
-          description: 'Not Found response.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotFoundResponseSchema'
-        '500':
-          description: 'Internal Server Error.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
-      security:
-        -
-          default:
-            - 'read:rates'
-    delete:
-      tags:
-        - 'Rate Plans'
-      summary: 'Delete a Rate Plan.'
-      operationId: 'RatePlanController::delete'
-      parameters:
-        -
-          name: x-property-id
-          in: header
-          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
-          required: true
-          schema:
-            type: string
-            example: '1,2,3'
-        -
-          name: id
-          in: path
-          description: 'Rate Plan ID.'
-          required: true
-          schema:
-            $ref: '#/components/schemas/RatePlanDeleteRequestSchema/properties/id'
-      responses:
-        '204':
-          description: 'Rate Plan was deleted.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NoContentResponseSchema'
-        '400':
-          description: 'Bad request response.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BadRequestResponseSchema'
-        '403':
-          description: 'Forbidden response.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForbiddenResponseSchema'
-        '404':
-          description: 'Not found response.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotFoundResponseSchema'
-        '500':
-          description: 'Internal server error.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
-      security:
-        -
-          default:
-            - 'delete:rates'
+            - 'read:hotel'
+  '/reservation/v1/reservations/{reservationId}/rooms/{reservationRoomId}':
     patch:
       tags:
-        - 'Rate Plans'
-      summary: 'Update an existing Rate Plan.'
-      operationId: 'RatePlanController::update'
+        - Reservations
+      summary: 'Update room assignment for a reservation'
+      description: 'Assign, reassign, or unassign a room to/from a reservation booking room'
+      operationId: 'ReservationRoomController::updateRoom'
       parameters:
         -
           name: x-property-id
@@ -2084,46 +1913,71 @@ paths:
             type: string
             example: '1,2,3'
         -
-          name: id
+          name: reservationId
           in: path
-          description: 'Rate Plan ID.'
+          description: 'Reservation identifier'
           required: true
           schema:
-            $ref: '#/components/schemas/RatePlanUpdateRequestSchema/properties/id'
+            type: string
+            example: '12345'
+        -
+          name: reservationRoomId
+          in: path
+          description: 'Reservation room identifier'
+          required: true
+          schema:
+            type: string
+            example: '67890'
       requestBody:
-        description: 'Rate Plan data.'
+        description: 'Room update data'
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RatePlanUpdateRequestSchema'
+              properties:
+                roomId:
+                  description: 'Room ID to assign (format: ''roomTypeId-roomNumber''), or null to unassign'
+                  type: string
+                  example: 10-101
+                  nullable: true
+                adjustPrice:
+                  description: 'Whether to adjust price if room assignment changes rate'
+                  type: boolean
+                  default: false
+              type: object
       responses:
         '200':
-          description: 'Updated Rate Plan.'
+          description: 'Room updated successfully'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RatePlanResponseSchema'
+                $ref: '#/components/schemas/UpdateReservationRoomResponseSchema'
         '400':
-          description: 'Bad request response.'
+          description: 'Bad Request - Invalid input data'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
         '403':
-          description: 'Forbidden response.'
+          description: 'Forbidden response'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenResponseSchema'
         '404':
-          description: 'Not found response.'
+          description: 'Not Found - Reservation or reservation room not found'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundResponseSchema'
         '500':
-          description: 'Internal server error.'
+          description: 'Internal server error'
           content:
             application/json:
               schema:
@@ -2131,7 +1985,7 @@ paths:
       security:
         -
           default:
-            - 'write:rates'
+            - 'hotel:write'
   /rooms/v1/out-of-service:
     post:
       tags:
@@ -2179,6 +2033,648 @@ components:
         - feature.distribution.market-segmentation
         - feature.distribution.market-segmentation-enable-custom-group
         - feature.inventory.rate-plans
+        - feature.distribution.age-policy-new-system-enabled
+        - feature.distribution.age-policy-dual-write-enabled
+        - feature.distribution.age-policy-validation-enabled
+        - feature.distribution.age-policy-auto-rollback-enabled
+        - feature.distribution.age-policy-centralized-service-layer
+    AgePolicyCreateRequestSchema:
+      required:
+        - config
+        - providesCribs
+        - extraGuestsConfig
+      properties:
+        config:
+          description: Configuration.
+          type: string
+          enum:
+            - single
+            - multiple
+          example: single
+        providesCribs:
+          description: 'Does property provide cribs?'
+          type: boolean
+          example: true
+        extraGuestsConfig:
+          description: 'Extra guests configuration.'
+          type: string
+          enum:
+            - per_age_group
+            - per_each_guest
+          example: per_age_group
+        customLabel:
+          description: 'Custom label (Adults or Guests)'
+          type: string
+          example: Adults
+          nullable: true
+      type: object
+    AgePolicySingleRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Age Policy ID.'
+          type: string
+          example: 1-b
+      type: object
+    AgePolicyUpdateRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Age Policy ID.'
+          type: string
+          example: 1-b
+        config:
+          description: Configuration.
+          type: string
+          enum:
+            - single
+            - multiple
+          example: single
+          nullable: true
+        providesCribs:
+          description: 'Does property provide cribs?'
+          type: boolean
+          example: true
+          nullable: true
+        extraGuestsConfig:
+          description: 'Extra guests configuration.'
+          type: string
+          enum:
+            - per_age_group
+            - per_each_guest
+          example: per_age_group
+          nullable: true
+        customLabel:
+          description: 'Custom label (Adults or Guests)'
+          type: string
+          example: Adults
+          nullable: true
+      type: object
+    AgePolicyListResponseSchema:
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgePolicyResponseSchema'
+          nullable: true
+      type: object
+    AgePolicyResponseSchema:
+      required:
+        - id
+        - config
+        - providesCribs
+        - extraGuestsConfig
+        - createdAt
+      properties:
+        id:
+          type: string
+        config:
+          type: string
+        providesCribs:
+          type: boolean
+        customLabel:
+          type: string
+          nullable: true
+        extraGuestsConfig:
+          type: string
+        createdAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+        updatedAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+          nullable: true
+      type: object
+    AllotmentBlockAutoReleaseScheduleCreateRequestSchema:
+      required:
+        - releaseDate
+        - allotmentBlockId
+        - roomTypeId
+        - startDate
+        - endDate
+        - releaseValueType
+        - releaseValue
+      properties:
+        releaseDate:
+          type: string
+          example: '2025-01-01'
+        allotmentBlockId:
+          type: string
+          example: '10'
+        roomTypeId:
+          type: string
+          example: '5'
+        startDate:
+          type: string
+          example: '2025-01-01'
+        endDate:
+          type: string
+          example: '2025-01-07'
+        releaseValueType:
+          type: string
+          example: quantity
+        releaseValue:
+          type: integer
+          example: 5
+        releaseUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+      type: object
+    AllotmentBlockAutoReleaseScheduleDeleteRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          example: '123'
+        allotmentBlockId:
+          type: string
+          example: '10'
+      type: object
+    AllotmentBlockAutoReleaseScheduleListRequestSchema:
+      required:
+        - allotmentBlockId
+      properties:
+        allotmentBlockId:
+          type: string
+          example: '10'
+        roomTypeIds:
+          description: 'Filter by room type IDs. Comma-separated list of room type IDs. Values passed as strings to avoid precision loss'
+          type: string
+          example: '5,6'
+          nullable: true
+        releaseDate:
+          description: 'Filter by schedule release date. Use single date (2025-01-01) or range (2025-01-01..2025-01-31)'
+          type: string
+          example: 2025-01-01..2025-01-31
+          nullable: true
+        startDate:
+          description: 'Filter by schedule start date. Use single date (2025-01-01) or range (2025-01-01..2025-01-31)'
+          type: string
+          example: 2025-01-01..2025-01-31
+          nullable: true
+        endDate:
+          description: 'Filter by schedule end date. Use single date (2025-01-01) or range (2025-01-01..2025-01-31)'
+          type: string
+          example: 2025-01-01..2025-01-31
+          nullable: true
+      type: object
+    AllotmentBlockAutoReleaseScheduleUpdateRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          example: '123'
+        releaseDate:
+          type: string
+          example: '2025-01-01'
+          nullable: true
+        allotmentBlockId:
+          type: string
+          example: '10'
+          nullable: true
+        roomTypeId:
+          type: string
+          example: '5'
+          nullable: true
+        startDate:
+          type: string
+          example: '2025-01-01'
+          nullable: true
+        endDate:
+          type: string
+          example: '2025-01-07'
+          nullable: true
+        releaseValueType:
+          type: string
+          example: quantity
+          nullable: true
+        releaseValue:
+          type: integer
+          example: 5
+          nullable: true
+        releaseUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+      type: object
+    AllotmentBlockAutoReleaseScheduleBulkCreateItemSchema:
+      required:
+        - releaseDate
+        - roomTypeId
+        - startDate
+        - endDate
+        - releaseValueType
+        - releaseValue
+      properties:
+        releaseDate:
+          type: string
+          example: '2025-01-01'
+        roomTypeId:
+          type: string
+          example: '5'
+        startDate:
+          type: string
+          example: '2025-01-01'
+        endDate:
+          type: string
+          example: '2025-01-07'
+        releaseValueType:
+          type: string
+          example: quantity
+        releaseValue:
+          type: integer
+          example: 5
+        releaseUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+      type: object
+    AllotmentBlockAutoReleaseScheduleBulkCreateRequestSchema:
+      required:
+        - allotmentBlockId
+        - items
+      properties:
+        allotmentBlockId:
+          type: string
+          example: '10'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllotmentBlockAutoReleaseScheduleBulkCreateItemSchema'
+      type: object
+    AllotmentBlockAutoReleaseScheduleBulkUpdateItemSchema:
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          example: '123'
+        releaseDate:
+          type: string
+          example: '2025-01-01'
+          nullable: true
+        allotmentBlockId:
+          type: string
+          example: '10'
+          nullable: true
+        roomTypeId:
+          type: string
+          example: '5'
+          nullable: true
+        startDate:
+          type: string
+          example: '2025-01-01'
+          nullable: true
+        endDate:
+          type: string
+          example: '2025-01-07'
+          nullable: true
+        releaseValueType:
+          type: string
+          example: quantity
+          nullable: true
+        releaseValue:
+          type: integer
+          example: 5
+          nullable: true
+        releaseUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+      type: object
+    AllotmentBlockAutoReleaseScheduleBulkUpdateRequestSchema:
+      required:
+        - allotmentBlockId
+        - items
+      properties:
+        allotmentBlockId:
+          type: string
+          example: '10'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllotmentBlockAutoReleaseScheduleBulkUpdateItemSchema'
+      type: object
+    AllotmentBlockReleaseCreateRequestSchema:
+      required:
+        - allotmentBlockId
+        - roomTypeId
+        - startDate
+        - endDate
+        - releasedQuantity
+      properties:
+        allotmentBlockId:
+          type: string
+          example: '10'
+        roomTypeId:
+          type: string
+          example: '5'
+        startDate:
+          type: string
+          example: '2025-01-01'
+        endDate:
+          type: string
+          example: '2025-01-07'
+        releasedQuantity:
+          type: integer
+          example: 3
+        releasedUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+      type: object
+    AllotmentBlockReleaseDeleteRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          example: '123'
+        allotmentBlockId:
+          type: string
+          example: '10'
+      type: object
+    AllotmentBlockReleaseListRequestSchema:
+      properties:
+        roomTypeIds:
+          description: 'Filter by room type IDs. Comma-separated list of room type IDs. Values passed as strings to avoid precision loss'
+          type: string
+          example: '657822,657825'
+          nullable: true
+        releaseDate:
+          description: 'Filter by release date. Use single date (2025-01-01) or range (2025-01-01..2025-01-31)'
+          type: string
+          example: 2025-01-01..2025-01-31
+          nullable: true
+        startDate:
+          description: 'Filter by schedule start date. Use single date (2025-01-01) or range (2025-01-01..2025-01-31)'
+          type: string
+          example: 2025-01-01..2025-01-31
+          nullable: true
+        endDate:
+          description: 'Filter by schedule end date. Use single date (2025-01-01) or range (2025-01-01..2025-01-31)'
+          type: string
+          example: 2025-01-01..2025-01-31
+          nullable: true
+      type: object
+    AllotmentBlockReleaseUpdateRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          example: '123'
+        allotmentBlockId:
+          type: string
+          example: '10'
+          nullable: true
+        roomTypeId:
+          type: string
+          example: '5'
+          nullable: true
+        startDate:
+          type: string
+          example: '2025-01-01'
+          nullable: true
+        endDate:
+          type: string
+          example: '2025-01-07'
+          nullable: true
+        releasedQuantity:
+          type: integer
+          example: 3
+          nullable: true
+        releasedUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+      type: object
+    AllotmentBlockReleaseBulkCreateItemSchema:
+      required:
+        - roomTypeId
+        - startDate
+        - endDate
+        - releasedQuantity
+      properties:
+        roomTypeId:
+          type: string
+          example: '5'
+        startDate:
+          type: string
+          example: '2025-01-01'
+        endDate:
+          type: string
+          example: '2025-01-07'
+        releasedQuantity:
+          type: integer
+          example: 3
+        releasedUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+      type: object
+    AllotmentBlockReleaseBulkCreateRequestSchema:
+      required:
+        - allotmentBlockId
+        - items
+      properties:
+        allotmentBlockId:
+          type: string
+          example: '10'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllotmentBlockReleaseBulkCreateItemSchema'
+      type: object
+    AllotmentBlockReleaseBulkUpdateItemSchema:
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          example: '123'
+        allotmentBlockId:
+          type: string
+          example: '10'
+          nullable: true
+        roomTypeId:
+          type: string
+          example: '5'
+          nullable: true
+        startDate:
+          type: string
+          example: '2025-01-01'
+          nullable: true
+        endDate:
+          type: string
+          example: '2025-01-07'
+          nullable: true
+        releasedQuantity:
+          type: integer
+          example: 3
+          nullable: true
+        releasedUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+      type: object
+    AllotmentBlockReleaseBulkUpdateRequestSchema:
+      required:
+        - allotmentBlockId
+        - items
+      properties:
+        allotmentBlockId:
+          type: string
+          example: '10'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllotmentBlockReleaseBulkUpdateItemSchema'
+      type: object
+    AllotmentBlockAutoReleaseScheduleBulkResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllotmentBlockAutoReleaseScheduleResponseSchema'
+      type: object
+    AllotmentBlockAutoReleaseScheduleListResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllotmentBlockAutoReleaseScheduleResponseSchema'
+      type: object
+    AllotmentBlockAutoReleaseScheduleResponseSchema:
+      required:
+        - id
+        - propertyId
+        - releaseDate
+        - allotmentBlockId
+        - roomTypeId
+        - startDate
+        - endDate
+        - releaseValueType
+        - releaseValue
+        - releaseUnits
+        - appliedAt
+      properties:
+        id:
+          type: string
+          example: '123'
+        propertyId:
+          type: string
+          example: '1'
+        releaseDate:
+          type: string
+          example: '2025-01-01'
+        allotmentBlockId:
+          type: string
+          example: '10'
+        roomTypeId:
+          type: string
+          example: '5'
+        startDate:
+          type: string
+          example: '2025-01-01'
+        endDate:
+          type: string
+          example: '2025-01-07'
+        releaseValueType:
+          type: string
+          example: quantity
+        releaseValue:
+          type: integer
+          example: 5
+        releaseUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+        appliedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      type: object
+    AllotmentBlockReleaseBulkResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllotmentBlockReleaseResponseSchema'
+      type: object
+    AllotmentBlockReleaseListResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllotmentBlockReleaseResponseSchema'
+      type: object
+    AllotmentBlockReleaseResponseSchema:
+      required:
+        - id
+        - propertyId
+        - allotmentBlockId
+        - roomTypeId
+        - startDate
+        - endDate
+        - releasedQuantity
+        - releasedUnits
+      properties:
+        id:
+          type: string
+          example: '123'
+        propertyId:
+          type: string
+          example: '1'
+        allotmentBlockId:
+          type: string
+          example: '10'
+        roomTypeId:
+          type: string
+          example: '5'
+        startDate:
+          type: string
+          example: '2025-01-01'
+        endDate:
+          type: string
+          example: '2025-01-07'
+        releasedQuantity:
+          type: integer
+          example: 3
+        releasedUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      type: object
     ConnectedApplicationListRequestSchema:
       type: object
     ApplicationCollectionResponseSchema:
@@ -3857,6 +4353,33 @@ components:
         canDisable:
           type: boolean
       type: object
+    SystemRequestSchema: {  }
+    SystemFeatureResponseSchema:
+      description: 'System feature information'
+      required:
+        - name
+        - version
+      properties:
+        name:
+          description: 'Feature name'
+          type: string
+          example: occupancy
+        version:
+          description: 'Feature version'
+          type: string
+          example: '2.0'
+      type: object
+    SystemResponseSchema:
+      description: 'System features response'
+      required:
+        - features
+      properties:
+        features:
+          description: 'Array of system feature versions for this property'
+          type: array
+          items:
+            $ref: '#/components/schemas/SystemFeatureResponseSchema'
+      type: object
     RatePlanAddonRequestSchema:
       required:
         - addonId
@@ -4493,6 +5016,64 @@ components:
           format: 'Y-m-d\TH:i:sP'
           nullable: true
       type: object
+    UpdateReservationRoomRequestSchema:
+      required:
+        - reservationId
+        - reservationRoomId
+      properties:
+        reservationId:
+          description: 'Reservation ID'
+          type: string
+          example: '12345'
+        reservationRoomId:
+          description: 'Reservation Room ID'
+          type: string
+          example: '67890'
+        roomId:
+          description: 'Room ID to assign (format: ''roomTypeId-roomNumber''), or null to unassign'
+          type: string
+          example: 10-101
+          nullable: true
+        roomTypeId:
+          description: 'Room type ID to change to (without assigning specific room), or null'
+          type: integer
+          example: 15
+          nullable: true
+        adjustPrice:
+          description: 'Whether to adjust price if room assignment changes rate'
+          type: boolean
+          default: false
+      type: object
+    UpdateReservationRoomResponseSchema:
+      required:
+        - reservationRoomId
+        - roomId
+        - roomTypeId
+        - roomName
+        - total
+      properties:
+        reservationRoomId:
+          description: 'Reservation room ID that was updated'
+          type: integer
+        roomId:
+          description: 'Assigned room ID (null if unassigned)'
+          type: string
+          nullable: true
+        roomTypeId:
+          description: 'Room type ID'
+          type: integer
+          nullable: true
+        roomName:
+          description: 'Room name'
+          type: string
+          nullable: true
+        total:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Room total after assignment in the booking''s currency'
+      type: object
     OutOfServiceRequestSchema:
       required:
         - fromDate
@@ -4580,6 +5161,12 @@ components:
             'hotel:write': 'Write Hotel information'
             'hotel:delete': 'Delete Hotel information'
             'write:appError': 'Write AppError information'
+            'read:agePolicy': 'Read Age Policy information'
+            'write:agePolicy': 'Write Age Policy information'
+            'delete:agePolicy': 'Delete Age Policy information'
+            'write:allotmentBlocks': 'Write AllotmentBlock information'
+            'read:allotmentBlocks': 'Read AllotmentBlock information'
+            'delete:allotmentBlocks': 'Delete AllotmentBlock information'
 tags:
   -
     name: Applications
@@ -4600,8 +5187,11 @@ tags:
     name: 'Market Segmentation'
     description: 'Market Segmentation'
   -
-    name: 'Rate Plans'
-    description: 'Rate Plans'
+    name: Property
+    description: Property
+  -
+    name: Reservations
+    description: Reservations
   -
     name: Rooms
     description: Rooms

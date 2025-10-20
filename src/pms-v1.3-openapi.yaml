@@ -1742,29 +1742,168 @@ components:
                                 type: string
                                 format: date-time
                             sourceID:
-                                description: 'The third-party source ID for this group, can be null'
+                                description: 'The third-party source ID for this group, can be empty'
+                                type: string
+                            sourceName:
+                                description: 'The third-party source name for this group, can be empty'
                                 type: string
                             address1:
                                 description: Address
                                 type: string
+                                nullable: true
                             address2:
                                 description: Address2
                                 type: string
+                                nullable: true
                             city:
                                 description: City
                                 type: string
+                                nullable: true
                             zip:
                                 description: Zip
                                 type: string
+                                nullable: true
                             state:
                                 description: State
                                 type: string
+                                nullable: true
+                            countryCode:
+                                description: 'Country code'
+                                type: string
+                                nullable: true
                             commissionType:
                                 description: 'Commission type'
                                 type: string
                                 enum:
                                     - fixed
                                     - percent
+                                nullable: true
+                            taxDocumentType:
+                                description: 'Tax document type'
+                                type: string
+                                nullable: true
+                            taxIdNumber:
+                                description: 'Tax ID number'
+                                type: string
+                                nullable: true
+                            legalName:
+                                description: 'Legal name'
+                                type: string
+                                nullable: true
+                            contacts:
+                                description: 'Group contacts'
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        id:
+                                            description: 'Unique ID for a contact'
+                                            type: string
+                                        group_profile_id:
+                                            description: 'The group profile ID this contact belongs to'
+                                            type: string
+                                        primary:
+                                            description: 'Whether this is the primary contact'
+                                            type: boolean
+                                        anonymized:
+                                            description: 'Whether the contact is anonymized'
+                                            type: boolean
+                                        first_name:
+                                            description: 'Contact first name'
+                                            type: string
+                                        last_name:
+                                            description: 'Contact last name'
+                                            type: string
+                                        role:
+                                            description: 'Contact role'
+                                            type: string
+                                            nullable: true
+                                        status:
+                                            description: 'Contact status'
+                                            type: string
+                                            enum:
+                                                - active
+                                        created_at:
+                                            description: 'Contact creation time'
+                                            type: string
+                                            format: date-time
+                                        updated_at:
+                                            description: 'Contact last update time'
+                                            type: string
+                                            format: date-time
+                                        emails:
+                                            description: 'Contact email addresses'
+                                            type: array
+                                            items:
+                                                type: object
+                                                properties:
+                                                    type:
+                                                        description: 'Email type'
+                                                        type: string
+                                                        enum:
+                                                            - personal
+                                                            - business
+                                                    value:
+                                                        description: 'Email address value'
+                                                        type: string
+                                        phones:
+                                            description: 'Contact phone numbers'
+                                            type: array
+                                            items:
+                                                type: object
+                                                properties:
+                                                    type:
+                                                        description: 'Phone type'
+                                                        type: string
+                                                        enum:
+                                                            - home
+                                                            - work
+                                                            - cell_phone
+                                                            - fax
+                                                    value:
+                                                        description: 'Phone number value'
+                                                        type: string
+                                            nullable: true
+                                        is_billing_recipient:
+                                            description: 'Whether this contact is a billing recipient'
+                                            type: boolean
+                                        tax_id_number:
+                                            description: 'Contact tax ID number'
+                                            type: string
+                                            nullable: true
+                                        tax_document_type:
+                                            description: 'Contact tax document type'
+                                            type: string
+                                            nullable: true
+                                        legal_name:
+                                            description: 'Contact legal name'
+                                            type: string
+                                            nullable: true
+                                        address_1:
+                                            description: 'Contact address line 1'
+                                            type: string
+                                            nullable: true
+                                        address_2:
+                                            description: 'Contact address line 2'
+                                            type: string
+                                            nullable: true
+                                        city:
+                                            description: 'Contact city'
+                                            type: string
+                                            nullable: true
+                                        state:
+                                            description: 'Contact state'
+                                            type: string
+                                            nullable: true
+                                        country_code:
+                                            description: 'Contact country code'
+                                            type: string
+                                            nullable: true
+                                        zip:
+                                            description: 'Contact zip code'
+                                            type: string
+                                            nullable: true
+                                nullable: true
         PostPatchGroupRequest:
             type: object
             properties:
@@ -5055,8 +5194,11 @@ components:
                             items:
                                 type: object
                                 properties:
-                                    type:
-                                        description: 'Payment Type'
+                                    method:
+                                        description: 'Payment Method'
+                                        type: string
+                                    code:
+                                        description: 'Payment Code'
                                         type: string
                                     name:
                                         description: 'Payment Name (in given lang)'
@@ -6546,6 +6688,10 @@ components:
                                 format: date
                             allotmentBlockCode:
                                 description: 'Allotment block code'
+                                type: string
+                                nullable: true
+                            groupCode:
+                                description: 'Group profile code'
                                 type: string
                                 nullable: true
                             adults:
@@ -8322,12 +8468,13 @@ components:
                 roomBlockID:
                     description: 'Room block ID'
                     type: string
-                '"courtesy_hold"}':
-                    description: "roomBlockType Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold."
+                roomBlockType:
+                    description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold."
                     type: string
                     enum:
                         - blocked
                         - out_of_service
+                        - courtesy_hold
                 roomBlockReason:
                     description: 'Room block reason'
                     type: string
@@ -8900,6 +9047,101 @@ components:
                                                             -
                                                                 type: number
                                             nullable: true
+                                        lengthOfStaySettings:
+                                            description: 'Length of Stay configuration settings specific to this date range'
+                                            type: object
+                                            properties:
+                                                applicationType:
+                                                    description: 'Application type for Length of Stay rules'
+                                                    type: string
+                                                    enum:
+                                                        - progressive_application
+                                                        - retroactive_adjustment
+                                                    nullable: true
+                                                ranges:
+                                                    description: 'Night-based ranges for Length of Stay configuration'
+                                                    type: array
+                                                    items:
+                                                        type: object
+                                                        properties:
+                                                            minimumNights:
+                                                                description: 'Minimum number of nights required for this range'
+                                                                type: integer
+                                                            maximumNights:
+                                                                description: 'Maximum number of nights for this range (null means no limit)'
+                                                                type: integer
+                                                                nullable: true
+                                                            amount:
+                                                                description: 'Amount for this range'
+                                                                type: number
+                                                                nullable: true
+                                                            amountAdult:
+                                                                description: 'Amount per adult for this range'
+                                                                type: number
+                                                                nullable: true
+                                                            amountChild:
+                                                                description: 'Amount per child for this range'
+                                                                type: number
+                                                                nullable: true
+                                                            amountRateBased:
+                                                                description: 'Rate-based amounts for this range'
+                                                                type: array
+                                                                items:
+                                                                    type: object
+                                                                nullable: true
+                                                    nullable: true
+                                            nullable: true
+                                nullable: true
+                            lengthOfStaySettings:
+                                description: 'Length of Stay configuration settings'
+                                type: object
+                                properties:
+                                    applicationType:
+                                        description: 'Application type for Length of Stay rules:<br/> <table> <tr><th>Value</th><th>Meaning</th></tr> <tr><td>progressive_application</td><td>Apply tax/fee when minimum nights are reached</td></tr> <tr><td>retroactive_adjustment</td><td>Apply adjustments retroactively when conditions are met</td></tr> </table>'
+                                        type: string
+                                        enum:
+                                            - progressive_application
+                                            - retroactive_adjustment
+                                        nullable: true
+                                    ranges:
+                                        description: 'Night-based ranges for Length of Stay configuration'
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                minimumNights:
+                                                    description: 'Minimum number of nights required for this range'
+                                                    type: integer
+                                                maximumNights:
+                                                    description: 'Maximum number of nights for this range (null means no limit)'
+                                                    type: integer
+                                                    nullable: true
+                                                amount:
+                                                    description: 'Amount for this range (uses same amountType as the parent tax/fee)'
+                                                    type: number
+                                                    nullable: true
+                                                amountAdult:
+                                                    description: 'Amount per adult for this range (uses same amountType as the parent tax/fee)'
+                                                    type: number
+                                                    nullable: true
+                                                amountChild:
+                                                    description: 'Amount per child for this range (uses same amountType as the parent tax/fee)'
+                                                    type: number
+                                                    nullable: true
+                                                amountRateBased:
+                                                    description: 'Rate-based amounts for this range (uses same amountType as the parent tax/fee)'
+                                                    type: array
+                                                    items:
+                                                        type: object
+                                                        properties:
+                                                            rate:
+                                                                description: 'Maximum rate for which this percentage is valid'
+                                                                type: number
+                                                            percentage:
+                                                                description: 'Percentage applied for the rate'
+                                                                type: number
+                                                    nullable: true
+                                        nullable: true
                                 nullable: true
                     nullable: true
                 total:
@@ -8913,53 +9155,8 @@ components:
                     description: 'Returns if the request could be completed'
                     type: boolean
                 data:
-                    description: 'Details for the users'
-                    type: array
-                    items:
-                        type: object
-                        properties:
-                            userID:
-                                description: 'User ID'
-                                type: string
-                            firstName:
-                                description: 'First Name'
-                                type: string
-                            lastName:
-                                description: 'Last Name'
-                                type: string
-                            email:
-                                description: Email
-                                type: string
-                            language:
-                                description: 'User Language|Property Default Language. See the full list of available language parameters <a target="_blank" href="https://integrations.cloudbeds.com/hc/en-us/articles/360007144993-FAQ#methods-and-parameters">here</a>'
-                                type: string
-                            userRole:
-                                description: 'Details for the role'
-                                type: object
-                                properties:
-                                    name:
-                                        description: "Role's name"
-                                        type: string
-                                    description:
-                                        description: "Role's description"
-                                        type: string
-                            active:
-                                description: ''
-                                type: string
-                                enum:
-                                    - 'yes'
-                                    - 'no'
-                            lastLogin:
-                                description: 'Date and time of the last login event'
-                                type: string
-                                format: date
-                            propertyId:
-                                description: 'Property numeric identifier'
-                                type: string
-                            organizationID:
-                                description: 'Organization ID'
-                                type: string
-                                nullable: true
+                    description: 'Container of user arrays, indexed by property ID (e.g., "1").'
+                    type: object
 paths:
     /oauth/metadata:
         get:
@@ -12116,6 +12313,14 @@ paths:
                         default: false
                     required: false
                     in: query
+                -
+                    description: 'Include shared rooms in the result for multiple adults/children'
+                    name: includeSharedRooms
+                    schema:
+                        type: boolean
+                        default: false
+                    required: false
+                    in: query
     /patchRate:
         post:
             tags:
@@ -12442,6 +12647,20 @@ paths:
                 -
                     description: 'Filters reservation with the supplied Guest ID (Including additional guests).'
                     name: guestID
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Filters reservation with the supplied allotment block code.'
+                    name: allotmentBlockCode
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Filters reservation with the supplied group code.'
+                    name: groupCode
                     schema:
                         type: string
                     required: false
@@ -13399,6 +13618,14 @@ paths:
                 -
                     description: 'If detailed rates are expected'
                     name: detailedRates
+                    schema:
+                        type: boolean
+                        default: false
+                    required: false
+                    in: query
+                -
+                    description: 'Include shared rooms in the result for multiple adults/children'
+                    name: includeSharedRooms
                     schema:
                         type: boolean
                         default: false
