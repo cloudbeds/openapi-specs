@@ -8,6 +8,88 @@ servers:
     url: 'https://api.cloudbeds.com/'
     description: 'Cloudbeds API v2'
 paths:
+  /addons/v1/addons:
+    get:
+      tags:
+        - Addons
+      summary: 'Retrieve property add-ons'
+      description: 'Fetches list of Add-ons with basic information for a specific property'
+      operationId: 'AddonController::getAddons'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '100'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+          example: '0'
+        -
+          name: filters
+          in: query
+          description: 'This parameter should be formatted as a list of strings separated by ;'
+          required: false
+          schema:
+            $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+          example: 'field1:value;field2:operator:value'
+        -
+          name: Accept-Language
+          in: header
+          description: 'The preferred language(s) for localized strings (e.g., en-US)'
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'Successful response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonsResponseSchema'
+        '400':
+          description: 'Bad Request - Invalid input parameters'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized - Invalid or missing authentication'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden - Insufficient permissions'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal Server Error'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:addon'
   /integration/v1/connected-applications:
     get:
       tags:
@@ -40,6 +122,7 @@ paths:
                 - 'delete:item'
                 - 'delete:marketsegment'
                 - 'delete:roomblock'
+                - 'read:addon'
                 - 'read:adjustment'
                 - 'read:allotmentBlock'
                 - 'read:appPropertySettings'
@@ -2038,10 +2121,63 @@ components:
         - feature.distribution.age-policy-validation-enabled
         - feature.distribution.age-policy-auto-rollback-enabled
         - feature.distribution.age-policy-centralized-service-layer
+        - feature.prop-staff.property-feature-cache
+    GetAddonsRequestSchema:
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+    AddonResponseSchema:
+      required:
+        - id
+        - name
+        - description
+        - productId
+        - price
+      properties:
+        id:
+          description: 'Unique identifier of the add-on'
+          type: string
+          example: '98765'
+        name:
+          description: 'Display name of the add-on, localized based on the Accept-Language header'
+          type: string
+          example: Breakfast
+        description:
+          description: 'Human-readable description, localized based on the Accept-Language header'
+          type: string
+          example: 'A basic continental breakfast...'
+        productId:
+          description: 'Identifier of the underlying product this add-on is based on'
+          type: string
+          example: '12345'
+        price:
+          $ref: '#/components/schemas/MoneySchema'
+      type: object
+    AddonsResponseSchema:
+      required:
+        - offset
+        - limit
+        - data
+      properties:
+        offset:
+          description: 'Number of results to skip'
+          type: integer
+          example: 0
+        limit:
+          description: 'Maximum number of results to return'
+          type: integer
+          example: 100
+        data:
+          description: 'Contains the list of add-on details'
+          type: array
+          items:
+            $ref: '#/components/schemas/AddonResponseSchema'
+      type: object
     AgePolicyCreateRequestSchema:
       required:
         - config
-        - providesCribs
         - extraGuestsConfig
       properties:
         config:
@@ -2051,10 +2187,6 @@ components:
             - single
             - multiple
           example: single
-        providesCribs:
-          description: 'Does property provide cribs?'
-          type: boolean
-          example: true
         extraGuestsConfig:
           description: 'Extra guests configuration.'
           type: string
@@ -2093,11 +2225,6 @@ components:
             - multiple
           example: single
           nullable: true
-        providesCribs:
-          description: 'Does property provide cribs?'
-          type: boolean
-          example: true
-          nullable: true
         extraGuestsConfig:
           description: 'Extra guests configuration.'
           type: string
@@ -2112,6 +2239,41 @@ components:
           example: Adults
           nullable: true
       type: object
+    AgeGroupListResponseSchema:
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgeGroupResponseSchema'
+          nullable: true
+      type: object
+    AgeGroupResponseSchema:
+      required:
+        - id
+        - agePolicyId
+        - groupType
+        - minAge
+        - createdAt
+      properties:
+        id:
+          type: string
+        agePolicyId:
+          type: string
+        groupType:
+          type: string
+        minAge:
+          type: integer
+        maxAge:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+        updatedAt:
+          type: string
+          format: 'Y-m-d\TH:i:sP'
+          nullable: true
+      type: object
     AgePolicyListResponseSchema:
       properties:
         data:
@@ -2124,7 +2286,6 @@ components:
       required:
         - id
         - config
-        - providesCribs
         - extraGuestsConfig
         - createdAt
       properties:
@@ -2132,8 +2293,6 @@ components:
           type: string
         config:
           type: string
-        providesCribs:
-          type: boolean
         customLabel:
           type: string
           nullable: true
@@ -2675,6 +2834,184 @@ components:
           format: date-time
           nullable: true
       type: object
+    GetAmenityCatalogRequestSchema: {  }
+    GetAmenityCategoryCatalogRequestSchema: {  }
+    GetRoomAmenitiesRequestSchema: {  }
+    RoomAmenitiesUpdateRequestSchema:
+      required:
+        - id
+        - amenities
+      properties:
+        id:
+          description: 'Room ID to update'
+          type: string
+          example: '101'
+        amenities:
+          description: 'List of amenity codes to set for the room (full replace)'
+          type: array
+          items:
+            type: string
+            example: wifi
+      type: object
+    UpdatePropertyAmenitiesRequestSchema:
+      properties:
+        amenities:
+          description: 'List of amenity codes to set for the property'
+          type: array
+          items:
+            type: string
+            example: wifi
+      type: object
+    UpdatePropertyRoomsAmenitiesRequestSchema:
+      required:
+        - rooms
+      properties:
+        rooms:
+          description: 'List of rooms with amenities to update'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomAmenitiesUpdateRequestSchema'
+      type: object
+    UpdateRoomAmenitiesRequestSchema:
+      properties:
+        amenities:
+          description: 'List of amenity codes to set for the room'
+          type: array
+          items:
+            type: string
+            example: wifi
+      type: object
+    AmenityItemSchema:
+      required:
+        - code
+        - name
+        - categoryCode
+        - isTop
+      properties:
+        code:
+          description: 'Unique amenity code'
+          type: string
+          example: wifi
+        name:
+          description: 'Translated amenity name'
+          type: string
+          example: Wi-fi
+        categoryCode:
+          description: 'Category code'
+          type: string
+          example: technology
+        isTop:
+          description: 'Whether this is a top amenity'
+          type: boolean
+          example: true
+      type: object
+    GetAmenityCatalogResponseSchema:
+      required:
+        - amenities
+      properties:
+        amenities:
+          description: 'List of amenities in the catalog'
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenityItemSchema'
+      type: object
+    GetAmenityCategoryCatalogResponseSchema:
+      required:
+        - categories
+      properties:
+        categories:
+          description: 'List of amenity categories in the catalog'
+          type: array
+          items:
+            required:
+              - code
+              - name
+            properties:
+              code:
+                description: 'Unique category code'
+                type: string
+                example: technology
+              name:
+                description: 'Translated category name'
+                type: string
+                example: Technology
+            type: object
+      type: object
+    GetPropertyAmenitiesResponseSchema:
+      required:
+        - amenities
+      properties:
+        amenities:
+          description: 'List of active property amenities'
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenityItemSchema'
+      type: object
+    GetPropertyRoomsAmenitiesResponseSchema:
+      required:
+        - rooms
+      properties:
+        rooms:
+          description: 'List of rooms with their amenities'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomAmenitiesSchema'
+      type: object
+    GetRoomAmenitiesResponseSchema:
+      required:
+        - amenities
+      properties:
+        amenities:
+          description: 'List of active room amenities'
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenityItemSchema'
+      type: object
+    RoomAmenitiesSchema:
+      required:
+        - id
+        - amenities
+      properties:
+        id:
+          description: 'Room ID'
+          type: string
+          example: '101'
+        amenities:
+          description: 'List of active amenities for this room'
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenityItemSchema'
+      type: object
+    UpdatePropertyAmenitiesResponseSchema:
+      required:
+        - amenities
+      properties:
+        amenities:
+          description: 'Updated list of property amenities'
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenityItemSchema'
+      type: object
+    UpdatePropertyRoomsAmenitiesResponseSchema:
+      required:
+        - rooms
+      properties:
+        rooms:
+          description: 'Updated rooms with their amenities'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomAmenitiesSchema'
+      type: object
+    UpdateRoomAmenitiesResponseSchema:
+      required:
+        - amenities
+      properties:
+        amenities:
+          description: 'Updated list of room amenities'
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenityItemSchema'
+      type: object
     ConnectedApplicationListRequestSchema:
       type: object
     ApplicationCollectionResponseSchema:
@@ -2934,6 +3271,11 @@ components:
               $ref: '#/components/schemas/BadRequestErrorListSchema'
           nullable: true
           description: 'The list of errors'
+        code:
+          description: 'Error code identifying the type of error'
+          type: string
+          example: INVALID_REQUEST
+          nullable: true
       type: object
     CreatedResponseSchema: {  }
     ForbiddenResponseSchema:
@@ -5148,6 +5490,7 @@ components:
           authorizationUrl: 'https://api.cloudbeds.com/auth/oauth/authorize'
           tokenUrl: 'https://api.cloudbeds.com/auth/oauth/token'
           scopes:
+            'read:addon': 'Read Addon information'
             'read:doorLockKey': 'Read DoorLock keys and settings'
             'write:doorLockKey': 'Write DoorLock keys and settings'
             'delete:doorLockKey': 'Delete DoorLock keys and settings'
@@ -5168,6 +5511,9 @@ components:
             'read:allotmentBlocks': 'Read AllotmentBlock information'
             'delete:allotmentBlocks': 'Delete AllotmentBlock information'
 tags:
+  -
+    name: Addons
+    description: Addons
   -
     name: Applications
     description: Applications
