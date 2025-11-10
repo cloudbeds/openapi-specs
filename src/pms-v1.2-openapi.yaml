@@ -9440,11 +9440,18 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'Interval start date'
+                    description: 'Interval end date'
                     name: endDate
                     schema:
                         type: string
                         format: date
+                    required: false
+                    in: query
+                -
+                    description: 'If false (default) this will show the effective availability on each date. If true, will read raw availability from the allotment intervals.'
+                    name: forUpdate
+                    schema:
+                        type: boolean
                     required: false
                     in: query
     /updateAllotmentBlock:
