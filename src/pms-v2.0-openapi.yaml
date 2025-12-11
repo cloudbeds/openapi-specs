@@ -961,6 +961,64 @@ paths:
         -
           default:
             - 'read:item'
+  /item/v1/items:
+    post:
+      tags:
+        - Items
+      summary: 'Post one or more items to a reservation, house account, or group profile'
+      description: 'Adds items to a reservation, house account, or group profile. This endpoint supports batch operations, allowing multiple items to be posted in a single request. Each item can have associated payments and custom pricing.'
+      operationId: 'ItemController::createItems'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Items to post with optional payment information'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostItemsRequestSchema'
+      responses:
+        '201':
+          description: 'Items successfully posted'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostItemsResponseSchema'
+        '400':
+          description: 'Bad request - invalid parameters or validation errors'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden - insufficient permissions'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found - reservation, house account, or group not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:item'
   /market-segmentation/v1/groups:
     get:
       tags:
@@ -2115,12 +2173,17 @@ components:
         - feature.integrations.generate-dummy-doorlock-keys
         - feature.distribution.market-segmentation
         - feature.distribution.market-segmentation-enable-custom-group
-        - feature.inventory.rate-plans
+        - feature.distribution.market-segmentation-delete-with-query-builder
         - feature.distribution.age-policy-new-system-enabled
         - feature.distribution.age-policy-dual-write-enabled
         - feature.distribution.age-policy-validation-enabled
         - feature.distribution.age-policy-auto-rollback-enabled
         - feature.distribution.age-policy-centralized-service-layer
+        - feature.distribution.send-rate-plan-if-promo-code-removed
+        - feature.inventory.rate-plans
+        - feature.inventory.derived-rate-plans-from-non-base-rate-plans
+        - feature.inventory.derived-rate-plans-from-another-derived-rate-plans
+        - feature.inventory.enable-rate-snapshots
         - feature.prop-staff.property-feature-cache
     GetAddonsRequestSchema:
       allOf:
@@ -2179,6 +2242,7 @@ components:
       required:
         - config
         - extraGuestsConfig
+        - groups
       properties:
         config:
           description: Configuration.
@@ -2194,24 +2258,76 @@ components:
             - per_age_group
             - per_each_guest
           example: per_age_group
+        groups:
+          description: 'List of age groups.'
+          type: array
+          items:
+            required:
+              - groupType
+              - minAge
+            properties:
+              groupType:
+                description: 'Age group type. Must be one of the valid age group types.'
+                type: string
+                enum:
+                  - child
+                  - adult
+              minAge:
+                description: 'Minimum age for this age group.'
+                type: integer
+              maxAge:
+                description: 'Maximum age for this age group.'
+                type: integer
+            type: object
+          example:
+            -
+              groupType: child
+              minAge: 0
+              maxAge: 17
         customLabel:
           description: 'Custom label (Adults or Guests)'
           type: string
           example: Adults
           nullable: true
       type: object
-    AgePolicySingleRequestSchema:
+    AgePolicyPatchRequestSchema:
       required:
         - id
+        - config
+        - extraGuestsConfig
       properties:
         id:
           description: 'Age Policy ID.'
           type: string
           example: 1-b
+        config:
+          description: Configuration.
+          type: string
+          enum:
+            - single
+            - multiple
+          example: single
+          nullable: true
+        extraGuestsConfig:
+          description: 'Extra guests configuration.'
+          type: string
+          enum:
+            - per_age_group
+            - per_each_guest
+          example: per_age_group
+          nullable: true
+        customLabel:
+          description: 'Custom label (Adults or Guests)'
+          type: string
+          example: Adults
+          nullable: true
       type: object
     AgePolicyUpdateRequestSchema:
       required:
         - id
+        - config
+        - extraGuestsConfig
+        - groups
       properties:
         id:
           description: 'Age Policy ID.'
@@ -2224,7 +2340,6 @@ components:
             - single
             - multiple
           example: single
-          nullable: true
         extraGuestsConfig:
           description: 'Extra guests configuration.'
           type: string
@@ -2232,32 +2347,54 @@ components:
             - per_age_group
             - per_each_guest
           example: per_age_group
-          nullable: true
+        groups:
+          description: 'List of age groups.'
+          type: array
+          items:
+            required:
+              - groupType
+              - minAge
+            properties:
+              id:
+                description: 'Age group ID.'
+                type: string
+              groupType:
+                description: 'Age group type. Must be one of the valid age group types.'
+                type: string
+                enum:
+                  - child
+                  - adult
+              minAge:
+                description: 'Minimum age for this age group.'
+                type: integer
+              maxAge:
+                description: 'Maximum age for this age group.'
+                type: integer
+              applyRateFromId:
+                description: 'Apply rate from age group ID.'
+                type: string
+            type: object
+          example:
+            -
+              id: group-2
+              groupType: child
+              minAge: 0
+              maxAge: 17
+              applyRateFromId: group-1
         customLabel:
           description: 'Custom label (Adults or Guests)'
           type: string
           example: Adults
-          nullable: true
-      type: object
-    AgeGroupListResponseSchema:
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/AgeGroupResponseSchema'
           nullable: true
       type: object
     AgeGroupResponseSchema:
       required:
         - id
-        - agePolicyId
         - groupType
         - minAge
         - createdAt
       properties:
         id:
-          type: string
-        agePolicyId:
           type: string
         groupType:
           type: string
@@ -2274,14 +2411,6 @@ components:
           format: 'Y-m-d\TH:i:sP'
           nullable: true
       type: object
-    AgePolicyListResponseSchema:
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/AgePolicyResponseSchema'
-          nullable: true
-      type: object
     AgePolicyResponseSchema:
       required:
         - id
@@ -2293,11 +2422,16 @@ components:
           type: string
         config:
           type: string
+        extraGuestsConfig:
+          type: string
         customLabel:
           type: string
           nullable: true
-        extraGuestsConfig:
-          type: string
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgeGroupResponseSchema'
+          nullable: true
         createdAt:
           type: string
           format: 'Y-m-d\TH:i:sP'
@@ -2836,6 +2970,8 @@ components:
       type: object
     GetAmenityCatalogRequestSchema: {  }
     GetAmenityCategoryCatalogRequestSchema: {  }
+    GetPropertyAmenitiesRequestSchema: {  }
+    GetPropertyRoomsAmenitiesRequestSchema: {  }
     GetRoomAmenitiesRequestSchema: {  }
     RoomAmenitiesUpdateRequestSchema:
       required:
@@ -4285,6 +4421,103 @@ components:
           $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
         -
           $ref: '#/components/schemas/QueryParameterSortSchema'
+    ItemRequestSchema:
+      required:
+        - itemId
+        - itemQuantity
+      properties:
+        itemId:
+          description: 'Item identifier'
+          type: string
+          example: '123456'
+        itemQuantity:
+          description: 'Item quantity (must be greater than 0)'
+          type: integer
+          example: 2
+        itemPrice:
+          description: 'Custom item price in the smallest currency unit (e.g., cents for USD). If not provided, the item''s registered price will be used. For example, $10.50 should be sent as ''1050''.'
+          type: string
+          example: '1050'
+          nullable: true
+        itemNote:
+          description: 'Optional item note'
+          type: string
+          example: 'Extra towels requested'
+          nullable: true
+        subReservationId:
+          description: 'Sub-reservation identifier (optional)'
+          type: string
+          example: SUB123
+          nullable: true
+        payments:
+          description: 'Optional list of payments for this item. If provided, itemPaid is ignored.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentRequestSchema'
+        itemPaid:
+          description: 'If true, a cash payment will be automatically registered for the total value of the item including taxes and fees. Ignored if payments array is provided.'
+          type: boolean
+          example: false
+      type: object
+    PaymentRequestSchema:
+      required:
+        - paymentType
+        - amount
+      properties:
+        paymentType:
+          description: 'Payment method type. Use getPaymentMethods API to retrieve available payment methods for the property.'
+          type: string
+          example: cash
+        amount:
+          description: 'Payment amount in the smallest currency unit (e.g., cents for USD). For example, $10.50 should be sent as ''1050''.'
+          type: string
+          example: '1050'
+        notes:
+          description: 'Optional payment notes'
+          type: string
+          example: 'Paid at check-in'
+          nullable: true
+      type: object
+    PostItemsRequestSchema:
+      required:
+        - items
+      properties:
+        reservationId:
+          description: 'Reservation identifier. Required if houseAccountId and groupCode are not provided.'
+          type: string
+          example: RES123456
+          nullable: true
+        houseAccountId:
+          description: 'House account identifier. Required if reservationId and groupCode are not provided.'
+          type: string
+          example: '123456'
+          nullable: true
+        groupCode:
+          description: 'Group code. Required if reservationId and houseAccountId are not provided.'
+          type: string
+          example: GRP2025
+          nullable: true
+        saleDate:
+          description: 'Sale date in RFC 3339 format. If not provided, current timestamp will be used.'
+          type: string
+          example: '2025-10-06T14:30:00-07:00'
+          nullable: true
+        items:
+          description: 'Array of items to post (minimum 1 item required)'
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemRequestSchema'
+      type: object
+      oneOf:
+        -
+          required:
+            - reservationId
+        -
+          required:
+            - houseAccountId
+        -
+          required:
+            - groupCode
     CustomItemCollectionResponseSchema:
       required:
         - items
@@ -4350,6 +4583,53 @@ components:
           description: 'Item description'
           type: string
           example: 'Fresh brewed coffee'
+          nullable: true
+      type: object
+    PostItemsResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          description: 'Array of posted item results, one for each item in the request'
+          type: array
+          items:
+            $ref: '#/components/schemas/PostedItemResponseSchema'
+      type: object
+    PostedItemResponseSchema:
+      required:
+        - soldProductId
+        - externalRelationId
+      properties:
+        soldProductId:
+          description: 'Sold product identifier (can be used to void this product in the future)'
+          type: string
+          example: '382900'
+        externalRelationId:
+          description: 'External relation ID (same as sold product ID). Together with external relation kind (ITEM) it can be used to get transaction from Accounting API'
+          type: string
+          example: '382900'
+        transactionStatus:
+          description: 'Transaction status. Returns ''pending'' when sale date is in the future, ''completed'' otherwise.'
+          type: string
+          enum:
+            - pending
+            - completed
+          example: completed
+          nullable: true
+        remainingItemQuantity:
+          description: 'Remaining number of items in stock (only returned if item has stock inventory tracking enabled)'
+          type: integer
+          example: 10
+          nullable: true
+        reorderNeeded:
+          description: 'Whether item is at or below the reorder threshold (only returned if item has stock inventory tracking enabled)'
+          type: boolean
+          example: false
+          nullable: true
+        stopSellMet:
+          description: 'Whether item is at or below the stop-sell threshold (only returned if item has stock inventory tracking enabled)'
+          type: boolean
+          example: false
           nullable: true
       type: object
     GroupCreateRequestSchema:
@@ -4839,6 +5119,16 @@ components:
           items:
             $ref: '#/components/schemas/RatePlanAddonRequestSchema'
           nullable: true
+        segmentId:
+          description: 'Segment ID associated with the rate plan.'
+          type: integer
+          example: 789
+          nullable: true
+        policyId:
+          description: 'Policy ID associated with the rate plan.'
+          type: integer
+          example: 321
+          nullable: true
       type: object
     RatePlanDeleteRequestSchema:
       required:
@@ -4987,10 +5277,14 @@ components:
           description: 'Whether the rate plan is active.'
           type: boolean
           example: true
+        allotmentBlockId:
+          description: 'The allotment block''s ID this rate belongs to.'
+          type: string
+          example: '4567'
+          nullable: true
         promoCode:
           description: 'Promotional code for the rate plan.'
           type: string
-          default: true
           maxLength: 50
           example: SUMMER2023
           nullable: true
@@ -5058,11 +5352,27 @@ components:
           nullable: true
           additionalProperties:
             type: string
+        intervals:
+          description: 'List of rate plan intervals.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanIntervalRequestSchema'
+          nullable: true
         addons:
           description: 'List of addons for the rate plan.'
           type: array
           items:
             $ref: '#/components/schemas/RatePlanAddonRequestSchema'
+          nullable: true
+        segmentId:
+          description: 'Segment ID associated with the rate plan.'
+          type: integer
+          example: 789
+          nullable: true
+        policyId:
+          description: 'Policy ID associated with the rate plan.'
+          type: integer
+          example: 321
           nullable: true
       type: object
     RatePlanAddonResponseSchema:
@@ -5300,6 +5610,10 @@ components:
           type: string
           format: date-time
           example: '2023-10-01 12:00:00'
+        policyId:
+          type: integer
+          example: 9888000
+          nullable: true
       type: object
     ReservationCommissionRequestSchema:
       required:

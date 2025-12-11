@@ -3518,6 +3518,7 @@ components:
                                     enum:
                                         - value
                                         - percent
+                                        - fixed
                                 propertyLateCheckOutValue:
                                     description: 'The fixed value, or percentage of the daily rate, to be charged on a late check-out'
                                     type: string
@@ -5220,16 +5221,14 @@ components:
                                         nullable: true
                         gateway:
                             description: 'Payment Gateway used by property'
-                            type: array
-                            items:
-                                type: object
-                                properties:
-                                    name:
-                                        description: 'Gateway name'
-                                        type: string
-                                    currency:
-                                        description: '3 letters iso code'
-                                        type: string
+                            type: object
+                            properties:
+                                name:
+                                    description: 'Gateway name'
+                                    type: string
+                                currency:
+                                    description: '3 letters iso code'
+                                    type: string
         GetPaymentsCapabilitiesResponse:
             type: object
             properties:
@@ -7170,25 +7169,23 @@ components:
                                 type: string
                             source:
                                 description: ''
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        name:
-                                            description: 'Reservation source'
-                                            type: string
-                                        paymentCollect:
-                                            description: 'Reservation payment collect source'
-                                            type: string
-                                            enum:
-                                                - hotel
-                                                - collect
-                                        sourceID:
-                                            description: 'Booking source unique id'
-                                            type: string
-                                        category:
-                                            description: 'Reservation source category'
-                                            type: string
+                                type: object
+                                properties:
+                                    name:
+                                        description: 'Reservation source'
+                                        type: string
+                                    paymentCollect:
+                                        description: 'Reservation payment collect source'
+                                        type: string
+                                        enum:
+                                            - hotel
+                                            - collect
+                                    sourceID:
+                                        description: 'Booking source unique id'
+                                        type: string
+                                    category:
+                                        description: 'Reservation source category'
+                                        type: string
                             sourceCategory:
                                 description: 'Reservation source category'
                                 type: integer
@@ -7203,28 +7200,26 @@ components:
                                 nullable: true
                             balanceDetailed:
                                 description: 'Reservation balance detailed with the information available on MyFrontdesk, describing the financial items calculated'
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        suggestedDeposit:
-                                            description: 'Suggested deposit value, calculated according to the hotel policies. Does not mean that it was effectively paid'
-                                            type: string
-                                        subTotal:
-                                            description: 'Sum of the room prices on the reservation'
-                                            type: number
-                                        additionalItems:
-                                            description: 'Sum of the additional items recorded on the reservation'
-                                            type: number
-                                        taxesFees:
-                                            description: 'Sum of the taxes and fees calculated on the reservation'
-                                            type: number
-                                        grandTotal:
-                                            description: 'Sum of sub.Total + additionalItems + taxesFees'
-                                            type: number
-                                        paid:
-                                            description: 'Amount paid (reservation deposit + any other extra payment)'
-                                            type: number
+                                type: object
+                                properties:
+                                    suggestedDeposit:
+                                        description: 'Suggested deposit value, calculated according to the hotel policies. Does not mean that it was effectively paid'
+                                        type: string
+                                    subTotal:
+                                        description: 'Sum of the room prices on the reservation'
+                                        type: number
+                                    additionalItems:
+                                        description: 'Sum of the additional items recorded on the reservation'
+                                        type: number
+                                    taxesFees:
+                                        description: 'Sum of the taxes and fees calculated on the reservation'
+                                        type: number
+                                    grandTotal:
+                                        description: 'Sum of sub.Total + additionalItems + taxesFees'
+                                        type: number
+                                    paid:
+                                        description: 'Amount paid (reservation deposit + any other extra payment)'
+                                        type: number
                             detailedRates:
                                 description: 'Associative object, where key is the date, and value is the total rate for that date.'
                                 type: array
@@ -8915,10 +8910,18 @@ components:
                                 type: string
                             amountAdult:
                                 description: 'Amount charged per adult. Only applicable if amountType = fixed_per_person (Per Person Per Night)'
-                                type: string
+                                oneOf:
+                                    -
+                                        type: string
+                                    -
+                                        type: number
                             amountChild:
                                 description: 'Amount charged per children. Only applicable if amountType = fixed_per_person (Per Person Per Night)'
-                                type: string
+                                oneOf:
+                                    -
+                                        type: string
+                                    -
+                                        type: number
                             amountRateBased:
                                 description: 'Rules defined for Rate-Based taxes/fees. Only applicable if amountType = percentage_rate_based (Rate-based)'
                                 type: array
@@ -8951,7 +8954,7 @@ components:
                                     - fixed_per_reservation
                                     - percentage_rate_based
                             availableFor:
-                                description: 'Where this tax/fee is available?<br/>They mean:<br/> <table> <tr><th>Value</th><th>Meaning</th></tr> <tr><td>product</td><td>Items</td></tr> <tr><td>rate</td><td>Reservations</td></tr> <tr><td>fee</td><td>Fees -- this tax is charged on top of some fees</td></tr> </table>'
+                                description: 'Where this tax/fee is available?<br/>They mean:<br/> <table> <tr><th>Value</th><th>Meaning</th></tr> <tr><td>product</td><td>Items</td></tr> <tr><td>rate</td><td>Reservations</td></tr> <tr><td>fee</td><td>Fees -- this tax is charged on top of some fees</td></tr> <tr><td>custom_item</td><td>Custom item - this tax was charged for a custom item</td></tr> </table>'
                                 type: array
                                 items:
                                     type: string
@@ -8959,6 +8962,7 @@ components:
                                         - product
                                         - rate
                                         - fee
+                                        - custom_item
                             feesCharged:
                                 description: 'List of Fee IDs charged by the current tax. Only exists if type = tax.'
                                 type: array
@@ -9004,7 +9008,7 @@ components:
                                     properties:
                                         range:
                                             description: 'ISO 8601 date range. It can be in the format YYYY-MM-DD/YYYY-MM-DD or YYYY-MM-DD/ (to indicate that the end date is not defined). In case of empty year the format is --MM-DD/--MM-DD'
-                                            type: object
+                                            type: string
                                         amount:
                                             description: Amount
                                             oneOf:
@@ -9021,6 +9025,13 @@ components:
                                                     type: number
                                         amountChild:
                                             description: 'Amount charged per children. Only applicable if amountType = fixed_per_person (Per Person Per Night)'
+                                            oneOf:
+                                                -
+                                                    type: string
+                                                -
+                                                    type: number
+                                        maxLength:
+                                            description: 'Maximum amount of nights where this applies. Only applicable if amountType = fixed_per_person (Per Person Per Night)'
                                             oneOf:
                                                 -
                                                     type: string
@@ -9048,11 +9059,155 @@ components:
                                                                 type: number
                                             nullable: true
                                         lengthOfStaySettings:
-                                            description: 'Length of Stay configuration settings specific to this date range'
+                                            description: 'Length of Stay configuration settings specific to this date range. Returns object when settings exist, empty array [] when no settings configured.'
+                                            oneOf:
+                                                -
+                                                    type: object
+                                                    properties:
+                                                        applicationType:
+                                                            description: 'Application type for Length of Stay rules'
+                                                            type: string
+                                                            enum:
+                                                                - progressive_application
+                                                                - retroactive_adjustment
+                                                            nullable: true
+                                                        ranges:
+                                                            description: 'Night-based ranges for Length of Stay configuration'
+                                                            type: array
+                                                            items:
+                                                                type: object
+                                                                properties:
+                                                                    minimumNights:
+                                                                        description: 'Minimum number of nights required for this range'
+                                                                        type: integer
+                                                                    maximumNights:
+                                                                        description: 'Maximum number of nights for this range (null means no limit)'
+                                                                        type: integer
+                                                                        nullable: true
+                                                                    amount:
+                                                                        description: 'Amount for this range'
+                                                                        type: number
+                                                                        nullable: true
+                                                                    amountAdult:
+                                                                        description: 'Amount per adult for this range'
+                                                                        type: number
+                                                                        nullable: true
+                                                                    amountChild:
+                                                                        description: 'Amount per child for this range'
+                                                                        type: number
+                                                                        nullable: true
+                                                                    amountRateBased:
+                                                                        description: 'Rate-based amounts for this range'
+                                                                        type: array
+                                                                        items:
+                                                                            type: object
+                                                                        nullable: true
+                                                            nullable: true
+                                                -
+                                                    type: array
+                                                    items:
+                                                        type: object
+                                                        properties:
+                                                            applicationType:
+                                                                description: 'Application type for Length of Stay rules'
+                                                                type: string
+                                                                enum:
+                                                                    - progressive_application
+                                                                    - retroactive_adjustment
+                                                                nullable: true
+                                                            ranges:
+                                                                description: 'Night-based ranges for Length of Stay configuration'
+                                                                type: array
+                                                                items:
+                                                                    type: object
+                                                                    properties:
+                                                                        minimumNights:
+                                                                            description: 'Minimum number of nights required for this range'
+                                                                            type: integer
+                                                                        maximumNights:
+                                                                            description: 'Maximum number of nights for this range (null means no limit)'
+                                                                            type: integer
+                                                                            nullable: true
+                                                                        amount:
+                                                                            description: 'Amount for this range'
+                                                                            type: number
+                                                                            nullable: true
+                                                                        amountAdult:
+                                                                            description: 'Amount per adult for this range'
+                                                                            type: number
+                                                                            nullable: true
+                                                                        amountChild:
+                                                                            description: 'Amount per child for this range'
+                                                                            type: number
+                                                                            nullable: true
+                                                                        amountRateBased:
+                                                                            description: 'Rate-based amounts for this range'
+                                                                            type: array
+                                                                            items:
+                                                                                type: object
+                                                                            nullable: true
+                                                                nullable: true
+                                            nullable: true
+                                nullable: true
+                            lengthOfStaySettings:
+                                description: 'Length of Stay configuration settings. Returns object when settings exist, empty array [] when no settings configured.'
+                                oneOf:
+                                    -
+                                        type: object
+                                        properties:
+                                            applicationType:
+                                                description: 'Application type for Length of Stay rules:<br/> <table> <tr><th>Value</th><th>Meaning</th></tr> <tr><td>progressive_application</td><td>Apply tax/fee when minimum nights are reached</td></tr> <tr><td>retroactive_adjustment</td><td>Apply adjustments retroactively when conditions are met</td></tr> </table>'
+                                                type: string
+                                                enum:
+                                                    - progressive_application
+                                                    - retroactive_adjustment
+                                                nullable: true
+                                            ranges:
+                                                description: 'Night-based ranges for Length of Stay configuration'
+                                                type: array
+                                                items:
+                                                    type: object
+                                                    properties:
+                                                        minimumNights:
+                                                            description: 'Minimum number of nights required for this range'
+                                                            type: integer
+                                                        maximumNights:
+                                                            description: 'Maximum number of nights for this range (null means no limit)'
+                                                            type: integer
+                                                            nullable: true
+                                                        amount:
+                                                            description: 'Amount for this range (uses same amountType as the parent tax/fee)'
+                                                            type: number
+                                                            nullable: true
+                                                        amountAdult:
+                                                            description: 'Amount per adult for this range (uses same amountType as the parent tax/fee)'
+                                                            type: number
+                                                            nullable: true
+                                                        amountChild:
+                                                            description: 'Amount per child for this range (uses same amountType as the parent tax/fee)'
+                                                            type: number
+                                                            nullable: true
+                                                        amountRateBased:
+                                                            description: 'Rate-based amounts for this range (uses same amountType as the parent tax/fee)'
+                                                            type: array
+                                                            items:
+                                                                type: object
+                                                                properties:
+                                                                    rate:
+                                                                        description: 'Maximum rate for which this percentage is valid'
+                                                                        type: number
+                                                                    percentage:
+                                                                        description: 'Percentage applied for the rate'
+                                                                        type: number
+                                                            nullable: true
+                                                nullable: true
+                                    -
+                                        type: array
+                                        items:
                                             type: object
                                             properties:
                                                 applicationType:
-                                                    description: 'Application type for Length of Stay rules'
+                                                    description: 'Application type for Length of Stay rules:<br/> <table> <tr><th>Value</th><th>Meaning</th></tr> <tr><td>progressive_application</td><td>Apply tax/fee when minimum nights are reached</td></tr> <tr><td>retroactive_adjustment</td><td>Apply adjustments retroactively when conditions are met</td></tr> </table>'
                                                     type: string
                                                     enum:
                                                         - progressive_application
@@ -9072,76 +9227,31 @@ components:
                                                                 type: integer
                                                                 nullable: true
                                                             amount:
-                                                                description: 'Amount for this range'
+                                                                description: 'Amount for this range (uses same amountType as the parent tax/fee)'
                                                                 type: number
                                                                 nullable: true
                                                             amountAdult:
-                                                                description: 'Amount per adult for this range'
+                                                                description: 'Amount per adult for this range (uses same amountType as the parent tax/fee)'
                                                                 type: number
                                                                 nullable: true
                                                             amountChild:
-                                                                description: 'Amount per child for this range'
+                                                                description: 'Amount per child for this range (uses same amountType as the parent tax/fee)'
                                                                 type: number
                                                                 nullable: true
                                                             amountRateBased:
-                                                                description: 'Rate-based amounts for this range'
+                                                                description: 'Rate-based amounts for this range (uses same amountType as the parent tax/fee)'
                                                                 type: array
                                                                 items:
                                                                     type: object
+                                                                    properties:
+                                                                        rate:
+                                                                            description: 'Maximum rate for which this percentage is valid'
+                                                                            type: number
+                                                                        percentage:
+                                                                            description: 'Percentage applied for the rate'
+                                                                            type: number
                                                                 nullable: true
                                                     nullable: true
-                                            nullable: true
-                                nullable: true
-                            lengthOfStaySettings:
-                                description: 'Length of Stay configuration settings'
-                                type: object
-                                properties:
-                                    applicationType:
-                                        description: 'Application type for Length of Stay rules:<br/> <table> <tr><th>Value</th><th>Meaning</th></tr> <tr><td>progressive_application</td><td>Apply tax/fee when minimum nights are reached</td></tr> <tr><td>retroactive_adjustment</td><td>Apply adjustments retroactively when conditions are met</td></tr> </table>'
-                                        type: string
-                                        enum:
-                                            - progressive_application
-                                            - retroactive_adjustment
-                                        nullable: true
-                                    ranges:
-                                        description: 'Night-based ranges for Length of Stay configuration'
-                                        type: array
-                                        items:
-                                            type: object
-                                            properties:
-                                                minimumNights:
-                                                    description: 'Minimum number of nights required for this range'
-                                                    type: integer
-                                                maximumNights:
-                                                    description: 'Maximum number of nights for this range (null means no limit)'
-                                                    type: integer
-                                                    nullable: true
-                                                amount:
-                                                    description: 'Amount for this range (uses same amountType as the parent tax/fee)'
-                                                    type: number
-                                                    nullable: true
-                                                amountAdult:
-                                                    description: 'Amount per adult for this range (uses same amountType as the parent tax/fee)'
-                                                    type: number
-                                                    nullable: true
-                                                amountChild:
-                                                    description: 'Amount per child for this range (uses same amountType as the parent tax/fee)'
-                                                    type: number
-                                                    nullable: true
-                                                amountRateBased:
-                                                    description: 'Rate-based amounts for this range (uses same amountType as the parent tax/fee)'
-                                                    type: array
-                                                    items:
-                                                        type: object
-                                                        properties:
-                                                            rate:
-                                                                description: 'Maximum rate for which this percentage is valid'
-                                                                type: number
-                                                            percentage:
-                                                                description: 'Percentage applied for the rate'
-                                                                type: number
-                                                    nullable: true
-                                        nullable: true
                                 nullable: true
                     nullable: true
                 total:
@@ -13847,6 +13957,14 @@ paths:
                 -
                     description: 'If the response should include expired taxes and fees'
                     name: includeExpired
+                    schema:
+                        type: boolean
+                        default: false
+                    required: false
+                    in: query
+                -
+                    description: 'If the response should include custom item taxes'
+                    name: includeCustomItemTaxes
                     schema:
                         type: boolean
                         default: false
