@@ -1,0 +1,2896 @@
+openapi: 3.0.1
+info:
+  title: Group Profile API
+  version: 1.0.0
+  description: API for managing group profiles, contact persons, and related operations
+tags:
+  - name: Profile
+    description: Unified Profile API for all profile types (Company, Group, Travel Agent)
+  - name: ProfilePerson
+    description: Profile Person API (Profile-Guests/Contacts)
+  - name: ContactPerson
+    description: Contact Person API
+  - name: ProfileNote
+    description: Profile Note API
+  - name: ProfileTag
+    description: Profile Tag API
+  - name: ProfileDocument
+    description: Profile Document API
+servers:
+  - url: http://localhost:8700
+  - url: https://api.{environment}.com
+    variables:
+      environment:
+        default: cloudbeds-stage
+        enum:
+          - cloudbeds-stage   # Staging server
+          - cloudbeds         # Production server
+  - url: https://api.{island}.{environment}.com
+    variables:
+      island:
+        default: us2
+        enum:
+          - us1
+          - us2
+      environment:
+        default: cloudbeds-stage
+        enum:
+          - cloudbeds-stage   # Staging server
+          - cloudbeds         # Production server
+
+paths:
+  # <editor-fold desc="Unified Profile API">
+  /group-profile/v1/profiles:
+    get:
+      summary: List all profiles across all types
+      operationId: listAllProfiles
+      tags:
+        - Profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+        - $ref: "#/components/parameters/profileIds"
+        - $ref: "#/components/parameters/status"
+        - $ref: "#/components/parameters/profileType"
+        - $ref: "#/components/parameters/name"
+        - $ref: "#/components/parameters/code"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/pageToken"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: List all profiles successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileListResponse"
+              example:
+                data:
+                  - id: "19074818619469856"
+                    code: "ACME001"
+                    name: "Acme Corporation"
+                    status: "ACTIVE"
+                    profileType: "COMPANY"
+                  - id: "19074818619469857"
+                    code: "GRP-WEDDING-2024"
+                    name: "Smith-Johnson Wedding"
+                    status: "ACTIVE"
+                    profileType: "GROUP"
+                nextPageToken: "eyJmaWVsZHMiOlt7InBhdGgiOlsibmFtZSJdLCJ2YWx1ZSI6IlNtaXRoLUpvaG5zb24gV2VkZGluZyJ9XX0="
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+    post:
+      summary: Create a new profile (any type)
+      description: Create a company, group, or travel agent profile based on the attributes provided in the request body
+      operationId: createProfile
+      tags:
+        - Profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileRequest"
+            examples:
+              CompanyProfileExample:
+                summary: Create Company Profile (All Fields)
+                value:
+                  code: "ACME001"
+                  name: "Acme Corporation"
+                  status: "ACTIVE"
+                  phone: "+1-555-0100"
+                  cellPhone: "+1-555-0101"
+                  email: "info@acmecorp.com"
+                  externalCrmId: "CRM-ACME-12345"
+                  optIn: true
+                  optInType: "MARKETING"
+                  optInMethods: "EMAIL"
+                  address:
+                    address1: "Suite 500"
+                    address2: "5th Floor"
+                    street: "Main Street"
+                    number: "100"
+                    complement: "Building A"
+                    neighborhood: "Financial District"
+                    city: "New York"
+                    state: "NY"
+                    zip: "10001"
+                    countryCode: "US"
+                    email: "reception@acmecorp.com"
+                    latitude: 40.7128
+                    longitude: -74.0060
+                  useBillingAsMainAddress: false
+                  billingDetails:
+                    billingEntity: true
+                    legalName: "Acme Corporation Inc."
+                    billingEmail: "billing@acmecorp.com"
+                    billingAddress:
+                      address1: "Billing Department"
+                      address2: "PO Box 1234"
+                      street: "Park Avenue"
+                      number: "200"
+                      city: "New York"
+                      state: "NY"
+                      zip: "10002"
+                      countryCode: "US"
+                      email: "ar@acmecorp.com"
+                    billingCurrency: "USD"
+                    paymentMethod: "DIRECT_BILL"
+                    billingInstructions: "Net 30 days, please reference invoice number"
+                    invoiceRecipientEmail: "ap@acmecorp.com"
+                    creditLimit: 50000.00
+                    taxId: "12-3456789"
+                    billingFrequency: "MONTHLY"
+                    invoiceDueDays: 30
+                  attributes:
+                    companyProfile:
+                      parentCompanyId: null
+                      companyType: "CORPORATE"
+                      website: "https://www.acmecorp.com"
+                      contractStartDate: "2024-01-01"
+                      contractEndDate: "2025-12-31"
+                      roomNightCommitment: 500
+                      roomNightType: "NUMBER"
+              GroupProfileExample:
+                summary: Create Group Profile (All Fields)
+                value:
+                  code: "TECH2024"
+                  name: "Tech Summit 2024"
+                  status: "ACTIVE"
+                  phone: "+1-555-0200"
+                  cellPhone: "+1-555-0201"
+                  email: "events@techsummit.com"
+                  externalCrmId: "CRM-TECH-67890"
+                  optIn: true
+                  optInType: "TRANSACTIONAL"
+                  optInMethods: "SMS"
+                  address:
+                    address1: "Convention Center"
+                    address2: "Hall B"
+                    street: "Market Street"
+                    number: "300"
+                    complement: "West Wing"
+                    neighborhood: "Downtown"
+                    city: "San Francisco"
+                    state: "CA"
+                    zip: "94103"
+                    countryCode: "US"
+                    email: "venue@techsummit.com"
+                    latitude: 37.7749
+                    longitude: -122.4194
+                  useBillingAsMainAddress: true
+                  billingDetails:
+                    billingEntity: true
+                    legalName: "Tech Summit LLC"
+                    billingEmail: "billing@techsummit.com"
+                    billingAddress:
+                      address1: "Accounting Office"
+                      street: "Market Street"
+                      number: "300"
+                      city: "San Francisco"
+                      state: "CA"
+                      zip: "94103"
+                      countryCode: "US"
+                    billingCurrency: "USD"
+                    paymentMethod: "CREDIT_CARD"
+                    billingInstructions: "Please charge card on file"
+                    invoiceRecipientEmail: "finance@techsummit.com"
+                    creditLimit: 25000.00
+                    taxId: "98-7654321"
+                    billingFrequency: "WEEKLY"
+                    invoiceDueDays: 7
+                  attributes:
+                    groupProfile:
+                      groupType: "CONFERENCE"
+                      groupId: "GRP-2024-001"
+                      cutOffDate: "2024-10-01"
+                      internalSalesManager: "John Smith"
+                      specialRequirements: "AV equipment, high-speed internet, catering for 200"
+                      roomNightCommitment: 150
+                      roomNightType: "NUMBER"
+              TravelAgentProfileExample:
+                summary: Create Travel Agent Profile (All Fields)
+                value:
+                  code: "12345678"
+                  name: "Global Travel Partners"
+                  status: "ACTIVE"
+                  phone: "+1-555-0300"
+                  cellPhone: "+1-555-0301"
+                  email: "contact@gtp.com"
+                  externalCrmId: "CRM-GTP-11111"
+                  optIn: true
+                  optInType: "MARKETING"
+                  optInMethods: "EMAIL"
+                  address:
+                    address1: "Travel Agency Office"
+                    address2: "Suite 100"
+                    street: "Ocean Drive"
+                    number: "500"
+                    complement: "Ground Floor"
+                    neighborhood: "South Beach"
+                    city: "Miami"
+                    state: "FL"
+                    zip: "33139"
+                    countryCode: "US"
+                    email: "office@gtp.com"
+                    latitude: 25.7617
+                    longitude: -80.1918
+                  useBillingAsMainAddress: false
+                  billingDetails:
+                    billingEntity: true
+                    legalName: "Global Travel Partners Inc."
+                    billingEmail: "accounting@gtp.com"
+                    billingAddress:
+                      address1: "Corporate HQ"
+                      street: "Brickell Avenue"
+                      number: "1000"
+                      city: "Miami"
+                      state: "FL"
+                      zip: "33131"
+                      countryCode: "US"
+                      email: "ar@gtp.com"
+                    billingCurrency: "USD"
+                    paymentMethod: "CHECK"
+                    billingInstructions: "Mail checks to corporate office"
+                    invoiceRecipientEmail: "invoices@gtp.com"
+                    creditLimit: 15000.00
+                    taxId: "45-6789012"
+                    billingFrequency: "MONTHLY"
+                    invoiceDueDays: 15
+                  attributes:
+                    travelAgentProfile:
+                      agencyId: "AGY-001"
+                      agencyType: "RETAIL"
+                      commissionable: true
+                      commissionType: "PERCENTAGE"
+                      commissionAmount: 10.5
+                      commissionTerms: "Net 30 days after guest checkout"
+                      commissionCalculation: "CHECK_OUT"
+              CompanyProfileMinimal:
+                summary: Create Company Profile (Minimal - Required Fields Only)
+                value:
+                  code: "ACME001"
+                  name: "Acme Corporation"
+                  status: "ACTIVE"
+                  attributes:
+                    companyProfile: {}
+              GroupProfileMinimal:
+                summary: Create Group Profile (Minimal - Required Fields Only)
+                value:
+                  code: "TECH2024"
+                  name: "Tech Summit 2024"
+                  status: "ACTIVE"
+                  attributes:
+                    groupProfile: {}
+              TravelAgentProfileMinimal:
+                summary: Create Travel Agent Profile (Minimal - Required Fields Only)
+                value:
+                  code: "12345678"
+                  name: "Global Travel Partners"
+                  status: "ACTIVE"
+                  attributes:
+                    travelAgentProfile: {}
+      responses:
+        "201":
+          description: Profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+              example:
+                id: "19074818619469856"
+                code: "ACME001"
+                name: "Acme Corporation"
+                status: "ACTIVE"
+                phone: "+1-555-0100"
+                cellPhone: "+1-555-0101"
+                email: "info@acmecorp.com"
+                externalCrmId: "CRM-ACME-12345"
+                profileType: "COMPANY"
+                optIn: true
+                optInType: "MARKETING"
+                optInMethods: "EMAIL"
+                address:
+                  id: 1
+                  address1: "Suite 500"
+                  address2: "5th Floor"
+                  street: "Main Street"
+                  number: "100"
+                  complement: "Building A"
+                  neighborhood: "Financial District"
+                  city: "New York"
+                  state: "NY"
+                  zip: "10001"
+                  countryCode: "US"
+                  email: "reception@acmecorp.com"
+                  latitude: 40.7128
+                  longitude: -74.0060
+                useBillingAsMainAddress: false
+                billingDetails:
+                  billingEntity: true
+                  legalName: "Acme Corporation Inc."
+                  billingEmail: "billing@acmecorp.com"
+                  billingAddress:
+                    id: 2
+                    address1: "Billing Department"
+                    address2: "PO Box 1234"
+                    street: "Park Avenue"
+                    number: "200"
+                    city: "New York"
+                    state: "NY"
+                    zip: "10002"
+                    countryCode: "US"
+                    email: "ar@acmecorp.com"
+                  billingCurrency: "USD"
+                  paymentMethod: "DIRECT_BILL"
+                  billingInstructions: "Net 30 days, please reference invoice number"
+                  invoiceRecipientEmail: "ap@acmecorp.com"
+                  creditLimit: 50000.00
+                  taxId: "12-3456789"
+                  billingFrequency: "MONTHLY"
+                  invoiceDueDays: 30
+                createdAt: "2024-01-15T10:30:00Z"
+                updatedAt: "2024-01-15T10:30:00Z"
+                attributes:
+                  companyProfile:
+                    parentCompanyId: null
+                    companyType: "CORPORATE"
+                    website: "https://www.acmecorp.com"
+                    contractStartDate: "2024-01-01"
+                    contractEndDate: "2025-12-31"
+                    roomNightCommitment: 500
+                    roomNightType: "NUMBER"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /group-profile/v1/profiles/{profileId}:
+    get:
+      summary: Get profile by ID (any type)
+      description: Retrieve a company, group, or travel agent profile by its ID. The profile type is determined from the stored data.
+      operationId: getProfileById
+      tags:
+        - Profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+              example:
+                id: "19074818619469856"
+                code: "GRP-WEDDING-2024"
+                name: "Smith-Johnson Wedding"
+                status: "ACTIVE"
+                phone: "+1-555-0200"
+                email: "wedding@example.com"
+                profileType: "GROUP"
+                createdAt: "2024-01-15T10:30:00Z"
+                updatedAt: "2024-01-20T14:45:00Z"
+                attributes:
+                  groupProfile:
+                    groupType: "WEDDING"
+                    groupId: "WED-2024-001"
+                    roomNightCommitment: 25
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      summary: Update profile (any type)
+      description: Update a company, group, or travel agent profile. The profile type is determined from existing data and cannot be changed.
+      operationId: updateProfile
+      tags:
+        - Profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+            examples:
+              UpdateCompanyProfile:
+                summary: Update Company Profile
+                value:
+                  name: "Updated Company Name"
+                  status: "ACTIVE"
+                  phone: "+1-555-0199"
+                  email: "updated@company.com"
+                  attributes:
+                    companyProfile:
+                      website: "https://www.updated-company.com"
+              UpdateGroupProfile:
+                summary: Update Group Profile
+                value:
+                  name: "Updated Event Name"
+                  status: "ACTIVE"
+                  attributes:
+                    groupProfile:
+                      roomsBlocked: 200
+      responses:
+        "200":
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+    delete:
+      summary: Delete profile (any type)
+      description: Delete a company, group, or travel agent profile. The profile type is automatically determined.
+      operationId: deleteProfile
+      tags:
+        - Profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "204":
+          description: Profile deleted successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  # </editor-fold>
+
+  # <editor-fold desc="Profile Person API">
+  /group-profile/v1/profiles/{profileId}/persons:
+    get:
+      summary: List person for a profile
+      description: Get all person where this profile is linked to persons/guests
+      operationId: listProfilePerson
+      tags:
+        - ProfilePerson
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+        - name: personType
+          in: query
+          description: Filter by relationship type
+          required: false
+          schema:
+            $ref: "#/components/schemas/personType"
+        - name: roles
+          in: query
+          description: |
+            Filter by profile person roles. Returns persons matching any of the specified roles.
+            Use comma-separated values for multiple roles.
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/contactRole"
+          style: form
+          explode: false
+          example: "BILLING,INVOICING"
+        - name: sort
+          in: query
+          description: |
+            Sort profile persons by field and direction in format: field:direction
+            Multiple fields can be separated by semicolon.
+            Examples: role:asc, createdAt:desc, role:asc;createdAt:desc
+            Valid fields: role, createdAt, updatedAt
+            Valid directions: asc, desc (default: asc)
+            Default sort: createdAt:desc
+          required: false
+          schema:
+            type: string
+            default: createdAt:desc
+          example: role:asc
+        - $ref: "#/components/parameters/pageToken"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Person retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfilePersonListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      summary: Create a new person relationship for a profile
+      description: Create a relationship between this profile and a person/guest
+      operationId: createProfilePerson
+      tags:
+        - ProfilePerson
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProfilePersonRequest"
+      responses:
+        "201":
+          description: Person relationship created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfilePersonResponse"
+              example:
+                profileId: "19074818619469856"
+                personId: "87654321098765432"
+                personType: "CONTACT"
+                role: "Primary Contact"
+                startDate: "2024-01-15"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /group-profile/v1/profiles/{profileId}/persons/{personId}:
+    delete:
+      summary: Unlink person from a profile
+      description: Remove the relationship between this profile and a person/guest
+      operationId: unlinkProfilePerson
+      tags:
+        - ProfilePerson
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - name: personId
+          in: path
+          description: ID of the person to unlink from the profile
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: personType
+          in: query
+          description: Type of person (CONTACT or GUEST) - required to uniquely identify the relationship
+          required: true
+          schema:
+            $ref: "#/components/schemas/personType"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "204":
+          description: Person unlinked successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile or person not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  # Person relationship reverse lookup API
+  /group-profile/v1/profiles/persons/{personId}:
+    get:
+      summary: Find by person ID
+      description: Get all profile where person is the target (reverse lookup)
+      operationId: findByPersonId
+      tags:
+        - ProfilePerson
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: personId
+          in: path
+          description: Person/Guest ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: personType
+          in: query
+          description: Type of person (CONTACT or GUEST) - required to uniquely identify the person
+          required: true
+          schema:
+            $ref: "#/components/schemas/personType"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+        - $ref: "#/components/parameters/pageToken"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Person found successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfilePersonListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+  # </editor-fold>
+
+  # <editor-fold desc="Contact Person API">
+  /group-profile/v1/contact-persons:
+    get:
+      summary: Search contact persons of organization
+      operationId: SearchContactPersons
+      tags:
+        - ContactPerson
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+        - name: ids
+          in: query
+          description: |
+            Filter contact persons by a list of IDs. Returns only contacts matching these IDs.
+            Use comma-separated values for multiple IDs.
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+          style: form
+          explode: false
+          example: "123,456,789"
+        - name: profileId
+          in: query
+          description: Filter contact persons by profile ID (shows only contacts linked to this profile via profile_persons)
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: firstName
+          in: query
+          description: Search term to filter contact persons by firstName (case-insensitive contains)
+          required: false
+          schema:
+            type: string
+        - name: lastName
+          in: query
+          description: Search term to filter contact persons by lastName (case-insensitive contains)
+          required: false
+          schema:
+            type: string
+        - name: email
+          in: query
+          description: Search term to filter contact persons by email (case-insensitive contains)
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: |
+            Sort contact persons by field and direction in format: field:direction
+            Multiple fields can be separated by semicolon.
+            Examples: lastName:asc, firstName:desc, lastName:asc;firstName:desc
+            Valid fields: firstName, lastName, email, createdAt, updatedAt
+            Valid directions: asc, desc (default: asc)
+            Default sort: lastName:asc
+          required: false
+          schema:
+            type: string
+            default: "lastName:asc"
+          example: "lastName:asc"
+        - $ref: "#/components/parameters/pageToken"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Contact persons retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactPersonListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      summary: Add contact person to a profile (group, company, or travel agent)
+      operationId: addProfileContactPerson
+      tags:
+        - ContactPerson
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContactPersonRequest"
+      responses:
+        "201":
+          description: Contact person added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactPersonResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /group-profile/v1/contact-persons/{contactPersonId}:
+    get:
+      summary: Get contact person by ID
+      operationId: getContactPersonById
+      tags:
+        - ContactPerson
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/contactPersonId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "200":
+          description: Contact person retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactPersonResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Contact person not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      summary: Update contact person for a profile (group, company, or travel agent)
+      operationId: updateProfileContactPerson
+      tags:
+        - ContactPerson
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/contactPersonId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateContactPersonRequest"
+      responses:
+        "200":
+          description: Contact person updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactPersonResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Contact person not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+    delete:
+      summary: Delete contact person from a profile (group, company, or travel agent)
+      operationId: deleteProfileContactPerson
+      tags:
+        - ContactPerson
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/contactPersonId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "204":
+          description: Contact person deleted successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Contact person not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  # </editor-fold>
+
+  # <editor-fold desc="Profile Notes API">
+  /group-profile/v1/profiles/{profileId}/notes:
+    get:
+      summary: List notes for a profile
+      description: Get all notes for a profile (group, company, or travel agent)
+      operationId: listProfileNotes
+      tags:
+        - ProfileNote
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+        - name: archived
+          in: query
+          description: Filter notes by archived status. If not provided, returns only active notes.
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, ARCHIVED, ALL]
+            default: ACTIVE
+        - name: sort
+          in: query
+          description: |
+            Sort notes by field and direction in format: field:direction
+            Multiple fields can be separated by semicolon.
+            Examples: createdAt:desc, updatedAt:asc
+            Valid fields: createdAt, updatedAt
+            Valid directions: asc, desc (default: asc)
+            Default sort: createdAt:desc
+          required: false
+          schema:
+            type: string
+            default: "createdAt:desc"
+          example: "createdAt:desc"
+        - $ref: "#/components/parameters/pageToken"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Profile notes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileNoteListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      summary: Add note to a profile
+      description: Create a new note for a profile (group, company, or travel agent)
+      operationId: addProfileNote
+      tags:
+        - ProfileNote
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProfileNoteRequest"
+      responses:
+        "201":
+          description: Note added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileNoteResponse"
+              example:
+                id: "98765432109876543"
+                profileId: "19074818619469856"
+                userId: "12345"
+                content: "Customer requested late checkout due to flight delay"
+                createdAt: "2024-01-20T09:15:00Z"
+                updatedAt: "2024-01-20T09:15:00Z"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /group-profile/v1/profiles/{profileId}/notes/{noteId}:
+    get:
+      summary: Get profile note by ID
+      description: Get a specific note for a profile
+      operationId: getProfileNote
+      tags:
+        - ProfileNote
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/noteId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "200":
+          description: Profile note retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileNoteResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile note not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      summary: Update profile note
+      description: Update an existing note for a profile
+      operationId: updateProfileNote
+      tags:
+        - ProfileNote
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/noteId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileNoteRequest"
+      responses:
+        "200":
+          description: Profile note updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileNoteResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile note not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+    delete:
+      summary: Delete profile note
+      description: Delete a note from a profile
+      operationId: deleteProfileNote
+      tags:
+        - ProfileNote
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/noteId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "204":
+          description: Profile note deleted successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile note not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /group-profile/v1/profiles/{profileId}/notes/{noteId}/archive:
+    post:
+      summary: Archive profile note
+      description: Archive a note by setting the archived_at timestamp. Archived notes can be restored later.
+      operationId: archiveProfileNote
+      tags:
+        - ProfileNote
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/noteId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "200":
+          description: Profile note archived successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileNoteResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile note not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /group-profile/v1/profiles/{profileId}/notes/{noteId}/restore:
+    post:
+      summary: Restore archived profile note
+      description: Restore an archived note by unsetting the archived_at timestamp.
+      operationId: restoreProfileNote
+      tags:
+        - ProfileNote
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/noteId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "200":
+          description: Profile note restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileNoteResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile note not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  # </editor-fold>
+
+  # <editor-fold desc="Profile Tags API">
+  /group-profile/v1/profiles/{profileId}/tags:
+    get:
+      summary: List tags for profile
+      operationId: listProfileTags
+      tags:
+        - ProfileTag
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "200":
+          description: Group tags retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileTagListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+    post:
+      summary: Assign Tag to a profile
+      operationId: addProfileTag
+      tags:
+        - ProfileTag
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProfileTagRequest"
+      responses:
+        "201":
+          description: Tag added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileTagResponse"
+              example:
+                id: "55544433322211110"
+                profileId: "19074818619469856"
+                tag: "VIP"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Group profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /group-profile/v1/profiles/{profileId}/tags/{tagId}:
+    delete:
+      summary: Delete tag from profile
+      operationId: deleteProfileTag
+      tags:
+        - ProfileTag
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/tagId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "204":
+          description: Tag deleted successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Tag not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  # </editor-fold>
+
+  # <editor-fold desc="Profile Documents API">
+  /group-profile/v1/profiles/{profileId}/documents:
+    get:
+      summary: List documents for a profile
+      description: Get all documents for a profile (group, company, or travel agent)
+      operationId: listProfileDocuments
+      tags:
+        - ProfileDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+        - name: sort
+          in: query
+          description: |
+            Sort documents by field and direction in format: field:direction
+            Multiple fields can be separated by semicolon.
+            Examples: createdAt:desc, fileName:asc
+            Valid fields: fileName, createdAt, updatedAt
+            Valid directions: asc, desc (default: asc)
+            Default sort: createdAt:desc
+          required: false
+          schema:
+            type: string
+            default: "createdAt:desc"
+          example: "createdAt:desc"
+        - $ref: "#/components/parameters/pageToken"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Profile documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileDocumentListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      summary: Upload document(s) to a profile
+      description: Upload one or more documents for a profile (group, company, or travel agent)
+      operationId: uploadProfileDocuments
+      tags:
+        - ProfileDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - files
+                - userId
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: |
+                    One or more document files to upload.
+                    Maximum size per file: 10MB.
+                    Allowed file types: .png, .doc, .docx, .xls, .xlsx, .pdf, .jpg, .jpeg, .gif, .csv
+                userId:
+                  type: integer
+                  format: int64
+                  description: User ID of the person uploading the documents
+      responses:
+        "201":
+          description: Documents uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProfileDocumentResponse"
+                  total:
+                    type: integer
+                    description: Total number of documents successfully uploaded
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "413":
+          description: File too large
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /group-profile/v1/profiles/{profileId}/documents/{documentId}:
+    get:
+      summary: Get profile document metadata by ID
+      description: Get metadata for a specific document
+      operationId: getProfileDocument
+      tags:
+        - ProfileDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/documentId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "200":
+          description: Profile document retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileDocumentResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      summary: Delete profile document
+      description: Delete a document from a profile
+      operationId: deleteProfileDocument
+      tags:
+        - ProfileDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/documentId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "204":
+          description: Profile document deleted successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /group-profile/v1/profiles/{profileId}/documents/{documentId}/download:
+    get:
+      summary: Get document download URL
+      description: Get a pre-signed URL for downloading the document file (valid for 5 minutes)
+      operationId: downloadProfileDocument
+      tags:
+        - ProfileDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/profileId"
+        - $ref: "#/components/parameters/documentId"
+        - $ref: "#/components/parameters/xPropertyId"
+        - $ref: "#/components/parameters/xOrganizationId"
+      responses:
+        "200":
+          description: Pre-signed download URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileDocumentDownloadResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  # </editor-fold>
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    profileId:
+      name: profileId
+      in: path
+      description: Entity ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+    profileIds:
+      name: profileIds
+      in: query
+      description: Filter profiles by specific IDs (comma-separated list)
+      required: false
+      schema:
+        type: array
+        items:
+          type: integer
+          format: int64
+      style: form
+      explode: false
+    reservationId:
+      name: reservationId
+      in: path
+      description: Reservation Entity ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+    contactPersonId:
+      name: contactPersonId
+      in: path
+      description: Contact person ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+    tagId:
+      name: tagId
+      in: path
+      description: Tag ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+    noteId:
+      name: noteId
+      in: path
+      description: Note ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+    documentId:
+      name: documentId
+      in: path
+      description: Document ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+    status:
+      name: status
+      in: query
+      description: Filter by profile status
+      required: false
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/ProfileStatus"
+      style: form
+      explode: false
+    profileType:
+      name: profileType
+      in: query
+      description: Filter by profile types (supports multiple selections)
+      required: false
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/ProfileType"
+      style: form
+      explode: false
+    xPropertyId:
+      name: x-property-id
+      in: header
+      description: Property ID
+      required: false
+      schema:
+        type: integer
+        format: int64
+    xOrganizationId:
+      name: x-organization-id
+      in: header
+      description: Organization ID
+      required: true
+      schema:
+        type: integer
+        format: int64
+    pageToken:
+      name: pageToken
+      in: query
+      description: |
+        Cursor token for pagination. Use the `nextPageToken` from the previous response to fetch the next page.
+
+        **Usage:**
+        - Omit or pass empty string for the first page
+        - Pass the `nextPageToken` from previous response for subsequent pages
+        - When `nextPageToken` is null in the response, you've reached the last page
+
+        **Benefits over offset-based pagination:**
+        - Consistent results even when data changes between requests
+        - Better performance for large datasets (no row skipping)
+        - No maximum page limit
+      required: false
+      schema:
+        type: string
+      example: ""
+    limit:
+      name: limit
+      in: query
+      description: |
+        Page size. Specifies the maximum number of items to return in a single response.
+
+        **Limits:**
+        - Minimum: 1
+        - Maximum: 500
+        - Default: 100
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 100
+      example: 100
+    name:
+      name: name
+      in: query
+      description: Filter profiles by name containing this text (case-insensitive partial match)
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
+    code:
+      name: code
+      in: query
+      description: Filter profiles by code containing this text (case-insensitive partial match)
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 12
+    sort:
+      name: sort
+      in: query
+      description: |
+        Sort profiles by field and direction in format: field:direction
+        Examples: name:asc, createdAt:desc, code:asc
+        Valid fields: code, name, createdAt, updatedAt, profileType, status
+        Valid directions: asc, desc
+        Default: name:asc
+      required: false
+      schema:
+        type: string
+        pattern: '^(code|name|createdAt|updatedAt|profileType|status):(asc|desc)$'
+        default: name:asc
+      example: name:asc
+
+  schemas:
+    CursorPagination:
+      type: object
+      description: Cursor-based pagination metadata for list responses
+      properties:
+        nextPageToken:
+          type: string
+          nullable: true
+          description: |
+            Token to fetch the next page of results.
+            Pass this value as the `pageToken` query parameter in the next request.
+            When null, there are no more pages available.
+
+    # Base Profile Schema - Common fields for all profiles
+    BaseProfile:
+      type: object
+      required:
+        - name
+        - status
+#        - profileType
+        - code
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the profile
+          example: "19074818619469856"
+        profileType:
+          $ref: "#/components/schemas/ProfileType"
+        code:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Profile code (company code, group code, or IATA number for travel agents)
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Profile name (company name, group name, or agency name)
+        status:
+          $ref: "#/components/schemas/ProfileStatus"
+        cellPhone:
+          type: string
+          maxLength: 50
+          pattern: '^[+]?[0-9\s\-().]+$'
+          description: Cell phone number
+        phone:
+          type: string
+          maxLength: 50
+          pattern: '^[+]?[0-9\s\-().]+$'
+          description: Primary phone number
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Primary email address
+        externalCrmId:
+          type: string
+          maxLength: 100
+          description: External CRM system reference ID
+        # Opt-in fields
+        optIn:
+          type: boolean
+          description: Opt-in status
+        optInType:
+          type: string
+          enum: [MARKETING, TRANSACTIONAL]
+          description: Type of opt-in
+        optInMethods:
+          type: string
+          enum: [EMAIL, SMS, NOTIFICATION]
+          description: Opt-in communication method
+        # Address fields
+        address:
+          $ref: "#/components/schemas/Address"
+        useBillingAsMainAddress:
+          type: boolean
+          default: false
+          description: When true, use billing address as the main address instead of the address field
+        # Billing details section
+        billingDetails:
+          $ref: "#/components/schemas/BillingDetails"
+        # Audit fields (response-only)
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        # Profile-specific attributes
+        attributes:
+          type: object
+          properties:
+            groupProfile:
+              $ref: "#/components/schemas/GroupProfile"
+            companyProfile:
+              $ref: "#/components/schemas/CompanyProfile"
+            travelAgentProfile:
+              $ref: "#/components/schemas/TravelAgentProfile"
+          description: Dictionary containing profile-specific data (groupProfile, companyProfile, or travelAgentProfile). Only one profile type should be present.
+
+    # Group Profile - Profile-specific attributes
+    GroupProfile:
+      type: object
+      properties:
+        # Group-specific fields
+        groupType:
+          type: string
+          enum: [WEDDING, SOCIAL, SMERF, CORPORATE, ASSOCIATION, EDUCATION, MEETING, CONFERENCE, MICE, EXHIBITIONS, INCENTIVE, OTHER]
+          description: Type of group
+        groupId:
+          type: string
+          maxLength: 100
+          description: Unique group identifier
+        cutOffDate:
+          type: string
+          format: date
+          description: Booking cut-off date
+        internalSalesManager:
+          type: string
+          description: Internal sales manager name
+        specialRequirements:
+          type: string
+          description: Special requirements or notes
+        roomNightCommitment:
+          type: integer
+          minimum: 0
+          description: Room night commitment
+        roomNightType:
+          type: string
+          enum: [USD, PERCENTAGE, NUMBER]
+          description: Type of room night commitment (USD, Percentage, or Number)
+
+    # Company Profile - Profile-specific attributes
+    CompanyProfile:
+      type: object
+      properties:
+        companyType:
+          $ref: "#/components/schemas/CompanyType"
+        parentCompanyId:
+          type: integer
+          format: int64
+          description: Parent company ID if this is a subsidiary
+        website:
+          type: string
+          description: Company website URL
+        contractStartDate:
+          type: string
+          format: date
+          description: Contract start date
+        contractEndDate:
+          type: string
+          format: date
+          description: Contract end date
+        roomNightCommitment:
+          type: integer
+          minimum: 0
+          description: Annual room night commitment
+        roomNightType:
+          type: string
+          enum: [USD, PERCENTAGE, NUMBER]
+          description: Type of room night commitment (USD, Percentage, or Number)
+
+    # Travel Agent Profile - Profile-specific attributes
+    TravelAgentProfile:
+      type: object
+      properties:
+        agencyId:
+          type: string
+          maxLength: 50
+          description: Agency identifier
+        agencyType:
+          $ref: "#/components/schemas/AgencyType"
+        # Commission fields
+        commissionable:
+          type: boolean
+          description: Whether this agent is eligible for commission
+        commissionType:
+          type: string
+          enum: [PERCENTAGE, FLAT_RATE]
+          description: Type of commission (Percentage or Flat Rate)
+        commissionAmount:
+          type: number
+          description: Commission amount (percentage or flat rate value)
+        commissionTerms:
+          type: string
+          description: Terms of commission payout
+        commissionCalculation:
+          type: string
+          enum: [CHECK_IN, CHECK_OUT, INCLUDED_IN_RATE, NOT_INCLUDED_IN_RATE, NA]
+          description: When commission is calculated
+
+    ProfileRequest:
+      allOf:
+        - $ref: "#/components/schemas/BaseProfile"
+        - type: object
+          required:
+            - name
+            - status
+          properties:
+            id:
+              readOnly: true
+            createdAt:
+              readOnly: true
+            updatedAt:
+              readOnly: true
+
+    UpdateProfileRequest:
+      allOf:
+        - $ref: "#/components/schemas/BaseProfile"
+        - type: object
+          properties:
+            id:
+              readOnly: true
+            createdAt:
+              readOnly: true
+            updatedAt:
+              readOnly: true
+            profileType:
+              readOnly: true
+
+    ProfileResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseProfile"
+        - type: object
+          properties:
+            id:
+              type: string
+              description: Unique identifier for the profile
+              example: "19074818619469856"
+
+    ProfileListResponse:
+      allOf:
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProfileResponse"
+              description: Array of profile data
+        - $ref: "#/components/schemas/CursorPagination"
+
+    # <editor-fold desc="Profile Tags Schemas">
+    ProfileTagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Tag ID
+        tag:
+          type: string
+          description: Tag value
+        profileId:
+          type: string
+          description: Profile ID
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    CreateProfileTagRequest:
+      type: object
+      required:
+        - tag
+      properties:
+        tag:
+          type: string
+          description: Tag value
+
+    ProfileTagListResponse:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileTagResponse"
+    # </editor-fold>
+
+    # <editor-fold desc="Profile Person Schemas">
+    ProfilePersonResponse:
+      type: object
+      properties:
+        profileId:
+          type: string
+          description: ID of the profile entity (source)
+        personId:
+          type: string
+          description: ID of the person/guest (target)
+        personType:
+          $ref: "#/components/schemas/personType"
+        relationshipType:
+          $ref: "#/components/schemas/relationshipType"
+        isMainContact:
+          type: boolean
+          description: Whether this person is the main contact (applicable for CONTACT person type)
+        startDate:
+          type: string
+          format: date
+          description: Start date of the relationship
+        endDate:
+          type: string
+          format: date
+          description: End date of the relationship (null for active)
+        role:
+          $ref: "#/components/schemas/contactRole"
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional relationship metadata
+
+    CreateProfilePersonRequest:
+      type: object
+      required:
+        - personId
+        - personType
+      properties:
+        personId:
+          type: integer
+          format: int64
+          description: ID of the person/guest to link to
+        personType:
+          $ref: "#/components/schemas/personType"
+        relationshipType:
+          $ref: "#/components/schemas/relationshipType"
+        isMainContact:
+          type: boolean
+          description: Whether this person is the main contact (applicable for CONTACT person type)
+        startDate:
+          type: string
+          format: date
+          description: Start date of the relationship (defaults to today)
+        endDate:
+          type: string
+          format: date
+          description: End date of the relationship (null for indefinite)
+        role:
+          $ref: "#/components/schemas/contactRole"
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional relationship metadata
+
+    ProfilePersonListResponse:
+      allOf:
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProfilePersonResponse"
+              description: Array of profile person relationship data
+        - $ref: "#/components/schemas/CursorPagination"
+    # </editor-fold>
+
+    # <editor-fold desc="Contact Person Schemas">
+    ContactPersonResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Contact person ID
+        isMainContact:
+          type: boolean
+          description: Whether this is the main contact (from profile-person relationship, only populated when profileId filter was provided)
+        role:
+          $ref: "#/components/schemas/contactRole"
+          description: Role of the contact person (from profile-person relationship, only populated when profileId filter was provided)
+        relationshipType:
+          $ref: "#/components/schemas/relationshipType"
+          description: Type of relationship between person and profile (from profile-person relationship, only populated when profileId filter was provided)
+        startDate:
+          type: string
+          format: date
+          description: Start date of the relationship (from profile-person relationship, only populated when profileId filter was provided)
+        endDate:
+          type: string
+          format: date
+          description: End date of the relationship (from profile-person relationship, only populated when profileId filter was provided)
+        anonymized:
+          type: boolean
+          description: Whether the contact is anonymized
+          default: false
+        prefix:
+          type: string
+          maxLength: 5
+          description: Name prefix (Mr., Mrs., Dr., etc.)
+          example: "Mr."
+        firstName:
+          type: string
+          maxLength: 100
+          description: First name
+          example: "John"
+        lastName:
+          type: string
+          maxLength: 100
+          description: Last name
+          example: "Doe"
+        emails:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactEmail"
+          description: Email addresses with types
+        phones:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactPhone"
+          description: Phone numbers with types
+        status:
+          $ref: "#/components/schemas/ContactStatus"
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        billingDetails:
+          $ref: "#/components/schemas/BillingDetails"
+
+    CreateContactPersonRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - status
+      properties:
+        profileId:
+          type: integer
+          format: int64
+          description: Optional profile ID to link this contact person to a specific profile (group, company, or travel agent)
+        isMainContact:
+          type: boolean
+          description: Whether this is the main contact (stored in profile-person relationship, requires profileId)
+          default: false
+        role:
+          $ref: "#/components/schemas/contactRole"
+          description: Role of the contact person (stored in profile-person relationship, requires profileId)
+        anonymized:
+          type: boolean
+          description: Whether the contact is anonymized
+          default: false
+        prefix:
+          type: string
+          maxLength: 5
+          description: Name prefix (Mr., Mrs., Dr., etc.)
+          example: "Mr."
+        firstName:
+          type: string
+          maxLength: 100
+          description: First name
+          example: "John"
+        lastName:
+          type: string
+          maxLength: 100
+          description: Last name
+          example: "Doe"
+        emails:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactEmail"
+          description: Email addresses with types
+        phones:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactPhone"
+          description: Phone numbers with types
+        status:
+          $ref: "#/components/schemas/ContactStatus"
+        billingDetails:
+          $ref: "#/components/schemas/BillingDetails"
+
+    UpdateContactPersonRequest:
+      type: object
+      properties:
+        anonymized:
+          type: boolean
+          description: Whether the contact is anonymized
+        prefix:
+          type: string
+          maxLength: 5
+          description: Name prefix (Mr., Mrs., Dr., etc.)
+          example: "Mr."
+        firstName:
+          type: string
+          maxLength: 100
+          description: First name
+          example: "John"
+        lastName:
+          type: string
+          maxLength: 100
+          description: Last name
+          example: "Doe"
+        emails:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactEmail"
+          description: Email addresses with types
+        phones:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactPhone"
+          description: Phone numbers with types
+        status:
+          $ref: "#/components/schemas/ContactStatus"
+        billingDetails:
+          $ref: "#/components/schemas/BillingDetails"
+        profileId:
+          type: integer
+          format: int64
+          description: Profile ID to update relationship for. Required when updating role, isMainContact, or relationshipType.
+        role:
+          $ref: "#/components/schemas/contactRole"
+        isMainContact:
+          type: boolean
+          description: Whether this person is the main contact for the profile
+        relationshipType:
+          $ref: "#/components/schemas/relationshipType"
+
+    ContactEmail:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Email ID
+          readOnly: true
+        contactPersonId:
+          type: string
+          description: Contact person ID
+          readOnly: true
+        emailType:
+          type: string
+          maxLength: 50
+          description: Email type (work, personal, etc.)
+          example: "work"
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Email address
+          example: "john.doe@example.com"
+        primary:
+          type: boolean
+          description: Whether this is the primary email
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          readOnly: true
+
+    ContactPhone:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Phone ID
+          readOnly: true
+        contactPersonId:
+          type: string
+          description: Contact person ID
+          readOnly: true
+        phoneType:
+          type: string
+          maxLength: 50
+          description: Phone type (work, mobile, home, etc.)
+          example: "mobile"
+        phone:
+          type: string
+          maxLength: 50
+          description: Phone number
+          example: "+1-555-123-4567"
+        primary:
+          type: boolean
+          description: Whether this is the primary phone
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          readOnly: true
+
+    ContactStatus:
+      type: string
+      description: Contact person status. Allowed values are ACTIVE, DELETED
+      example: "ACTIVE"
+
+    ContactPersonListResponse:
+      allOf:
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/ContactPersonResponse"
+        - $ref: "#/components/schemas/CursorPagination"
+    # </editor-fold>
+
+    # <editor-fold desc="Profile Note Schemas">
+    ProfileNoteBase:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: User ID of the person who created the note
+          example: 12345
+        content:
+          type: string
+          description: Content of the note
+          example: "Customer requested late checkout due to flight delay"
+
+    NoteUser:
+      type: object
+      description: User information for note author
+      properties:
+        id:
+          type: string
+          description: User ID
+          example: "12345"
+        firstName:
+          type: string
+          description: First name of the user
+          example: "John"
+        lastName:
+          type: string
+          description: Last name of the user
+          example: "Doe"
+        email:
+          type: string
+          description: Email of the user
+          example: "john.doe@example.com"
+
+    ProfileNoteResponse:
+      type: object
+      required:
+        - id
+        - profileId
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the profile note
+          example: "12345"
+        profileId:
+          type: string
+          description: ID of the profile (group, company, or travel agent)
+          example: "67890"
+        user:
+          $ref: "#/components/schemas/NoteUser"
+        content:
+          type: string
+          description: Content of the note
+          example: "Customer requested late checkout due to flight delay"
+        archivedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the note was archived (null if not archived)
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    CreateProfileNoteRequest:
+      allOf:
+        - $ref: "#/components/schemas/ProfileNoteBase"
+        - type: object
+          required:
+            - userId
+            - content
+
+    UpdateProfileNoteRequest:
+      allOf:
+        - $ref: "#/components/schemas/ProfileNoteBase"
+
+    ProfileNoteListResponse:
+      allOf:
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProfileNoteResponse"
+              description: Array of profile note data
+        - $ref: "#/components/schemas/CursorPagination"
+    # </editor-fold>
+
+    # <editor-fold desc="Profile Document Schemas">
+    ProfileDocumentResponse:
+      type: object
+      required:
+        - id
+        - profileId
+        - userId
+        - fileName
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the profile document
+          example: "12345"
+        profileId:
+          type: string
+          description: ID of the profile (group, company, or travel agent)
+          example: "67890"
+        userId:
+          type: string
+          description: User ID of the person who uploaded the document
+          example: "54321"
+        fileName:
+          type: string
+          description: Original file name of the uploaded document
+          example: "contract.pdf"
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    ProfileDocumentListResponse:
+      allOf:
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProfileDocumentResponse"
+              description: Array of profile document data
+        - $ref: "#/components/schemas/CursorPagination"
+
+    ProfileDocumentDownloadResponse:
+      type: object
+      required:
+        - downloadUrl
+      properties:
+        downloadUrl:
+          type: string
+          format: uri
+          description: Pre-signed URL to download the document file (valid for 5 minutes)
+          example: "https://s3.amazonaws.com/bucket/path/file.pdf?X-Amz-..."
+    # </editor-fold>
+
+    # <editor-fold desc="Enums">
+    BillingDetails:
+      type: object
+      description: Billing details for profiles and contact persons
+      properties:
+        billingEntity:
+          type: boolean
+          description: Whether this is a billing entity
+        legalName:
+          type: string
+          maxLength: 255
+          description: Legal name for billing purposes
+        billingEmail:
+          type: string
+          format: email
+          maxLength: 255
+          description: Billing email address
+        billingAddress:
+          $ref: "#/components/schemas/Address"
+        billingCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          description: Billing currency code (ISO 4217 - 3 uppercase letters, e.g., USD, EUR, GBP)
+          example: USD
+        paymentMethod:
+          $ref: "#/components/schemas/PaymentMethod"
+        billingInstructions:
+          type: string
+          description: Special billing instructions
+        invoiceRecipientEmail:
+          type: string
+          format: email
+          maxLength: 255
+          description: Email address for invoice delivery
+        creditLimit:
+          type: number
+          description: Credit limit amount
+        taxId:
+          type: string
+          maxLength: 100
+          description: Tax identification number
+        billingFrequency:
+          $ref: "#/components/schemas/BillingFrequency"
+        invoiceDueDays:
+          type: integer
+          minimum: 0
+          description: Number of days until invoice is due
+
+    Address:
+      type: object
+      description: |
+        Flexible address object with country-specific fields.
+        The countryCode determines the expected address format.
+        All address fields except id and countryCode are stored as dynamic properties.
+        Common fields include: address1, address2, street, number, city, state, zip, etc.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the address
+          readOnly: true
+        countryCode:
+          type: string
+          minLength: 2
+          maxLength: 2
+          pattern: '^[A-Z]{2}$'
+          description: ISO 3166-1 alpha-2 country code (determines address format)
+      additionalProperties: true
+
+    ProfileStatus:
+      type: string
+      enum: [PENDING, ACTIVE, INACTIVE, CANCELLED, ARCHIVED]
+      description: Profile status
+      example: "ACTIVE"
+
+    ProfileType:
+      type: string
+      enum:
+        - COMPANY
+        - GROUP
+        - TRAVEL_AGENT
+      description: Profile type
+
+    GroupType:
+      type: string
+      enum: [WEDDING, SOCIAL, SMERF, CORPORATE, ASSOCIATION, EDUCATION, MEETING, CONFERENCE, MICE, EXHIBITIONS, INCENTIVE, OTHER]
+      description: Type of group. Allowed values are WEDDING, SOCIAL, SMERF, CORPORATE, ASSOCIATION, EDUCATION, MEETING, CONFERENCE, MICE, EXHIBITIONS, INCENTIVE, OTHER
+      example: "CONFERENCE"
+
+    PaymentMethod:
+      type: string
+      enum: [DIRECT_BILL, CASH, CHECK, CREDIT_CARD, DEBIT_CARD, VOUCHER, PAY_BY_LINK, THIRD_PARTY_PAYMENT]
+      description: Payment method. Allowed values are DIRECT_BILL, CASH, CHECK, CREDIT_CARD, DEBIT_CARD, VOUCHER, PAY_BY_LINK, THIRD_PARTY_PAYMENT
+      example: "CREDIT_CARD"
+
+    BillingFrequency:
+      type: string
+      enum: [PER_STAY, WEEKLY, MONTHLY, ON_DEMAND]
+      description: Billing frequency. Allowed values are PER_STAY, WEEKLY, MONTHLY, ON_DEMAND
+      example: "MONTHLY"
+
+    CompanyType:
+      type: string
+      enum: [CORPORATE, SME, NON_PROFIT, ENTERPRISE, GOVERNMENT, ASSOCIATION, LOCAL, B2B, PARTNERSHIP, OTHER]
+      description: Company type. Allowed values are CORPORATE, SME, NON_PROFIT, ENTERPRISE, GOVERNMENT, ASSOCIATION, LOCAL, B2B, PARTNERSHIP, OTHER
+      example: "CORPORATE"
+
+    AgencyType:
+      type: string
+      enum: [OTA, RETAIL, CORPORATE_AGENT, CONSORTIA, WHOLESALER, GROUP_TOUR, TOUR_OPERATOR, DOMESTIC, FOREIGN, OTHER]
+      description: Travel agency type. Allowed values are OTA, RETAIL, CORPORATE_AGENT, CONSORTIA, WHOLESALER, GROUP_TOUR, TOUR_OPERATOR, DOMESTIC, FOREIGN, OTHER
+      example: "RETAIL"
+
+    PreferredCommunication:
+      type: string
+      enum: [EMAIL, PHONE, SMS, FAX]
+      description: Preferred communication method. Allowed values are EMAIL, PHONE, SMS, FAX
+      example: "EMAIL"
+
+    personType:
+      type: string
+      enum:
+        - CONTACT
+        - GUEST
+      description: Type of persons
+
+    contactRole:
+      type: string
+      enum:
+        - BOOKING_COORDINATOR
+        - ONSITE_COORDINATOR
+        - ROOMING_LIST_CONTACT
+        - ACCOUNTS_PAYABLE
+        - BILLING
+        - INVOICING
+        - ACCOUNT_MANAGER
+        - SALES_LEAD
+        - TRAVEL_AGENT_ACCOUNT_MANAGER
+        - CORPORATE_CONTACT
+        - AUTHORIZED_SIGNER
+        - EXECUTIVE_APPROVER
+        - MARKETING
+        - MAIN_POINT_OF_CONTACT
+        - ADMINISTRATIVE
+        - OTHER
+      description: Role of person in the profile relationship
+      example: "BOOKING_COORDINATOR"
+
+    relationshipType:
+      type: string
+      enum:
+        - EMPLOYEE
+        - BOOKED_BY
+        - PART_OF_GROUP
+        - CONTACT
+        - GUEST
+        - DECISION_MAKER
+        - TRAVELER
+        - PRIMARY
+        - SECONDARY
+        - BILLING_CONTACT
+        - EMERGENCY_CONTACT
+      description: Type of relationship between person and profile
+      example: "PRIMARY"
+
+    # </editor-fold>
+
+    # <editor-fold desc="Base">
+    CursorPaginationBase:
+      type: object
+      description: |
+        Base schema for cursor-based pagination responses.
+        Use `nextPageToken` to fetch the next page of results.
+      properties:
+        nextPageToken:
+          type: string
+          nullable: true
+          description: |
+            Token to fetch the next page of results.
+            Pass this value as the `pageToken` query parameter in the next request.
+            When null, there are no more pages available.
+          example: "eyJmaWVsZHMiOlt7InBhdGgiOlsibmFtZSJdLCJ2YWx1ZSI6IkFjbWUgQ29ycCJ9XX0="
+
+    # <editor-fold desc="Error Schemas">
+    ApiError:
+      type: object
+      description: |
+        Standard error response for 4xx and 5xx errors (except validation errors).
+
+        ## Error Codes
+
+        ### Validation Errors (400)
+        - `INVALID_REQUEST` - The request body is invalid or malformed
+        - `INVALID_PARAMETER` - One or more request parameters are invalid
+        - `INVALID_ENUM_VALUE` - Invalid enum value provided
+        - `INVALID_JSON` - The request body contains malformed JSON
+
+        ### Resource Errors (404)
+        - `RESOURCE_NOT_FOUND` - The requested resource was not found
+        - `PROFILE_NOT_FOUND` - Profile not found
+        - `NOTE_NOT_FOUND` - Note not found
+        - `TAG_NOT_FOUND` - Tag not found
+
+        ### Conflict Errors (409)
+        - `RESOURCE_ALREADY_EXISTS` - The resource already exists
+        - `DUPLICATE_PROFILE_CODE` - A profile with this code already exists
+        - `DUPLICATE_RELATIONSHIP` - This relationship already exists
+
+        ### Authorization Errors (403)
+        - `ACCESS_DENIED` - Access denied to the requested resource
+        - `ORGANIZATION_MISMATCH` - Resource belongs to a different organization
+
+        ### Server Errors (500)
+        - `INTERNAL_ERROR` - An unexpected error occurred
+        - `DATABASE_ERROR` - A database error occurred
+      properties:
+        message:
+          type: string
+          description: Human-readable error message explaining what went wrong
+          example: "A profile with this code already exists. Please use a unique code."
+        code:
+          type: string
+          description: Machine-readable error code for programmatic error handling
+          example: "DUPLICATE_PROFILE_CODE"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the error occurred
+          example: "2024-01-15T10:30:45.123Z"
+
+    ValidationError:
+      type: object
+      description: |
+        Validation error response returned for 422 Unprocessable Entity.
+        Contains field-level validation errors with specific details about what failed.
+
+        ## Error Code
+        - `VALIDATION_ERROR` - One or more fields failed validation
+      properties:
+        message:
+          type: string
+          description: Overall validation error message
+          example: "One or more fields failed validation"
+        code:
+          type: string
+          description: Error code (always "VALIDATION_ERROR" for validation failures)
+          example: "VALIDATION_ERROR"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the error occurred
+          example: "2024-01-15T10:30:45.123Z"
+        fieldErrors:
+          type: array
+          description: List of field-specific validation errors
+          items:
+            $ref: "#/components/schemas/FieldError"
+
+    FieldError:
+      type: object
+      description: Field-level validation error details
+      properties:
+        field:
+          type: string
+          description: Name of the field that failed validation (supports nested fields with dot notation)
+          example: "attributes.companyProfile.website"
+        message:
+          type: string
+          description: Human-readable message explaining why validation failed for this field
+          example: "Invalid value 'INVALID_TYPE'. Allowed values are: [COMPANY, GROUP, TRAVEL_AGENT]"
+      example:
+        field: "email"
+        message: "must be a well-formed email address (provided: 'invalid-email')"
+    # </editor-fold>
+    # </editor-fold>
