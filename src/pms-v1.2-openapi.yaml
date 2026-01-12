@@ -244,6 +244,9 @@ components:
                 groupCode:
                     description: 'The unique identifier of the group profile the allotment block should be created'
                     type: string
+                eventCode:
+                    description: 'The unique identifier of the event the allotment block should be created'
+                    type: string
                 allotmentBlockName:
                     description: 'The name for the allotment block'
                     type: string
@@ -428,6 +431,12 @@ components:
                             groupCode:
                                 description: 'Group profile code associated to the allotment block'
                                 type: string
+                            eventId:
+                                description: 'Event ID associated to the allotment block'
+                                type: string
+                            eventCode:
+                                description: 'Event code associated to the allotment block'
+                                type: string
                             isAutoRelease:
                                 description: 'If the allotment block is configured for auto-release'
                                 type: boolean
@@ -580,6 +589,9 @@ components:
                             ratePlanId:
                                 description: 'Rate plan ID if applicable'
                                 type: string
+                            ratePlan:
+                                description: 'Rate plan name if applicable'
+                                type: string
                             allotmentType:
                                 description: 'the type of allotment block'
                                 type: string
@@ -588,6 +600,15 @@ components:
                                 type: string
                             groupCode:
                                 description: 'Group profile code associated to the allotment block'
+                                type: string
+                            eventId:
+                                description: 'Event ID associated to the allotment block'
+                                type: string
+                            eventCode:
+                                description: 'Event code associated to the allotment block'
+                                type: string
+                            bookingCodeUrl:
+                                description: 'URL for the booking engine with the allotment block code pre-filled'
                                 type: string
                             isAutoRelease:
                                 description: 'If the allotment block is configured for auto-release'
@@ -611,6 +632,30 @@ components:
                                         releaseTime:
                                             description: "The hour to being the auto-release in HH:00 format, e.g. '00:00', '01:00'..."
                                             type: string
+                            releaseStatus:
+                                description: 'Current status of the inventory release process'
+                                type: string
+                            releaseScheduleStatus:
+                                description: 'Human-readable description of release schedule'
+                                type: string
+                            releaseScheduleType:
+                                description: 'The release scheduling method for inventory release'
+                                type: string
+                            releaseDate:
+                                description: 'Release date'
+                                type: string
+                            reservationsCount:
+                                description: 'Number of linked reservations'
+                                type: integer
+                            roomsHeld:
+                                description: 'Total rooms held'
+                                type: integer
+                            roomsPickedUp:
+                                description: 'Rooms picked up'
+                                type: integer
+                            roomsRemaining:
+                                description: 'Rooms remaining'
+                                type: integer
                             allotmentIntervals:
                                 description: 'array of interval data by room type'
                                 type: array
@@ -881,6 +926,12 @@ components:
                                 type: string
                             groupCode:
                                 description: 'Group profile code associated to the allotment block'
+                                type: string
+                            eventId:
+                                description: 'Event ID associated to the allotment block'
+                                type: string
+                            eventCode:
+                                description: 'Event code associated to the allotment block'
                                 type: string
                             isAutoRelease:
                                 description: 'If the allotment block is configured for auto-release'
@@ -2270,9 +2321,7 @@ components:
                                         nullable: true
                         guestRequirements:
                             description: 'Guest requirements data. Only included if `includeGuestRequirements=true`.'
-                            type: array
-                            items:
-                                type: object
+                            type: object
                             nullable: true
                         specialRequests:
                             description: 'Special requests made by the guest at the time of the booking'
@@ -2432,9 +2481,7 @@ components:
                                 nullable: true
                             guestRequirements:
                                 description: 'Guest requirements data. Only included if `includeGuestRequirements=true`.'
-                                type: array
-                                items:
-                                    type: object
+                                type: object
                                 nullable: true
                             guestNotes:
                                 description: 'Guest Notes'
@@ -2577,9 +2624,7 @@ components:
                                 format: date-time
                             guestRequirements:
                                 description: 'Guest requirements data. Only included if `includeGuestRequirements=true`.'
-                                type: array
-                                items:
-                                    type: object
+                                type: object
                                 nullable: true
                             customFields:
                                 description: 'List of custom fields'
@@ -6013,9 +6058,7 @@ components:
                                         type: boolean
                                     guestRequirements:
                                         description: 'Guest requirements data. Only included if `includeGuestRequirements=true`.'
-                                        type: array
-                                        items:
-                                            type: object
+                                        type: object
                                         nullable: true
                                     customFields:
                                         description: 'List of custom fields'
@@ -7051,9 +7094,7 @@ components:
                                             nullable: true
                                         guestRequirements:
                                             description: 'Guest requirements data. Only included if `includeGuestsDetails=true` and `includeGuestRequirements=true`.'
-                                            type: array
-                                            items:
-                                                type: object
+                                            type: object
                                             nullable: true
                                         customFields:
                                             description: 'List of guest custom fields'
@@ -7538,9 +7579,7 @@ components:
                                             nullable: true
                                         guestRequirements:
                                             description: 'Guest requirements data. Only included if `includeGuestsDetails=true` and `includeGuestRequirements=true`.'
-                                            type: array
-                                            items:
-                                                type: object
+                                            type: object
                                             nullable: true
                                         customFields:
                                             description: 'List of guest custom fields'
@@ -9499,6 +9538,13 @@ paths:
                     required: false
                     in: query
                 -
+                    description: 'An event code'
+                    name: eventCode
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
                     description: 'Allotment block status(es)'
                     name: allotmentBlockStatus
                     schema:
@@ -10139,7 +10185,6 @@ paths:
                             - group
                             - company
                             - travel_agent
-                            - wholesaler
                     required: false
                     in: query
                 -
@@ -12810,7 +12855,7 @@ paths:
             tags:
                 - Reservation
             summary: getReservationsWithRateDetails
-            description: 'Returns a list of reservations with added information regarding booked rates and sources. The results are limited to 2 years in the past unless resutsFrom parameter is set to another date.<br /> Please note that some reservations modification may not be reflected in this timestamp.'
+            description: 'Returns a list of reservations with added information regarding booked rates and sources.<br /> Please note that some reservations modification may not be reflected in this timestamp.'
             responses:
                 200:
                     description: '200 Response'
@@ -12834,7 +12879,7 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'Inferior limit datetime, used to filter reservations, based on booking date. If it is not set, will return the reservations starting 2 years ago'
+                    description: 'Inferior limit datetime, used to filter reservations, based on booking date'
                     name: resultsFrom
                     schema:
                         type: string
