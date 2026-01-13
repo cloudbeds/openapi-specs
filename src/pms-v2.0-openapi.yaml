@@ -588,6 +588,536 @@ paths:
         -
           default:
             - 'delete:doorLockKey'
+  /events/v2/events:
+    get:
+      tags:
+        - Events
+      summary: 'List events for a property'
+      description: 'Returns a paginated list of events for a property. Events contain operational data and reference group profiles via profileId.'
+      operationId: 'EventController::list'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: eventCode
+          in: query
+          schema:
+            type: string
+        -
+          name: profileId
+          in: query
+          schema:
+            type: string
+        -
+          name: status
+          in: query
+          schema:
+            type: string
+        -
+          name: createdFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        -
+          name: createdTo
+          in: query
+          schema:
+            type: string
+            format: date-time
+        -
+          name: startDateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        -
+          name: startDateTo
+          in: query
+          schema:
+            type: string
+            format: date
+        -
+          name: endDateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        -
+          name: endDateTo
+          in: query
+          schema:
+            type: string
+            format: date
+        -
+          name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 100
+            minimum: 0
+        -
+          name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: 'List of events'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventListResponseSchema'
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:group'
+    post:
+      tags:
+        - Events
+      summary: 'Create a new event'
+      description: 'Creates a new event associated with an existing group profile or without any profile association.'
+      operationId: 'EventController::create'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventCreateRequestSchema'
+      responses:
+        '201':
+          description: 'Event created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSingleResponseSchema'
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:group'
+  '/events/v2/events/{eventId}':
+    get:
+      tags:
+        - Events
+      summary: 'Get a single event'
+      description: 'Returns detailed information about a specific event.'
+      operationId: 'EventController::show'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: eventId
+          in: path
+          description: 'Event ID or event code (e.g., "12345" or "g162795")'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'Event details'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSingleResponseSchema'
+        '404':
+          description: 'Event not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:group'
+    delete:
+      tags:
+        - Events
+      summary: 'Delete an event'
+      description: 'Deletes an event by ID or event code. This is a soft delete.'
+      operationId: 'EventController::destroy'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: eventId
+          in: path
+          description: 'Event ID or event code'
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'Event deleted'
+        '404':
+          description: 'Event not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:group'
+    patch:
+      tags:
+        - Events
+      summary: 'Update an existing event'
+      description: 'Updates an event. Only provided fields are updated. For profileId: omit to keep, null to clear, string to replace.'
+      operationId: 'EventController::update'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: eventId
+          in: path
+          description: 'Event ID or event code'
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventUpdateRequestSchema'
+      responses:
+        '200':
+          description: 'Event updated'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSingleResponseSchema'
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '404':
+          description: 'Event not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:group'
+  '/events/v2/events/{eventId}/notes':
+    get:
+      tags:
+        - Events
+      summary: 'List notes for an event'
+      description: 'Returns a paginated list of notes for a specific event.'
+      operationId: 'EventNoteController::list'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: eventId
+          in: path
+          description: 'Event ID or event code'
+          required: true
+          schema:
+            type: string
+        -
+          name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 100
+            minimum: 0
+        -
+          name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        -
+          name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: 'List of notes'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventNoteListResponseSchema'
+        '404':
+          description: 'Event not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:group'
+    post:
+      tags:
+        - Events
+      summary: 'Create a note for an event'
+      description: 'Creates a new note for a specific event.'
+      operationId: 'EventNoteController::create'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: eventId
+          in: path
+          description: 'Event ID or event code'
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventNoteCreateRequestSchema'
+      responses:
+        '201':
+          description: 'Note created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventNoteSingleResponseSchema'
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '404':
+          description: 'Event not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:group'
+  '/events/v2/events/{eventId}/notes/{noteId}':
+    patch:
+      tags:
+        - Events
+      summary: 'Update an event note'
+      description: 'Updates an existing note or archives it.'
+      operationId: 'EventNoteController::update'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: eventId
+          in: path
+          description: 'Event ID or event code'
+          required: true
+          schema:
+            type: string
+        -
+          name: noteId
+          in: path
+          description: 'Note ID'
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventNoteUpdateRequestSchema'
+      responses:
+        '200':
+          description: 'Note updated'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventNoteSingleResponseSchema'
+        '400':
+          description: 'Bad request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '404':
+          description: 'Event or note not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:group'
   '/housekeeping/v1/inspections/{propertyId}':
     get:
       tags:
@@ -2173,7 +2703,6 @@ components:
         - feature.integrations.generate-dummy-doorlock-keys
         - feature.distribution.market-segmentation
         - feature.distribution.market-segmentation-enable-custom-group
-        - feature.distribution.market-segmentation-delete-with-query-builder
         - feature.distribution.age-policy-new-system-enabled
         - feature.distribution.age-policy-dual-write-enabled
         - feature.distribution.age-policy-validation-enabled
@@ -3428,14 +3957,19 @@ components:
           type: string
       type: object
     MoneySchema:
+      description: 'Money representation with amount in smallest currency unit and ISO 4217 currency code'
       required:
         - amount
         - currencyCode
       properties:
         amount:
+          description: 'Amount in the smallest representable units of the currency (e.g., cents for USD). For example, USD $124.39 would be "12439".'
           type: string
+          example: '12439'
         currencyCode:
+          description: 'ISO 4217 currency code'
           type: string
+          example: USD
       type: object
     NoContentResponseSchema: {  }
     NotFoundResponseSchema:
@@ -3466,6 +4000,7 @@ components:
                   - groups_data_sync_enabled_channels
                   - full_reservation_sync_enabled_channels
                   - is_distribution_enabled
+                  - allow_ota_reservation_cancellation
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting you are updating.'
@@ -3493,6 +4028,7 @@ components:
                   - groups_data_sync_enabled_channels
                   - full_reservation_sync_enabled_channels
                   - is_distribution_enabled
+                  - allow_ota_reservation_cancellation
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting.'
@@ -3539,6 +4075,7 @@ components:
                   - groups_data_sync_enabled_channels
                   - full_reservation_sync_enabled_channels
                   - is_distribution_enabled
+                  - allow_ota_reservation_cancellation
                 example: example_setting_key
               message:
                 description: 'The reason why the update failed.'
@@ -3894,6 +4431,582 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DoorLockSettingsCommonRoomResponseSchema'
+      type: object
+    EventCreateRequestSchema:
+      description: 'Request body for creating a new event'
+      required:
+        - name
+        - sourceId
+      properties:
+        name:
+          description: 'Event name'
+          type: string
+          maxLength: 255
+          example: 'Smith Wedding Reception'
+        profileId:
+          description: 'GPS Profile ID to link to this event'
+          type: string
+          example: '987123456489'
+          nullable: true
+        status:
+          description: 'Event status (default: lead)'
+          type: string
+          enum:
+            - lead
+            - proposal
+            - tentative
+            - qualified
+            - definite
+            - open
+            - closed
+            - closed_lost
+            - canceled
+          example: lead
+        sourceId:
+          description: 'Source ID for the event booking source'
+          type: string
+          example: ss-123456
+        startDate:
+          description: 'Event start date (YYYY-MM-DD). NOTE: Informational only - effective event dates are calculated from linked reservations.'
+          type: string
+          example: '2025-06-15'
+          nullable: true
+        endDate:
+          description: 'Event end date (YYYY-MM-DD). NOTE: Informational only - effective event dates are calculated from linked reservations.'
+          type: string
+          example: '2025-06-17'
+          nullable: true
+        transactionMode:
+          description: 'Transaction routing mode (default: none)'
+          type: string
+          enum:
+            - none
+            - post_into_group
+          example: none
+        transactionTypes:
+          description: 'Transaction types to route (required when transactionMode is post_into_group)'
+          type: array
+          items:
+            type: string
+          example:
+            - accommodation
+            - products
+          nullable: true
+        folioConfigId:
+          description: 'Folio configuration ID'
+          type: string
+          example: '456'
+          nullable: true
+        enableAggregateAllotmentBlock:
+          description: 'Enable aggregate allotment block feature'
+          type: boolean
+          example: false
+        aggregateAllotmentBlockPackageId:
+          description: 'Package ID for aggregate allotment block'
+          type: string
+          example: '123'
+          nullable: true
+        segmentId:
+          description: 'Market segment ID'
+          type: string
+          example: '5'
+          nullable: true
+      type: object
+    EventGetRequestSchema:
+      description: 'Request schema for getting a single event.'
+      required:
+        - eventId
+      properties:
+        eventId:
+          description: 'Event ID or event code (e.g., "12345" or "g162795")'
+          type: string
+          example: '12345'
+      type: object
+    EventListRequestSchema:
+      description: 'Request parameters for listing events'
+      properties:
+        eventCode:
+          description: 'Filter by event code (legacy: groupCode)'
+          type: string
+          example: g162795
+          nullable: true
+        profileId:
+          description: 'Filter by GPS profile ID'
+          type: string
+          example: '987123456489'
+          nullable: true
+        status:
+          description: 'Filter by event status'
+          type: string
+          enum:
+            - lead
+            - proposal
+            - tentative
+            - qualified
+            - definite
+            - open
+            - closed
+            - closed_lost
+            - canceled
+          example: definite
+          nullable: true
+        createdFrom:
+          description: 'Filter events created after this datetime (RFC 3339 format)'
+          type: string
+          example: '2025-01-01T00:00:00Z'
+          nullable: true
+        createdTo:
+          description: 'Filter events created before this datetime (RFC 3339 format)'
+          type: string
+          example: '2025-12-31T23:59:59Z'
+          nullable: true
+        startDateFrom:
+          description: 'Filter events where startDate is on or after this date (YYYY-MM-DD format)'
+          type: string
+          example: '2025-01-01'
+          nullable: true
+        startDateTo:
+          description: 'Filter events where startDate is on or before this date (YYYY-MM-DD format)'
+          type: string
+          example: '2025-12-31'
+          nullable: true
+        endDateFrom:
+          description: 'Filter events where endDate is on or after this date (YYYY-MM-DD format)'
+          type: string
+          example: '2025-01-01'
+          nullable: true
+        endDateTo:
+          description: 'Filter events where endDate is on or before this date (YYYY-MM-DD format)'
+          type: string
+          example: '2025-12-31'
+          nullable: true
+        limit:
+          description: 'Maximum number of items to return (default: 100, max: 100)'
+          type: integer
+          maximum: 100
+          minimum: 0
+          example: 100
+        offset:
+          description: 'Number of items to skip (default: 0)'
+          type: integer
+          minimum: 0
+          example: 0
+      type: object
+    EventNoteCreateRequestSchema:
+      description: 'Request body for creating an event note'
+      required:
+        - text
+      properties:
+        eventId:
+          description: 'Event ID or event code (e.g., "12345" or "g162795")'
+          type: string
+          example: '12345'
+        text:
+          description: 'Note content'
+          type: string
+          maxLength: 10000
+          example: 'Guest requested late checkout for the wedding party'
+      type: object
+    EventNoteListRequestSchema:
+      description: 'Request parameters for listing event notes'
+      properties:
+        eventId:
+          description: 'Event ID or event code (e.g., "12345" or "g162795")'
+          type: string
+          example: '12345'
+        limit:
+          description: 'Maximum number of items to return (default: 100, max: 100)'
+          type: integer
+          maximum: 100
+          minimum: 0
+          example: 100
+        offset:
+          description: 'Number of items to skip (default: 0)'
+          type: integer
+          minimum: 0
+          example: 0
+        includeArchived:
+          description: 'Include archived notes (default: false)'
+          type: boolean
+          example: false
+      type: object
+    EventNoteUpdateRequestSchema:
+      description: 'Request body for updating an event note. At least one field must be provided.'
+      properties:
+        eventId:
+          description: 'Event ID or event code (e.g., "12345" or "g162795")'
+          type: string
+          example: '12345'
+        noteId:
+          description: 'Note ID'
+          type: string
+          example: '456'
+        text:
+          description: 'Updated note content'
+          type: string
+          maxLength: 10000
+          example: 'Guest requested late checkout - confirmed with management'
+          nullable: true
+        archived:
+          description: 'Archive the note'
+          type: boolean
+          example: true
+          nullable: true
+      type: object
+    EventUpdateRequestSchema:
+      description: 'Request body for updating an event. Only provided fields are updated. For profileId: omit to keep, null to clear, string to replace.'
+      properties:
+        eventId:
+          description: 'Event ID or event code (e.g., "12345" or "g162795")'
+          type: string
+          example: '12345'
+        profileId:
+          description: 'GPS Profile ID. Omit to keep unchanged, send null to clear, or send string to replace.'
+          type: string
+          example: '987123456489'
+          nullable: true
+        name:
+          description: 'Event name'
+          type: string
+          maxLength: 255
+          example: 'Smith Wedding Reception - Updated'
+          nullable: true
+        status:
+          description: 'Event status'
+          type: string
+          enum:
+            - lead
+            - proposal
+            - tentative
+            - qualified
+            - definite
+            - open
+            - closed
+            - closed_lost
+            - canceled
+          example: definite
+          nullable: true
+        sourceId:
+          description: 'Source ID for the event booking source'
+          type: string
+          example: ss-123456
+          nullable: true
+        startDate:
+          description: 'Event start date (YYYY-MM-DD). NOTE: Informational only - effective event dates are calculated from linked reservations.'
+          type: string
+          example: '2025-06-15'
+          nullable: true
+        endDate:
+          description: 'Event end date (YYYY-MM-DD). NOTE: Informational only - effective event dates are calculated from linked reservations.'
+          type: string
+          example: '2025-06-17'
+          nullable: true
+        transactionMode:
+          description: 'Transaction routing mode'
+          type: string
+          enum:
+            - none
+            - post_into_group
+          example: post_into_group
+          nullable: true
+        transactionTypes:
+          description: 'Transaction types to route (required when transactionMode is post_into_group)'
+          type: array
+          items:
+            type: string
+          example:
+            - accommodation
+            - products
+          nullable: true
+        folioConfigId:
+          description: 'Folio configuration ID'
+          type: string
+          example: '456'
+          nullable: true
+        enableAggregateAllotmentBlock:
+          description: 'Enable aggregate allotment block feature'
+          type: boolean
+          example: true
+          nullable: true
+        aggregateAllotmentBlockPackageId:
+          description: 'Package ID for aggregate allotment block'
+          type: string
+          example: '123'
+          nullable: true
+        segmentId:
+          description: 'Market segment ID'
+          type: string
+          example: '5'
+          nullable: true
+      type: object
+    EventListResponseSchema:
+      description: 'Paginated list of events'
+      required:
+        - success
+        - offset
+        - limit
+        - data
+      properties:
+        success:
+          description: 'Success status'
+          type: boolean
+          example: true
+        offset:
+          description: 'Number of items skipped (pagination offset)'
+          type: integer
+          minimum: 0
+          example: 0
+        limit:
+          description: 'Maximum number of items returned'
+          type: integer
+          maximum: 100
+          minimum: 0
+          example: 100
+        data:
+          description: 'List of events'
+          type: array
+          items:
+            $ref: '#/components/schemas/EventResponseSchema'
+      type: object
+    EventNoteListResponseSchema:
+      description: 'Paginated list of event notes'
+      required:
+        - success
+        - offset
+        - limit
+        - data
+      properties:
+        success:
+          description: 'Success status'
+          type: boolean
+          example: true
+        offset:
+          description: 'Number of items skipped (pagination offset)'
+          type: integer
+          minimum: 0
+          example: 0
+        limit:
+          description: 'Maximum number of items returned'
+          type: integer
+          maximum: 100
+          minimum: 0
+          example: 100
+        data:
+          description: 'List of event notes'
+          type: array
+          items:
+            $ref: '#/components/schemas/EventNoteResponseSchema'
+      type: object
+    EventNoteResponseSchema:
+      description: 'Event note response data'
+      required:
+        - id
+        - eventId
+        - text
+        - createdBy
+        - createdAt
+        - updatedAt
+        - archived
+      properties:
+        id:
+          description: 'Unique note ID'
+          type: string
+          example: '144'
+        eventId:
+          description: 'Parent event ID'
+          type: string
+          example: '12345'
+        text:
+          description: 'Note content'
+          type: string
+          example: 'Guest requested late checkout for the wedding party'
+        createdBy:
+          description: 'Creator name'
+          type: string
+          example: 'John Smith'
+        createdAt:
+          description: 'Creation timestamp (RFC 3339)'
+          type: string
+          format: date-time
+          example: '2025-01-15T10:30:00Z'
+        updatedAt:
+          description: 'Last update timestamp (RFC 3339)'
+          type: string
+          format: date-time
+          example: '2025-01-15T10:30:00Z'
+        archived:
+          description: 'Whether note is archived'
+          type: boolean
+          example: false
+        archivedAt:
+          description: 'Archive timestamp (RFC 3339)'
+          type: string
+          format: date-time
+          example: '2025-01-20T14:45:00Z'
+          nullable: true
+      type: object
+    EventNoteSingleResponseSchema:
+      description: 'Single event note response with success envelope'
+      required:
+        - success
+        - data
+      properties:
+        success:
+          description: 'Success status'
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/EventNoteResponseSchema'
+      type: object
+    EventResponseSchema:
+      description: 'Event response data'
+      required:
+        - id
+        - eventCode
+        - name
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          description: 'Unique event ID'
+          type: string
+          example: '12345'
+        eventCode:
+          description: 'Event code (legacy: groupCode)'
+          type: string
+          example: g162795
+        profileId:
+          description: 'GPS Profile ID linked to this event'
+          type: string
+          example: '987123456489'
+          nullable: true
+        name:
+          description: 'Event name'
+          type: string
+          example: 'Smith Wedding Reception'
+        status:
+          description: 'Event status'
+          type: string
+          enum:
+            - lead
+            - proposal
+            - tentative
+            - qualified
+            - definite
+            - open
+            - closed
+            - closed_lost
+            - canceled
+          example: definite
+        sourceId:
+          description: 'Source ID'
+          type: string
+          example: ss-693577
+          nullable: true
+        sourceName:
+          description: 'Source name'
+          type: string
+          example: 'Website/Booking Engine'
+          nullable: true
+        startDate:
+          description: 'Event start date (YYYY-MM-DD)'
+          type: string
+          format: date
+          example: '2025-06-15'
+          nullable: true
+        endDate:
+          description: 'Event end date (YYYY-MM-DD)'
+          type: string
+          format: date
+          example: '2025-06-17'
+          nullable: true
+        transactionMode:
+          description: 'Transaction routing mode'
+          type: string
+          enum:
+            - none
+            - post_into_group
+          example: post_into_group
+        transactionTypes:
+          description: 'Transaction types when mode is post_into_group'
+          type: array
+          items:
+            type: string
+          example:
+            - accommodation
+            - products
+          nullable: true
+        folioConfigId:
+          description: 'Folio configuration ID'
+          type: string
+          example: '456'
+          nullable: true
+        enableAggregateAllotmentBlock:
+          description: 'Aggregate allotment block enabled'
+          type: boolean
+          example: true
+        aggregateAllotmentBlockPackageId:
+          description: 'Package ID for aggregate allotment block'
+          type: string
+          example: '123'
+          nullable: true
+        segmentId:
+          description: 'Market segment ID'
+          type: string
+          example: '5'
+          nullable: true
+        allotmentBlockCount:
+          description: 'Number of allotment blocks'
+          type: integer
+          example: 2
+        reservationsCount:
+          description: 'Number of linked reservations'
+          type: integer
+          example: 15
+        roomsHeld:
+          description: 'Total rooms held'
+          type: integer
+          example: 20
+        roomsPickedUp:
+          description: 'Rooms picked up'
+          type: integer
+          example: 15
+        roomsRemaining:
+          description: 'Rooms remaining'
+          type: integer
+          example: 5
+        total:
+          $ref: '#/components/schemas/MoneySchema'
+        grandTotal:
+          $ref: '#/components/schemas/MoneySchema'
+        paidValue:
+          $ref: '#/components/schemas/MoneySchema'
+        balanceDue:
+          $ref: '#/components/schemas/MoneySchema'
+        createdAt:
+          description: 'Creation timestamp (RFC 3339)'
+          type: string
+          format: date-time
+          example: '2025-01-15T10:30:00Z'
+        updatedAt:
+          description: 'Last update timestamp (RFC 3339)'
+          type: string
+          format: date-time
+          example: '2025-01-20T14:45:00Z'
+      type: object
+    EventSingleResponseSchema:
+      description: 'Single event response with success envelope'
+      required:
+        - success
+        - data
+      properties:
+        success:
+          description: 'Success status'
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/EventResponseSchema'
       type: object
     InspectionItemSchema:
       required:
@@ -5834,6 +6947,9 @@ tags:
   -
     name: 'Door Locks'
     description: 'Door Locks'
+  -
+    name: Events
+    description: Events
   -
     name: Housekeeping
     description: Housekeeping
