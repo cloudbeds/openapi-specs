@@ -1279,6 +1279,37 @@ paths:
                   type: boolean
                 example:
                   INTEGRATION_INVOICING: true
+  "/fiscal-document/v1/folio-export/pdf":
+    post:
+      summary: Get folio list of transactions exported as PDF
+      description: Get folio list of transactions exported as PDF
+      operationId: getFolioPdf
+      security:
+        - bearerAuth: [ ]
+      tags:
+        - Export
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+        - $ref: "#/components/parameters/acceptLanguageHeader"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/GetFolioExportRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful file download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Used to indicate if the content should be displayed inline or as an attachment.
+              schema:
+                type: string
 components:
   securitySchemes:
     bearerAuth:
@@ -1295,6 +1326,13 @@ components:
         format: int64
         minimum: 1
       description: Property id
+    acceptLanguageHeader:
+      name: Accept-Language
+      in: header
+      required: false
+      schema:
+        type: string
+      description: Desired language of exported PDF
     fiscalDocumentId:
       name: id
       in: path
@@ -1606,9 +1644,12 @@ components:
           type: boolean
           default: false
           nullable: false
+        dueDatePropertyTimezone:
+          type: string
+          format: date
     GetInvoicePreviewRequest:
       type: object
-      required: [ transactionIds, sourceId, sourceKind, guestId, recipient ]
+      required: [ transactionIds, sourceId, sourceKind, guestId ]
       properties:
         transactionIds:
           deprecated: true
@@ -1663,6 +1704,9 @@ components:
           type: boolean
           default: false
           nullable: false
+        dueDatePropertyTimezone:
+          type: string
+          format: date
 
     ProFormaInvoicePreviewRequest:
       type: object
@@ -1811,66 +1855,47 @@ components:
               - CONTACT
               - GROUP
               - COMPANY
+              - GROUP_PROFILE
+              - GROUP_PROFILE_CONTACT
             description: Type of the recipient.
           id:
             type: integer
             format: int64
             description: ID of the recipient, references guestId, contactId, groupId, etc. depending on type.
             minimum: 1
+          taxDocumentSource:
+            type: string
+            enum:
+              - GUEST_TAX_ID
+              - GUEST_DOCUMENT_NUMBER
+            description: Source of the tax document number.
 
     ManualRecipientRequest:
       type: object
       required:
         - name
+        - taxId
+        - type
       properties:
-          # Basic recipient information
+          type:
+            enum: [ PERSON, COMPANY ]
+            description: Type of recipient (person or company)
           name:
             type: string
-            description: Name of the recipient (person or company)
+            description: Name of the recipient
+            nullable: true
+          gender:
+            $ref: "#/components/schemas/GuestGender"
           email:
             type: string
             format: email
             description: Email address of the recipient
             nullable: true
-          type:
+          birthday:
             type: string
-            enum: [PERSON, COMPANY]
-            description: Type of recipient (person or company)
-          # Address information (flat structure, used for both personal and company addresses)
-          address1:
-            type: string
-            description: Primary street address
+            format: date
+            description: Birthday of the recipient
             nullable: true
-          address2:
-            type: string
-            description: Secondary street address
-            nullable: true
-          city:
-            type: string
-            description: City
-            nullable: true
-          state:
-            type: string
-            description: State or province
-            nullable: true
-          zipCode:
-            type: string
-            description: Zip/postal code
-            nullable: true
-          country:
-            type: string
-            description: Country code or name
-            nullable: true
-          # Tax information
-          taxId:
-            type: string
-            description: Tax ID / VAT number
-            nullable: true
-          taxType:
-            type: string
-            description: Tax type
-            nullable: true
-          # Contact details
           phone:
             type: string
             description: Phone number
@@ -1879,38 +1904,63 @@ components:
             type: string
             description: Cell phone number
             nullable: true
-          gender:
+          taxId:
             type: string
-            description: Gender
+            description: Tax ID / VAT number
             nullable: true
-          birthday:
-            type: string
-            format: date-time
-            description: Birthday
+          address:
+            type: object
             nullable: true
-          # Document information
-          documentType:
-            type: string
-            description: Type of identification document
+            properties:
+              country:
+                type: string
+                description: Country code
+                nullable: true
+              state:
+                type: string
+                description: State or province
+                nullable: true
+              city:
+                type: string
+                description: City
+                nullable: true
+              address1:
+                type: string
+                description: Primary street address
+                nullable: true
+              address2:
+                type: string
+                description: Secondary street address
+                nullable: true
+              zip:
+                type: string
+                description: Zip/postal code
+                nullable: true
+          document:
+            type: object
             nullable: true
-          documentNumber:
-            type: string
-            description: Document number
-            nullable: true
-          documentIssuingCountry:
-            type: string
-            description: Country that issued the document
-            nullable: true
-          documentIssueDate:
-            type: string
-            format: date-time
-            description: Document issue date
-            nullable: true
-          documentExpirationDate:
-            type: string
-            format: date-time
-            description: Document expiration date
-            nullable: true
+            properties:
+              type:
+                $ref: "#/components/schemas/GuestDocumentType"
+                description: Type of identification document
+              number:
+                type: string
+                description: Document number
+                nullable: true
+              issueDate:
+                type: string
+                format: date
+                description: Document issue date
+                nullable: true
+              issuingCountry:
+                type: string
+                description: Country that issued the document
+                nullable: true
+              expirationDate:
+                type: string
+                format: date
+                description: Document expiration date
+                nullable: true
 
     CreateSimpleReceiptRequest:
       type: object
@@ -1940,9 +1990,11 @@ components:
           $ref: "#/components/schemas/SourceKind"
         recipient:
           $ref: "#/components/schemas/RecipientRequest"
+        manualRecipient:
+          $ref: "#/components/schemas/ManualRecipientRequest"
     CreateReceiptRequest:
       type: object
-      required: [ sourceId, sourceKind, userId, recipient ]
+      required: [ sourceId, sourceKind, userId ]
       properties:
         allocations:
           type: array
@@ -1966,6 +2018,14 @@ components:
           type: integer
           format: int64
           nullable: true
+        skipIntegration:
+          description: At the moment this can only be set to True on Italy to skip the integration, for italy this case is needed to avoid Printing the Receipt
+          type: boolean
+          default: false
+        handwritten:
+          description: Indicates this is a handwritten receipt created during POS unavailability. Only allowed for properties with Fiskaltrust integration enabled.
+          type: boolean
+          default: false
         userId:
           type: integer
           format: int64
@@ -1978,6 +2038,8 @@ components:
           $ref: "#/components/schemas/SourceKind"
         recipient:
           $ref: "#/components/schemas/RecipientRequest"
+        manualRecipient:
+          $ref: "#/components/schemas/ManualRecipientRequest"
     AllocateReceiptPaymentRequest:
       type: object
       required: [receiptId, allocations]
@@ -2268,6 +2330,9 @@ components:
           type: boolean
         chargeBreakdown:
           type: boolean
+        allowPendingTransactions:
+          type: boolean
+          default: false
         useGuestLang:
           type: boolean
         dueDays:
@@ -2284,6 +2349,9 @@ components:
           type: string
           nullable: true
         prefix:
+          type: string
+          nullable: true
+        separator:
           type: string
           nullable: true
         suffix:
@@ -2353,7 +2421,41 @@ components:
           type: string
         governmentIntegration:
           $ref: '#/components/schemas/GovernmentIntegration'
-
+    GetFolioExportRequest:
+      type: object
+      required: [ folioIds, sourceId, sourceKind ]
+      properties:
+        folioIds:
+          description: Include transactions from the specified folio IDs
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [ 3774744, 7763263217 ]
+        sourceKind:
+          $ref: "#/components/schemas/SourceKind"
+        sourceId:
+          description: source ID of folio
+          type: integer
+          format: int64
+        creditDebitView:
+          description: "Should transactions be separated into debit/credits"
+          type: boolean
+        revenueCompact:
+          description: "Compact revenue transactions, valid only for sourceKind = RESERVATION"
+          type: boolean
+        dateFrom:
+          description: "Minimum date, only for sourceKind = HOUSE_ACCOUNT"
+          type: string
+          format: date
+          nullable: true
+          example: ""
+        dateTo:
+          description: "Maximum date, only for sourceKind = HOUSE_ACCOUNT, optional"
+          type: string
+          format: date
+          nullable: true
+          example: ""
     RecipientDetails:
       type: object
       properties:
@@ -2509,6 +2611,13 @@ components:
           type: string
         cancellationFailedFallbackStatus:
           $ref: "#/components/schemas/FiscalDocumentStatus"
+        pdfFileBase64:
+          type: string
+          format: byte
+          description: Base64-encoded PDF file content. Only allowed when status is COMPLETED_INTEGRATION.
+        handwritten:
+          type: boolean
+          description: Indicates this is a handwritten receipt created during POS unavailability.
     DocumentTriggerEvent:
       type: string
       enum:
@@ -2532,6 +2641,8 @@ components:
           type: boolean
         useGuestLang:
           type: boolean
+        allowPendingTransactions:
+          type: boolean
         dueDays:
           type: integer
           format: int32
@@ -2540,6 +2651,8 @@ components:
         prefix:
           type: string
         suffix:
+          type: string
+        separator:
           type: string
         legalCompanyName:
           type: string
@@ -2674,6 +2787,23 @@ components:
         - VOID_AND_REFUND
         - ADD_PAYMENT
         - APPLY_TO_INVOICE
+    GuestDocumentType:
+      type: string
+      description: Type of guest identification document
+      enum:
+        - na
+        - driver_licence
+        - student_id
+        - passport
+        - dni
+        - nie
+    GuestGender:
+      type: string
+      description: Gender of the guest
+      enum:
+        - M
+        - F
+        - N/A
     SourceKind:
       type: string
       description: Kind of the source entity
