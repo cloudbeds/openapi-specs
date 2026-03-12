@@ -17,27 +17,7 @@ tags:
   - name: ProfileDocument
     description: Profile Document API
 servers:
-  - url: http://localhost:8700
-  - url: https://api.{environment}.com
-    variables:
-      environment:
-        default: cloudbeds-stage
-        enum:
-          - cloudbeds-stage   # Staging server
-          - cloudbeds         # Production server
-  - url: https://api.{island}.{environment}.com
-    variables:
-      island:
-        default: us2
-        enum:
-          - us1
-          - us2
-      environment:
-        default: cloudbeds-stage
-        enum:
-          - cloudbeds-stage   # Staging server
-          - cloudbeds         # Production server
-
+  - url: https://api.cloudbeds.com
 paths:
   # <editor-fold desc="Unified Profile API">
   /group-profile/v1/profiles:
@@ -391,7 +371,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationError"
-
   /group-profile/v1/profiles/{profileId}:
     get:
       summary: Get profile by ID (any type)
@@ -667,7 +646,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationError"
-
   /group-profile/v1/profiles/{profileId}/persons/{personId}:
     delete:
       summary: Unlink person from a profile
@@ -713,7 +691,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-
   # Person relationship reverse lookup API
   /group-profile/v1/profiles/persons/{personId}:
     get:
@@ -896,7 +873,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationError"
-
   /group-profile/v1/contact-persons/{contactPersonId}:
     get:
       summary: Get contact person by ID
@@ -1125,7 +1101,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationError"
-
   /group-profile/v1/profiles/{profileId}/notes/{noteId}:
     get:
       summary: Get profile note by ID
@@ -1249,7 +1224,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationError"
-
   /group-profile/v1/profiles/{profileId}/notes/{noteId}/archive:
     post:
       summary: Archive profile note
@@ -1287,7 +1261,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-
   /group-profile/v1/profiles/{profileId}/notes/{noteId}/restore:
     post:
       summary: Restore archived profile note
@@ -1407,7 +1380,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationError"
-
   /group-profile/v1/profiles/{profileId}/tags/{tagId}:
     delete:
       summary: Delete tag from profile
@@ -1569,7 +1541,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationError"
-
   /group-profile/v1/profiles/{profileId}/documents/{documentId}:
     get:
       summary: Get profile document metadata by ID
@@ -1639,7 +1610,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-
   /group-profile/v1/profiles/{profileId}/documents/{documentId}/download:
     get:
       summary: Get document download URL
@@ -1678,14 +1648,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
   # </editor-fold>
-
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
   parameters:
     profileId:
       name: profileId
@@ -1854,7 +1822,6 @@ components:
         pattern: '^(code|name|createdAt|updatedAt|profileType|status):(asc|desc)$'
         default: name:asc
       example: name:asc
-
   schemas:
     CursorPagination:
       type: object
@@ -1867,14 +1834,13 @@ components:
             Token to fetch the next page of results.
             Pass this value as the `pageToken` query parameter in the next request.
             When null, there are no more pages available.
-
     # Base Profile Schema - Common fields for all profiles
     BaseProfile:
       type: object
       required:
         - name
         - status
-#        - profileType
+        #        - profileType
         - code
       properties:
         id:
@@ -1956,7 +1922,6 @@ components:
             travelAgentProfile:
               $ref: "#/components/schemas/TravelAgentProfile"
           description: Dictionary containing profile-specific data (groupProfile, companyProfile, or travelAgentProfile). Only one profile type should be present.
-
     # Group Profile - Profile-specific attributes
     GroupProfile:
       type: object
@@ -1988,7 +1953,6 @@ components:
           type: string
           enum: [USD, PERCENTAGE, NUMBER]
           description: Type of room night commitment (USD, Percentage, or Number)
-
     # Company Profile - Profile-specific attributes
     CompanyProfile:
       type: object
@@ -2018,7 +1982,6 @@ components:
           type: string
           enum: [USD, PERCENTAGE, NUMBER]
           description: Type of room night commitment (USD, Percentage, or Number)
-
     # Travel Agent Profile - Profile-specific attributes
     TravelAgentProfile:
       type: object
@@ -2047,7 +2010,6 @@ components:
           type: string
           enum: [CHECK_IN, CHECK_OUT, INCLUDED_IN_RATE, NOT_INCLUDED_IN_RATE, NA]
           description: When commission is calculated
-
     ProfileRequest:
       allOf:
         - $ref: "#/components/schemas/BaseProfile"
@@ -2062,7 +2024,6 @@ components:
               readOnly: true
             updatedAt:
               readOnly: true
-
     UpdateProfileRequest:
       allOf:
         - $ref: "#/components/schemas/BaseProfile"
@@ -2076,7 +2037,6 @@ components:
               readOnly: true
             profileType:
               readOnly: true
-
     ProfileResponse:
       allOf:
         - $ref: "#/components/schemas/BaseProfile"
@@ -2086,7 +2046,6 @@ components:
               type: string
               description: Unique identifier for the profile
               example: "19074818619469856"
-
     ProfileListResponse:
       allOf:
         - type: object
@@ -2097,7 +2056,6 @@ components:
                 $ref: "#/components/schemas/ProfileResponse"
               description: Array of profile data
         - $ref: "#/components/schemas/CursorPagination"
-
     # <editor-fold desc="Profile Tags Schemas">
     ProfileTagResponse:
       type: object
@@ -2119,7 +2077,6 @@ components:
           type: string
           format: date-time
           description: Last update timestamp
-
     CreateProfileTagRequest:
       type: object
       required:
@@ -2128,7 +2085,6 @@ components:
         tag:
           type: string
           description: Tag value
-
     ProfileTagListResponse:
       type: object
       properties:
@@ -2169,7 +2125,6 @@ components:
           type: object
           additionalProperties: true
           description: Additional relationship metadata
-
     CreateProfilePersonRequest:
       type: object
       required:
@@ -2201,7 +2156,6 @@ components:
           type: object
           additionalProperties: true
           description: Additional relationship metadata
-
     ProfilePersonListResponse:
       allOf:
         - type: object
@@ -2279,7 +2233,6 @@ components:
           description: Last update timestamp
         billingDetails:
           $ref: "#/components/schemas/BillingDetails"
-
     CreateContactPersonRequest:
       type: object
       required:
@@ -2331,7 +2284,6 @@ components:
           $ref: "#/components/schemas/ContactStatus"
         billingDetails:
           $ref: "#/components/schemas/BillingDetails"
-
     UpdateContactPersonRequest:
       type: object
       properties:
@@ -2378,7 +2330,6 @@ components:
           description: Whether this person is the main contact for the profile
         relationshipType:
           $ref: "#/components/schemas/relationshipType"
-
     ContactEmail:
       type: object
       properties:
@@ -2415,7 +2366,6 @@ components:
           format: date-time
           description: Last update timestamp
           readOnly: true
-
     ContactPhone:
       type: object
       properties:
@@ -2451,12 +2401,10 @@ components:
           format: date-time
           description: Last update timestamp
           readOnly: true
-
     ContactStatus:
       type: string
       description: Contact person status. Allowed values are ACTIVE, DELETED
       example: "ACTIVE"
-
     ContactPersonListResponse:
       allOf:
         - type: object
@@ -2481,7 +2429,6 @@ components:
           type: string
           description: Content of the note
           example: "Customer requested late checkout due to flight delay"
-
     NoteUser:
       type: object
       description: User information for note author
@@ -2502,7 +2449,6 @@ components:
           type: string
           description: Email of the user
           example: "john.doe@example.com"
-
     ProfileNoteResponse:
       type: object
       required:
@@ -2535,7 +2481,6 @@ components:
           type: string
           format: date-time
           description: Last update timestamp
-
     CreateProfileNoteRequest:
       allOf:
         - $ref: "#/components/schemas/ProfileNoteBase"
@@ -2543,11 +2488,9 @@ components:
           required:
             - userId
             - content
-
     UpdateProfileNoteRequest:
       allOf:
         - $ref: "#/components/schemas/ProfileNoteBase"
-
     ProfileNoteListResponse:
       allOf:
         - type: object
@@ -2593,7 +2536,6 @@ components:
           type: string
           format: date-time
           description: Last update timestamp
-
     ProfileDocumentListResponse:
       allOf:
         - type: object
@@ -2604,7 +2546,6 @@ components:
                 $ref: "#/components/schemas/ProfileDocumentResponse"
               description: Array of profile document data
         - $ref: "#/components/schemas/CursorPagination"
-
     ProfileDocumentDownloadResponse:
       type: object
       required:
@@ -2666,7 +2607,6 @@ components:
           type: integer
           minimum: 0
           description: Number of days until invoice is due
-
     Address:
       type: object
       description: |
@@ -2687,13 +2627,11 @@ components:
           pattern: '^[A-Z]{2}$'
           description: ISO 3166-1 alpha-2 country code (determines address format)
       additionalProperties: true
-
     ProfileStatus:
       type: string
       enum: [PENDING, ACTIVE, INACTIVE, CANCELLED, ARCHIVED]
       description: Profile status
       example: "ACTIVE"
-
     ProfileType:
       type: string
       enum:
@@ -2701,50 +2639,42 @@ components:
         - GROUP
         - TRAVEL_AGENT
       description: Profile type
-
     GroupType:
       type: string
       enum: [WEDDING, SOCIAL, SMERF, CORPORATE, ASSOCIATION, EDUCATION, MEETING, CONFERENCE, MICE, EXHIBITIONS, INCENTIVE, OTHER]
       description: Type of group. Allowed values are WEDDING, SOCIAL, SMERF, CORPORATE, ASSOCIATION, EDUCATION, MEETING, CONFERENCE, MICE, EXHIBITIONS, INCENTIVE, OTHER
       example: "CONFERENCE"
-
     PaymentMethod:
       type: string
       enum: [DIRECT_BILL, CASH, CHECK, CREDIT_CARD, DEBIT_CARD, VOUCHER, PAY_BY_LINK, THIRD_PARTY_PAYMENT]
       description: Payment method. Allowed values are DIRECT_BILL, CASH, CHECK, CREDIT_CARD, DEBIT_CARD, VOUCHER, PAY_BY_LINK, THIRD_PARTY_PAYMENT
       example: "CREDIT_CARD"
-
     BillingFrequency:
       type: string
       enum: [PER_STAY, WEEKLY, MONTHLY, ON_DEMAND]
       description: Billing frequency. Allowed values are PER_STAY, WEEKLY, MONTHLY, ON_DEMAND
       example: "MONTHLY"
-
     CompanyType:
       type: string
       enum: [CORPORATE, SME, NON_PROFIT, ENTERPRISE, GOVERNMENT, ASSOCIATION, LOCAL, B2B, PARTNERSHIP, OTHER]
       description: Company type. Allowed values are CORPORATE, SME, NON_PROFIT, ENTERPRISE, GOVERNMENT, ASSOCIATION, LOCAL, B2B, PARTNERSHIP, OTHER
       example: "CORPORATE"
-
     AgencyType:
       type: string
       enum: [OTA, RETAIL, CORPORATE_AGENT, CONSORTIA, WHOLESALER, GROUP_TOUR, TOUR_OPERATOR, DOMESTIC, FOREIGN, OTHER]
       description: Travel agency type. Allowed values are OTA, RETAIL, CORPORATE_AGENT, CONSORTIA, WHOLESALER, GROUP_TOUR, TOUR_OPERATOR, DOMESTIC, FOREIGN, OTHER
       example: "RETAIL"
-
     PreferredCommunication:
       type: string
       enum: [EMAIL, PHONE, SMS, FAX]
       description: Preferred communication method. Allowed values are EMAIL, PHONE, SMS, FAX
       example: "EMAIL"
-
     personType:
       type: string
       enum:
         - CONTACT
         - GUEST
       description: Type of persons
-
     contactRole:
       type: string
       enum:
@@ -2766,7 +2696,6 @@ components:
         - OTHER
       description: Role of person in the profile relationship
       example: "BOOKING_COORDINATOR"
-
     relationshipType:
       type: string
       enum:
@@ -2783,7 +2712,6 @@ components:
         - EMERGENCY_CONTACT
       description: Type of relationship between person and profile
       example: "PRIMARY"
-
     # </editor-fold>
 
     # <editor-fold desc="Base">
@@ -2801,7 +2729,6 @@ components:
             Pass this value as the `pageToken` query parameter in the next request.
             When null, there are no more pages available.
           example: "eyJmaWVsZHMiOlt7InBhdGgiOlsibmFtZSJdLCJ2YWx1ZSI6IkFjbWUgQ29ycCJ9XX0="
-
     # <editor-fold desc="Error Schemas">
     ApiError:
       type: object
@@ -2848,7 +2775,6 @@ components:
           format: date-time
           description: ISO 8601 timestamp when the error occurred
           example: "2024-01-15T10:30:45.123Z"
-
     ValidationError:
       type: object
       description: |
@@ -2876,7 +2802,6 @@ components:
           description: List of field-specific validation errors
           items:
             $ref: "#/components/schemas/FieldError"
-
     FieldError:
       type: object
       description: Field-level validation error details

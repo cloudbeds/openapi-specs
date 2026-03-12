@@ -2,28 +2,8 @@ openapi: 3.0.1
 info:
   title: Fiscal document service API
   version: v1
-
 servers:
-  - url: http://localhost:8700
-  - url: https://api.{environment}.com
-    variables:
-      environment:
-        default: cloudbeds-stage
-        enum:
-          - cloudbeds-stage   # Staging server
-          - cloudbeds         # Production server
-  - url: https://api.{island}.{environment}.com
-    variables:
-      island:
-        default: us2
-        enum:
-          - us2
-      environment:
-        default: cloudbeds-stage
-        enum:
-          - cloudbeds-stage   # Staging server
-          - cloudbeds         # Production server
-
+  - url: https://api.cloudbeds.com
 paths:
   "/fiscal-document/v1/fiscal-documents":
     get:
@@ -33,17 +13,15 @@ paths:
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
-
         - name: pageToken
           in: query
           description: Token for fetching the next page, as per cursor-based pagination.
           required: false
           schema:
             type: string
-
         - name: sort
           in: query
           description: |
@@ -59,7 +37,6 @@ paths:
           schema:
             type: string
             example: createdAt:desc
-
         - name: limit
           in: query
           description: Number of results to return per page.
@@ -76,7 +53,6 @@ paths:
             $ref: "#/components/schemas/FiscalDocumentFilters"
           style: form
           explode: true
-
       responses:
         '200':
           description: OK
@@ -90,12 +66,12 @@ paths:
       description: |
         Update a fiscal document status, government integration details, or failure reason.
         Used by integration partners to update document lifecycle and government processing status.
-        
+
         **Common Updates:**
         - Update status (PENDING_INTEGRATION, COMPLETED_INTEGRATION, FAILED, etc.)
         - Set government integration details (series, number, external ID, QR codes)
         - Record failure reasons for failed integrations
-        
+
         **Invoice Cancellation (Spanish Properties Only):**
         - Set status to CANCEL_REQUESTED to cancel invoices
         - Only invoices in OPEN, PAID, PARTIALLY_PAID or CORRECTION_NEEDED status can be canceled
@@ -103,7 +79,7 @@ paths:
         - Integration partners must handle CANCEL_REQUESTED and update to CANCELED (success) or revert to previous status (failure)
       operationId: putFiscalDocument
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -129,7 +105,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/FiscalDocumentSummaryResponse"
-
   "/fiscal-document/v1/fiscal-documents/transactions":
     get:
       summary: Get available transactions for fiscal documents
@@ -144,7 +119,7 @@ paths:
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: forDocumentType
@@ -159,14 +134,12 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/FiscalDocumentKind"
-
         - name: pageToken
           in: query
           description: Token for fetching the next page, as per cursor-based pagination.
           required: false
           schema:
             type: string
-
         - name: limit
           in: query
           description: Number of results to return per page.
@@ -177,7 +150,6 @@ paths:
             default: 20
             minimum: 1
             maximum: 100
-
         - name: sourceId
           in: query
           description: source ID.
@@ -209,7 +181,6 @@ paths:
               type: integer
               format: int64
             minItems: 1
-
       responses:
         '200':
           description: OK
@@ -226,7 +197,7 @@ paths:
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: pageToken
@@ -235,7 +206,6 @@ paths:
           required: false
           schema:
             type: string
-
         - name: limit
           in: query
           description: Number of results to return per page.
@@ -246,7 +216,6 @@ paths:
             default: 20
             minimum: 1
             maximum: 100
-
         - name: sourceId
           in: query
           description: source ID.
@@ -288,6 +257,14 @@ paths:
               type: integer
               format: int64
             minItems: 1
+            maxItems: 1
+        - name: documentId
+          in: query
+          description: document ID.
+          required: false
+          schema:
+            type: integer
+            format: int64
         - name: statuses
           in: query
           description: Filter by status.
@@ -296,7 +273,6 @@ paths:
             type: array
             items:
               $ref: "#/components/schemas/TransactionStatus"
-
       responses:
         '200':
           description: OK
@@ -313,7 +289,7 @@ paths:
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: sourceIds
@@ -348,7 +324,6 @@ paths:
             items:
               type: integer
               format: int64
-
       responses:
         '200':
           description: OK
@@ -356,6 +331,44 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/Allocations"
+  "/fiscal-document/v1/invoices/{id}/receipts/allocations":
+    get:
+      summary: Get allocations for an invoice
+      description: |
+        Retrieves all active allocations for the specified invoice, grouped by transaction ID.
+        Only includes allocations from receipts with active statuses.
+      operationId: getInvoiceAllocations
+      tags:
+        - Fiscal Documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+        - name: id
+          in: path
+          description: Invoice ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceAllocationsResponse"
+        '400':
+          description: Bad Request - Invalid request (document is not an invoice or invalid ID format)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ApiError"
+        '404':
+          description: Bad Request - Invoice not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ApiError"
   "/fiscal-document/v1/fiscal-documents/allocations/summary":
     get:
       summary: Get allocations summary
@@ -365,7 +378,7 @@ paths:
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: sourceId
@@ -402,7 +415,6 @@ paths:
               type: integer
               format: int64
             minItems: 1
-
       responses:
         '200':
           description: OK
@@ -412,14 +424,16 @@ paths:
                 "$ref": "#/components/schemas/AllocationsSummary"
   "/fiscal-document/v1/fiscal-documents/transactions/summary":
     get:
-      summary: Get totals of selected available transactions for fiscal documents
+      deprecated: true
+      summary: Get totals of selected available transactions for fiscal documents (deprecated)
       description: |
+        **Deprecated:** Use POST /fiscal-document/v1/fiscal-documents/transactions/summary instead.
         Get totals of selected available transactions for fiscal documents based on the document type.
       operationId: getSelectedTransactionsSummary
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: forDocumentType
@@ -434,7 +448,6 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/FiscalDocumentKind"
-
         - name: sourceId
           in: query
           description: source ID.
@@ -479,7 +492,31 @@ paths:
               type: integer
               format: int64
             minItems: 1
-
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FiscalDocumentTransactionsSummary"
+    post:
+      summary: Get totals of selected available transactions for fiscal documents
+      description: |
+        Get totals of selected available transactions for fiscal documents based on the document type.
+        Supports partial transaction amounts via transactionIdToAmount.
+      operationId: postSelectedTransactionsSummary
+      tags:
+        - Fiscal Documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionsSummaryRequest"
       responses:
         '200':
           description: OK
@@ -495,11 +532,10 @@ paths:
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/fiscalDocumentId"
         - $ref: "#/components/parameters/propertyIdHeader"
-
         - name: pageToken
           in: query
           description: Token for fetching the next page, as per cursor-based pagination.
@@ -540,7 +576,6 @@ paths:
               type: integer
               format: int64
             minItems: 1
-
       responses:
         '200':
           description: OK
@@ -556,11 +591,10 @@ paths:
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/fiscalDocumentId"
         - $ref: "#/components/parameters/propertyIdHeader"
-
         - name: includeLinkedDocumentTransactions
           in: query
           description: Include transactions from linked documents.
@@ -568,7 +602,6 @@ paths:
           schema:
             type: boolean
             default: false
-
       responses:
         '200':
           description: OK
@@ -584,7 +617,7 @@ paths:
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/fiscalDocumentId"
         - $ref: "#/components/parameters/propertyIdHeader"
@@ -630,7 +663,7 @@ paths:
       tags:
         - Fiscal Documents
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/fiscalDocumentId"
         - $ref: "#/components/parameters/propertyIdHeader"
@@ -653,7 +686,7 @@ paths:
       description: Create a fiscal document of the type invoice.
       operationId: createInvoice
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -677,7 +710,7 @@ paths:
       description: Get fiscal document preview of the type invoice.
       operationId: getDocumentPreview
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -701,14 +734,13 @@ paths:
               description: Used to indicate if the content should be displayed inline or as an attachment.
               schema:
                 type: string
-
   "/fiscal-document/v1/fiscal-documents/credit-note":
     post:
       summary: Create a fiscal document of the type credit note
       description: Create a fiscal document of the type credit note.
       operationId: createCreditNote
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -732,7 +764,7 @@ paths:
       description: Get fiscal document preview of the type credit note.
       operationId: getCreditNotePreview
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -772,7 +804,7 @@ paths:
         - If the invoice has been rectified, the API will return an error with details about which invoice should be rectified instead
       operationId: createRectifyInvoice
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -823,7 +855,7 @@ paths:
         - If the invoice has been rectified, the API will return an error with details about which invoice should be rectified instead
       operationId: getRectifyInvoicePreview
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -847,6 +879,48 @@ paths:
               description: Used to indicate if the content should be displayed inline or as an attachment.
               schema:
                 type: string
+  "/fiscal-document/v1/fiscal-documents/{advance_invoice_id}/settlement":
+    post:
+      summary: Create a settlement invoice for an advance invoice
+      description: |
+        Create a settlement invoice linked to an existing advance invoice.
+
+        A settlement invoice finalizes the billing cycle started by an advance invoice.
+        It references the advance invoice and may include additional transactions
+        that were not part of the original advance.
+
+        **Validation Rules:**
+        - The parent document must be an ADVANCE_INVOICE
+        - The parent document must be in an active status
+        - There must not already be an active settlement invoice for this advance
+      operationId: createSettlementInvoice
+      security:
+        - bearerAuth: []
+      tags:
+        - Fiscal Documents
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+        - name: advance_invoice_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: The ID of the advance invoice to settle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/CreateSettlementInvoiceRequest"
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FiscalDocumentSummaryResponse"
   "/fiscal-document/v1/fiscal-documents/pro-forma-invoice/preview":
     post:
       summary: Create a fiscal document of the type pro forma invoice
@@ -861,7 +935,7 @@ paths:
         - Has its own sequence numbering and settings
       operationId: getProFormaPreview
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -899,7 +973,7 @@ paths:
         - Has its own sequence numbering and settings
       operationId: createProFormaInvoice
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -927,7 +1001,7 @@ paths:
         - REJECTED -> CANCELED
       operationId: updateProFormaInvoiceStatus
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -961,7 +1035,6 @@ paths:
                 "$ref": "#/components/schemas/ApiError"
         '404':
           description: Pro forma invoice not found
-
   "/fiscal-document/v1/fiscal-documents/receipt":
     post:
       summary: Create receipt for a payment.
@@ -974,7 +1047,7 @@ paths:
         All transactions not part of an invoice will be added to newly created invoice.
       operationId: createReceipt
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -1000,7 +1073,6 @@ paths:
                 "$ref": "#/components/schemas/ApiError"
         '404':
           description: Payment or payment transaction not found.
-
   "/fiscal-document/v1/fiscal-documents/simple-receipt":
     post:
       summary: Create simple receipts.
@@ -1008,7 +1080,7 @@ paths:
         Create receipts for list of payments without allocations.
       operationId: createSimpleReceipt
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -1036,7 +1108,6 @@ paths:
                 "$ref": "#/components/schemas/ApiError"
         '404':
           description: Payment or payment transaction not found.
-
   "/fiscal-document/v1/fiscal-documents/receipts/{receiptId}/void":
     post:
       summary: Void a receipt
@@ -1046,7 +1117,7 @@ paths:
         For Italy, a refund receipt will be automatically created and linked to the voided receipt.
       operationId: voidReceipt
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -1069,8 +1140,42 @@ paths:
                 "$ref": "#/components/schemas/ApiError"
         '404':
           description: Receipt not found
-
-
+  "/fiscal-document/v1/fiscal-documents/receipts/{receiptId}/apply":
+    post:
+      summary: Apply receipt to invoice
+      description: |
+        Apply receipt to invoice. Receipt should not have allocations
+      operationId: applyReceipt
+      security:
+        - bearerAuth: []
+      tags:
+        - Fiscal Documents
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+        - name: receiptId
+          in: path
+          description: The ID of the receipt
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ApplyReceiptRequest"
+      responses:
+        '204':
+          description: Receipt successfully voided
+        '400':
+          description: Bad Request - Invalid status or document type
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ApiError"
+        '404':
+          description: Receipt not found
   "/fiscal-document/v1/fiscal-documents/receipt/allocate-payment":
     post:
       summary: Allocate payment associated with receipt to charge transactions.
@@ -1082,7 +1187,7 @@ paths:
         All transactions not part of an invoice will be added to newly created invoice.
       operationId: allocateReceiptPayment
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Fiscal Documents
       parameters:
@@ -1108,7 +1213,6 @@ paths:
                 "$ref": "#/components/schemas/ApiError"
         '404':
           description: Payment or payment transaction not found.
-
   "/fiscal-document/v1/configs":
     get:
       summary: Get list of fiscal documents configs
@@ -1117,7 +1221,7 @@ paths:
       tags:
         - Configs
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
       responses:
@@ -1133,7 +1237,7 @@ paths:
       operationId: updateConfigs
       description: Update document config.
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Configs
       parameters:
@@ -1163,7 +1267,7 @@ paths:
       operationId: getLogo
       description: Retrieve the logo image used in fiscal document templates as a presigned URL.
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Configs
       parameters:
@@ -1184,7 +1288,7 @@ paths:
       operationId: uploadLogo
       description: Upload a logo image to be used in fiscal document templates.
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Configs
       parameters:
@@ -1214,7 +1318,7 @@ paths:
       operationId: deleteLogo
       description: Delete the logo image used in fiscal document templates.
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Configs
       parameters:
@@ -1234,7 +1338,7 @@ paths:
       tags:
         - Configs
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - in: query
@@ -1256,6 +1360,87 @@ paths:
               description: Used to indicate if the content should be displayed inline or as an attachment.
               schema:
                 type: string
+  "/fiscal-document/v1/fiscalization/registration":
+    get:
+      summary: Get fiscalization registration for a property
+      description: Returns the fiscalization registration (supplier/party info) for the given property.
+      operationId: getFiscalizationRegistration
+      tags:
+        - Fiscalization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationRegistrationResponse'
+        '404':
+          $ref: "#/components/responses/404"
+    post:
+      summary: Create fiscalization registration
+      description: Creates a new fiscalization registration (supplier/party info) for the given property.
+      operationId: createFiscalizationRegistration
+      tags:
+        - Fiscalization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FiscalizationRegistrationRequest"
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationRegistrationResponse'
+    put:
+      summary: Update fiscalization registration
+      description: Updates the fiscalization registration for the given property.
+      operationId: updateFiscalizationRegistration
+      tags:
+        - Fiscalization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FiscalizationRegistrationRequest"
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationRegistrationResponse'
   "/fiscal-document/v1/property/features":
     get:
       summary: Get enabled features for the current user and property
@@ -1263,7 +1448,7 @@ paths:
         Returns a map of feature flags enabled for the authenticated user in the context of the current property.
       operationId: getPropertyFeatures
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Features
       parameters:
@@ -1279,13 +1464,13 @@ paths:
                   type: boolean
                 example:
                   INTEGRATION_INVOICING: true
-  "/fiscal-document/v1/folio-export/pdf":
+  "/fiscal-document/v1/folios/export":
     post:
-      summary: Get folio list of transactions exported as PDF
-      description: Get folio list of transactions exported as PDF
-      operationId: getFolioPdf
+      summary: Export folio transactions as PDF
+      description: Export folio list of transactions as PDF
+      operationId: exportFolioPdf
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       tags:
         - Export
       parameters:
@@ -1310,6 +1495,302 @@ paths:
               description: Used to indicate if the content should be displayed inline or as an attachment.
               schema:
                 type: string
+  "/fiscal-document/v1/folio-export/pdf":
+    post:
+      summary: Get folio list of transactions exported as PDF
+      description: Get folio list of transactions exported as PDF
+      operationId: getFolioPdf
+      security:
+        - bearerAuth: []
+      tags:
+        - Export
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+        - $ref: "#/components/parameters/acceptLanguageHeader"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/GetFolioExportRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful file download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Used to indicate if the content should be displayed inline or as an attachment.
+              schema:
+                type: string
+  /fiscal-document/v1/fiscalization/registration/rules:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization registration rules for a country
+      description: Returns country-specific fiscalization rules for building forms
+      operationId: getFiscalizationRegistrationRules
+      parameters:
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ISO 3166-1 alpha-2 country code (e.g., BR, PL, MX)
+      responses:
+        '200':
+          description: Successfully retrieved fiscalization rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationRegistrationRulesResponse'
+        '400':
+          description: Invalid country code
+        '404':
+          description: Rules not found for country
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/registration/validate:
+    post:
+      tags:
+        - Fiscalization
+      summary: Validate fiscalization registration data
+      description: Validates party data against country-specific fiscalization rules based on the $regime field
+      operationId: validateFiscalizationData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalizationRegistrationRequest'
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationValidationResult'
+        '400':
+          description: Invalid request
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/registration/countries:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get available countries for property registration
+      description: Returns list of countries available for fiscalization based on property location
+      operationId: getFiscalizationRegistrationCountries
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Property ID
+      responses:
+        '200':
+          description: Available countries retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FiscalizationCountryOption'
+        '404':
+          description: Property not found
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/registration/status:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get registration status for a property
+      description: Returns the registration status with government systems for each configured country
+      operationId: getFiscalizationRegistrationStatus
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Property ID
+      responses:
+        '200':
+          description: Registration status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationRegistrationStatus'
+        '404':
+          description: Property not found
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/provider:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization provider info for a country
+      description: Returns which provider handles fiscal registration for a given country
+      operationId: getFiscalizationProvider
+      parameters:
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ISO 3166-1 alpha-2 country code (e.g., BR, PL, MX)
+      responses:
+        '200':
+          description: Provider info retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationProviderInfo'
+        '400':
+          description: No provider configured for this country
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/consent:
+    post:
+      tags:
+        - Fiscalization
+      summary: Record user consent for fiscalization
+      description: Records that the user has consented to sharing data with the fiscalization provider
+      operationId: createFiscalizationConsent
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Property ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalizationConsentRequest'
+      responses:
+        '200':
+          description: Consent recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationConsentResponse'
+        '400':
+          description: Invalid request
+      security:
+        - bearerAuth: []
+    get:
+      tags:
+        - Fiscalization
+      summary: Get consent status for a property
+      description: Returns whether the property has consented to fiscalization
+      operationId: getFiscalizationConsent
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Property ID
+      responses:
+        '200':
+          description: Consent status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationConsentResponse'
+        '404':
+          description: No consent found
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/tax/rules:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization tax rules for a country
+      description: Returns country-specific tax categories and rates for configuring tax mappings
+      operationId: getFiscalizationTaxRules
+      parameters:
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ISO 3166-1 alpha-2 country code (e.g., BR, PL, MX)
+      responses:
+        '200':
+          description: Successfully retrieved tax rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationTaxRulesResponse'
+        '400':
+          description: Invalid country code
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/tax:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization tax for a property
+      description: Returns the fiscalization tax configuration for the given property
+      operationId: getFiscalizationTax
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationTaxResponse'
+        '404':
+          description: Fiscalization tax config not found for property
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - Fiscalization
+      summary: Update fiscalization tax for a property
+      description: Creates or updates the fiscalization tax configuration for the given property
+      operationId: updateFiscalizationTax
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalizationTaxRequest'
+        required: true
+      responses:
+        '200':
+          description: Fiscalization tax config saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationTaxResponse'
+      security:
+        - bearerAuth: []
 components:
   securitySchemes:
     bearerAuth:
@@ -1423,9 +1904,64 @@ components:
           items:
             type: integer
             format: int64
+    CreateSettlementInvoiceRequest:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 0
+        transactionIds:
+          deprecated: true
+          description: Include transactions with the specified IDs (deprecated, use `includeTransactionIds` instead)
+          type: array
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+        folioIds:
+          description: Include all transactions from the specified folio IDs
+          type: array
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+        excludeTransactionIds:
+          description: Exclude transactions with the specified IDs
+          type: array
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+        includeTransactionIds:
+          description: Include transactions with the specified IDs
+          type: array
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+        transactionIdToAmount:
+          description: Map of transaction ID to amount (in major currency units, e.g., 10.50 for $10.50) for partial transaction inclusion
+          type: object
+          nullable: true
+          additionalProperties:
+            type: number
+        recipient:
+          $ref: "#/components/schemas/RecipientRequest"
+        manualRecipient:
+          $ref: "#/components/schemas/ManualRecipientRequest"
+        sequenceId:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+        dueDatePropertyTimezone:
+          type: string
+          format: date
     GetCreditNotePreviewRequest:
       type: object
-      required: [ invoiceId, method ]
+      required: [invoiceId, method]
       properties:
         sequenceId:
           type: integer
@@ -1531,7 +2067,7 @@ components:
             minimum: 1
     GetRectifyInvoiceNotePreviewRequest:
       type: object
-      required: [ invoiceId, method ]
+      required: [invoiceId, method]
       description: |
         Request to create a rectifying invoice. Only available for Spanish properties.
 
@@ -1590,6 +2126,13 @@ components:
     CreateInvoiceRequest:
       type: object
       required: [transactionIds, sourceId, sourceKind, guestId]
+      example:
+        sourceId: 100
+        sourceKind: "RESERVATION"
+        includeTransactionIds: [123, 456]
+        recipient:
+          type: "GUEST"
+          id: 1
       properties:
         transactionIds:
           deprecated: true
@@ -1599,6 +2142,12 @@ components:
             type: integer
             format: int64
             minimum: 1
+        transactionIdToAmount:
+          description: Map of transaction ID to amount (in major currency units, e.g., 10.50 for $10.50) for partial transaction inclusion
+          type: object
+          nullable: true
+          additionalProperties:
+            type: number
         sourceId:
           type: integer
           format: int64
@@ -1649,8 +2198,14 @@ components:
           format: date
     GetInvoicePreviewRequest:
       type: object
-      required: [ transactionIds, sourceId, sourceKind, guestId ]
+      required: [transactionIds, sourceId, sourceKind, guestId]
       properties:
+        transactionIdToAmount:
+          description: Map of transaction ID to amount (in major currency units, e.g., 10.50 for $10.50) for partial transaction inclusion
+          type: object
+          nullable: true
+          additionalProperties:
+            type: number
         transactionIds:
           deprecated: true
           description: Include transactions with the specified IDs (deprecated, use `includeTransactionIds` instead)
@@ -1707,10 +2262,9 @@ components:
         dueDatePropertyTimezone:
           type: string
           format: date
-
     ProFormaInvoicePreviewRequest:
       type: object
-      required: [ transactionIds, sourceId, sourceKind, guestId, recipient ]
+      required: [transactionIds, sourceId, sourceKind, guestId, recipient]
       properties:
         transactionIds:
           deprecated: true
@@ -1720,6 +2274,12 @@ components:
             format: int64
             minimum: 1
           description: List of pending transaction IDs to include in the pro forma invoice (deprecated, use `includeTransactionIds` instead)
+        transactionIdToAmount:
+          description: Map of transaction ID to amount (in major currency units, e.g., 10.50 for $10.50) for partial transaction inclusion
+          type: object
+          nullable: true
+          additionalProperties:
+            type: number
         paymentIds:
           type: array
           items:
@@ -1770,7 +2330,6 @@ components:
             type: integer
             format: int64
             minimum: 1
-
     ProFormaInvoiceRequest:
       type: object
       required: [transactionIds, sourceId, sourceKind, guestId, recipient]
@@ -1783,6 +2342,12 @@ components:
             format: int64
             minimum: 1
           description: List of pending transaction IDs to include in the pro forma invoice (deprecated, use `includeTransactionIds` instead)
+        transactionIdToAmount:
+          description: Map of transaction ID to amount (in major currency units, e.g., 10.50 for $10.50) for partial transaction inclusion
+          type: object
+          nullable: true
+          additionalProperties:
+            type: number
         paymentIds:
           type: array
           items:
@@ -1833,7 +2398,6 @@ components:
             type: integer
             format: int64
             minimum: 1
-
     ProFormaStatusUpdateRequest:
       type: object
       required: [status]
@@ -1848,28 +2412,27 @@ components:
         - type
         - id
       properties:
-          type:
-            type: string
-            enum:
-              - GUEST
-              - CONTACT
-              - GROUP
-              - COMPANY
-              - GROUP_PROFILE
-              - GROUP_PROFILE_CONTACT
-            description: Type of the recipient.
-          id:
-            type: integer
-            format: int64
-            description: ID of the recipient, references guestId, contactId, groupId, etc. depending on type.
-            minimum: 1
-          taxDocumentSource:
-            type: string
-            enum:
-              - GUEST_TAX_ID
-              - GUEST_DOCUMENT_NUMBER
-            description: Source of the tax document number.
-
+        type:
+          type: string
+          enum:
+            - GUEST
+            - CONTACT
+            - GROUP
+            - COMPANY
+            - GROUP_PROFILE
+            - GROUP_PROFILE_CONTACT
+          description: Type of the recipient.
+        id:
+          type: integer
+          format: int64
+          description: ID of the recipient, references guestId, contactId, groupId, etc. depending on type.
+          minimum: 1
+        taxDocumentSource:
+          type: string
+          enum:
+            - GUEST_TAX_ID
+            - GUEST_DOCUMENT_NUMBER
+          description: Source of the tax document number.
     ManualRecipientRequest:
       type: object
       required:
@@ -1877,94 +2440,93 @@ components:
         - taxId
         - type
       properties:
-          type:
-            enum: [ PERSON, COMPANY ]
-            description: Type of recipient (person or company)
-          name:
-            type: string
-            description: Name of the recipient
-            nullable: true
-          gender:
-            $ref: "#/components/schemas/GuestGender"
-          email:
-            type: string
-            format: email
-            description: Email address of the recipient
-            nullable: true
-          birthday:
-            type: string
-            format: date
-            description: Birthday of the recipient
-            nullable: true
-          phone:
-            type: string
-            description: Phone number
-            nullable: true
-          cellPhone:
-            type: string
-            description: Cell phone number
-            nullable: true
-          taxId:
-            type: string
-            description: Tax ID / VAT number
-            nullable: true
-          address:
-            type: object
-            nullable: true
-            properties:
-              country:
-                type: string
-                description: Country code
-                nullable: true
-              state:
-                type: string
-                description: State or province
-                nullable: true
-              city:
-                type: string
-                description: City
-                nullable: true
-              address1:
-                type: string
-                description: Primary street address
-                nullable: true
-              address2:
-                type: string
-                description: Secondary street address
-                nullable: true
-              zip:
-                type: string
-                description: Zip/postal code
-                nullable: true
-          document:
-            type: object
-            nullable: true
-            properties:
-              type:
-                $ref: "#/components/schemas/GuestDocumentType"
-                description: Type of identification document
-              number:
-                type: string
-                description: Document number
-                nullable: true
-              issueDate:
-                type: string
-                format: date
-                description: Document issue date
-                nullable: true
-              issuingCountry:
-                type: string
-                description: Country that issued the document
-                nullable: true
-              expirationDate:
-                type: string
-                format: date
-                description: Document expiration date
-                nullable: true
-
+        type:
+          enum: [PERSON, COMPANY]
+          description: Type of recipient (person or company)
+        name:
+          type: string
+          description: Name of the recipient
+          nullable: true
+        gender:
+          $ref: "#/components/schemas/GuestGender"
+        email:
+          type: string
+          format: email
+          description: Email address of the recipient
+          nullable: true
+        birthday:
+          type: string
+          format: date
+          description: Birthday of the recipient
+          nullable: true
+        phone:
+          type: string
+          description: Phone number
+          nullable: true
+        cellPhone:
+          type: string
+          description: Cell phone number
+          nullable: true
+        taxId:
+          type: string
+          description: Tax ID / VAT number
+          nullable: true
+        address:
+          type: object
+          nullable: true
+          properties:
+            country:
+              type: string
+              description: Country code
+              nullable: true
+            state:
+              type: string
+              description: State or province
+              nullable: true
+            city:
+              type: string
+              description: City
+              nullable: true
+            address1:
+              type: string
+              description: Primary street address
+              nullable: true
+            address2:
+              type: string
+              description: Secondary street address
+              nullable: true
+            zip:
+              type: string
+              description: Zip/postal code
+              nullable: true
+        document:
+          type: object
+          nullable: true
+          properties:
+            type:
+              $ref: "#/components/schemas/GuestDocumentType"
+              description: Type of identification document
+            number:
+              type: string
+              description: Document number
+              nullable: true
+            issueDate:
+              type: string
+              format: date
+              description: Document issue date
+              nullable: true
+            issuingCountry:
+              type: string
+              description: Country that issued the document
+              nullable: true
+            expirationDate:
+              type: string
+              format: date
+              description: Document expiration date
+              nullable: true
     CreateSimpleReceiptRequest:
       type: object
-      required: [ transactionIds, sourceId, sourceKind, userId, recipient ]
+      required: [transactionIds, sourceId, sourceKind, userId, recipient]
       properties:
         transactionIds:
           description: Ids of the transactions associated to payments
@@ -1972,8 +2534,7 @@ components:
           items:
             minItems: 1
             type: integer
-            format:
-              int64
+            format: int64
         sequenceId:
           type: integer
           format: int64
@@ -1992,9 +2553,13 @@ components:
           $ref: "#/components/schemas/RecipientRequest"
         manualRecipient:
           $ref: "#/components/schemas/ManualRecipientRequest"
+        handwritten:
+          type: boolean
+          default: false
+          description: Indicates this is a handwritten receipt created during POS unavailability. Only allowed for properties with Fiskaltrust integration enabled.
     CreateReceiptRequest:
       type: object
-      required: [ sourceId, sourceKind, userId ]
+      required: [sourceId, sourceKind, userId]
       properties:
         allocations:
           type: array
@@ -2011,6 +2576,11 @@ components:
         paymentId:
           description: |
             Id of the payment. This parameter is mutually exclusive with `transactionId`.
+          type: integer
+          format: int64
+          nullable: true
+        invoiceId:
+          description: Id of invoice that receipt should be applied to. Ignored if allocations are presented.
           type: integer
           format: int64
           nullable: true
@@ -2040,6 +2610,14 @@ components:
           $ref: "#/components/schemas/RecipientRequest"
         manualRecipient:
           $ref: "#/components/schemas/ManualRecipientRequest"
+    ApplyReceiptRequest:
+      type: object
+      required: [invoiceId]
+      properties:
+        invoiceId:
+          type: integer
+          format: int64
+          description: The ID of the invoice to apply the receipt to.
     AllocateReceiptPaymentRequest:
       type: object
       required: [receiptId, allocations]
@@ -2054,7 +2632,6 @@ components:
           format: int64
           description: |
             Id of the receipt.
-
     ReceiptTransactionAllocation:
       type: object
       required: [transactionId, amount]
@@ -2064,7 +2641,9 @@ components:
           format: int64
         amount:
           type: number
-
+        documentId:
+          type: integer
+          format: int64
     FiscalDocumentDetailedResponse:
       type: object
       properties:
@@ -2159,7 +2738,6 @@ components:
           $ref: '#/components/schemas/GovernmentIntegration'
         linkedTo:
           type: string
-
     FiscalDocumentPaginated:
       type: object
       properties:
@@ -2169,7 +2747,6 @@ components:
             $ref: '#/components/schemas/FiscalDocumentDetailedResponse'
         nextPageToken:
           $ref: '#/components/schemas/NextPageToken'
-
     FiscalDocumentTransactionResponse:
       type: object
       properties:
@@ -2178,6 +2755,8 @@ components:
         propertyId:
           type: string
         sourceId:
+          type: string
+        sourceIdentifier:
           type: string
         sourceKind:
           $ref: "#/components/schemas/SourceKind"
@@ -2192,6 +2771,11 @@ components:
           type: string
         amount:
           type: number
+        availableAmount:
+          type: number
+        documentFiscalizedAmount:
+          description: Will be null if filter is not by document id
+          type: number
         folioId:
           type: string
         status:
@@ -2204,7 +2788,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FiscalDocumentTransactionAllocation'
-
     FiscalDocumentTransactionsForAllocationPaginated:
       type: object
       properties:
@@ -2214,7 +2797,6 @@ components:
             $ref: '#/components/schemas/TransactionForAllocationResponse'
         nextPageToken:
           $ref: '#/components/schemas/NextPageToken'
-
     FiscalDocumentTransactionsPaginated:
       type: object
       properties:
@@ -2249,6 +2831,48 @@ components:
           type: string
         total:
           type: string
+    TransactionsSummaryRequest:
+      type: object
+      required: [sourceId, sourceKind]
+      properties:
+        documentKind:
+          $ref: "#/components/schemas/FiscalDocumentKind"
+          description: Document type for which transactions are related.
+        sourceId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Source ID.
+        sourceKind:
+          $ref: "#/components/schemas/SourceKind"
+          description: Filter by source kind.
+        folioIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          minItems: 1
+          description: Filter by folio IDs.
+        excludeTransactionIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          minItems: 1
+          description: Transaction IDs to exclude.
+        includeTransactionIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          minItems: 1
+          description: Transaction IDs to include.
+        transactionIdToAmount:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: number
+          description: Map of transaction ID to amount (in major currency units, e.g., 10.50 for $10.50) for partial transaction inclusion.
     AllocationsSummary:
       type: object
       properties:
@@ -2290,6 +2914,23 @@ components:
         allocated_amount:
           type: number
           example: 3.68
+    InvoiceAllocationsResponse:
+      type: object
+      properties:
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvoiceTransactionAllocation"
+    InvoiceTransactionAllocation:
+      type: object
+      properties:
+        transaction_id:
+          type: integer
+          format: int64
+          description: Invoice transaction ID that received the allocation
+        allocated_amount:
+          type: number
+          description: Total amount allocated to this transaction from all receipts
     PreviewRequest:
       type: object
       properties:
@@ -2412,6 +3053,8 @@ components:
           type: integer
           format: int64
           nullable: true
+        dateDisplay:
+          $ref: '#/components/schemas/DateDisplay'
     FiscalDocumentPatchRequest:
       type: object
       properties:
@@ -2423,15 +3066,15 @@ components:
           $ref: '#/components/schemas/GovernmentIntegration'
     GetFolioExportRequest:
       type: object
-      required: [ folioIds, sourceId, sourceKind ]
+      required: [sourceId, sourceKind]
       properties:
         folioIds:
-          description: Include transactions from the specified folio IDs
+          description: Include transactions from the specified folio IDs. If omitted, all transactions for the source are included.
           type: array
           items:
             type: integer
             format: int64
-          example: [ 3774744, 7763263217 ]
+          example: [3774744, 7763263217]
         sourceKind:
           $ref: "#/components/schemas/SourceKind"
         sourceId:
@@ -2445,17 +3088,28 @@ components:
           description: "Compact revenue transactions, valid only for sourceKind = RESERVATION"
           type: boolean
         dateFrom:
-          description: "Minimum date, only for sourceKind = HOUSE_ACCOUNT"
+          description: "Minimum date filter (inclusive). Required for sourceKind = HOUSE_ACCOUNT, optional for others."
           type: string
           format: date
           nullable: true
           example: ""
         dateTo:
-          description: "Maximum date, only for sourceKind = HOUSE_ACCOUNT, optional"
+          description: "Maximum date filter (inclusive), optional."
           type: string
           format: date
           nullable: true
           example: ""
+        format:
+          $ref: "#/components/schemas/ExportFormat"
+        recipient:
+          $ref: "#/components/schemas/RecipientRequest"
+          nullable: true
+    ExportFormat:
+      type: string
+      description: Export file format
+      enum:
+        - PDF
+        - XLSX
     RecipientDetails:
       type: object
       properties:
@@ -2504,11 +3158,9 @@ components:
             $ref: '#/components/schemas/AnyValue'
           description: |
             Arbitrary country-specific fields from guest requirements.
-
     RecipientType:
       type: string
       enum: [COMPANY, PERSON, MANUAL]
-
     RecipientAddress:
       type: object
       properties:
@@ -2524,7 +3176,6 @@ components:
           type: string
         country:
           type: string
-
     RecipientCompany:
       type: object
       properties:
@@ -2546,7 +3197,6 @@ components:
           type: string
         country:
           type: string
-
     RecipientTaxInfo:
       type: object
       properties:
@@ -2554,7 +3204,12 @@ components:
           type: string
         companyName:
           type: string
-
+        source:
+          type: string
+          enum:
+            - GUEST_TAX_ID
+            - GUEST_DOCUMENT_NUMBER
+          description: Indicates whether the tax identification used is from Tax ID or Document Number.
     RecipientContactDetails:
       type: object
       properties:
@@ -2567,7 +3222,6 @@ components:
         birthday:
           type: string
           format: date-time
-
     RecipientDocument:
       type: object
       properties:
@@ -2618,6 +3272,36 @@ components:
         handwritten:
           type: boolean
           description: Indicates this is a handwritten receipt created during POS unavailability.
+        signatures:
+          type: array
+          description: Array of semantic signatures/response data from the government integration.
+          items:
+            $ref: '#/components/schemas/IntegrationSignature'
+    IntegrationSignature:
+      type: object
+      description: A semantic signature/response item from a government integration.
+      properties:
+        type:
+          type: string
+          description: Semantic type (JWT_TOKEN, QR_CODE_DATA, TRANSACTION_ID, COMPLIANCE_CHECK, etc.)
+        label:
+          type: string
+          description: Human-readable display label.
+        value:
+          type: string
+          description: The actual signature data/value.
+        format:
+          type: string
+          description: Format of the value.
+          enum: [TEXT, BASE64, HEX, URL, UNKNOWN]
+        source:
+          type: string
+          description: Source integration (FISKALTRUST_FR, FISKALTRUST_IT, etc.)
+        rawMetadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: Original integration-specific codes for debugging/auditing.
     DocumentTriggerEvent:
       type: string
       enum:
@@ -2691,6 +3375,8 @@ components:
         useInvoiceTitleAndNumbering:
           type: boolean
           default: false
+        dateDisplay:
+          $ref: '#/components/schemas/DateDisplay'
     PropertyConfigsResponse:
       type: object
       properties:
@@ -2783,10 +3469,12 @@ components:
         - RECTIFY
         - DOWNLOAD
         - CREDIT_NOTE
+        - VOID_AND_CREDIT_NOTE
         - VOID
         - VOID_AND_REFUND
         - ADD_PAYMENT
         - APPLY_TO_INVOICE
+        - GENERATE_SETTLEMENT
     GuestDocumentType:
       type: string
       description: Type of guest identification document
@@ -2812,6 +3500,13 @@ components:
         - RESERVATION
         - HOUSE_ACCOUNT
         - ACCOUNTS_RECEIVABLE_LEDGER
+    Origin:
+      type: string
+      description: Origin of the fiscal document
+      enum:
+        - MFD
+        - FISCAL_DOCUMENT
+        - INTEGRATION
     FiscalDocumentStatus:
       type: string
       description: Status of the fiscal document
@@ -2834,6 +3529,8 @@ components:
         - REJECTED
         - ACCEPTED
         - PENDING_TRANSACTION
+        - ALLOCATED
+        - APPLIED
     FiscalDocumentKind:
       type: string
       description: Kind of fiscal document
@@ -2845,7 +3542,16 @@ components:
         - PRO_FORMA_INVOICE
         - REFUND_RECEIPT
         - INVOICE_RECEIPT
-
+        - ADVANCE_INVOICE
+        - SETTLEMENT_INVOICE
+    DateDisplay:
+      type: string
+      description: Controls which date columns to show on the document
+      default: transaction_date
+      enum:
+        - service_date
+        - transaction_date
+        - both
     CreationMethod:
       type: string
       enum:
@@ -2894,13 +3600,19 @@ components:
           items:
             $ref: "#/components/schemas/FiscalDocumentStatus"
           description: List of fiscal document statuses to filter by
-          example: ["DRAFT", "COMPLETED"]
+          example: ["OPEN", "COMPLETED"]
         kinds:
           type: array
           items:
             $ref: "#/components/schemas/FiscalDocumentKind"
           description: List of fiscal document kinds to filter by
           example: ["INVOICE", "RECEIPT"]
+        origins:
+          type: array
+          items:
+            $ref: "#/components/schemas/Origin"
+          description: List of fiscal document origins to filter by
+          example: ["MFD", "FISCAL_DOCUMENT"]
         createdAtFrom:
           type: string
           format: date-time
@@ -2957,7 +3669,6 @@ components:
         balanceTo:
           type: number
           description: Maximum document balance
-
     TransactionForAllocationResponse:
       type: object
       properties:
@@ -2980,9 +3691,490 @@ components:
           type: number
         allocatedAmount:
           type: number
+        availableAmount:
+          type: number
         status:
           $ref: "#/components/schemas/TransactionStatus"
         taxes:
           type: array
           items:
             $ref: '#/components/schemas/TransactionForAllocationResponse'
+    # Clean provider-agnostic models
+    FiscalizationRegistrationRequest:
+      type: object
+      description: Provider-agnostic supplier registration data
+      required:
+        - country
+        - name
+      properties:
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+          pattern: "^[A-Z]{2}$"
+          example: "IT"
+        name:
+          type: string
+          description: Legal name of the company
+          example: "Mario Rossi Albergo"
+        taxId:
+          type: string
+          description: Primary tax identification number
+          example: "98765432103"
+        addresses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/FiscalizationAddress'
+        emails:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/FiscalizationEmail'
+        phones:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalizationPhone'
+        identities:
+          type: object
+          description: Additional tax/legal identities (key-value pairs)
+          additionalProperties:
+            type: string
+          example:
+            "it-fiscal-code": "98765432103"
+        extensions:
+          type: object
+          description: Country-specific tax configuration
+          additionalProperties:
+            type: string
+          example:
+            "it-regime-fiscale": "RF07"
+            "it-sdi-format": "FPR12"
+    FiscalizationAddress:
+      type: object
+      required:
+        - street
+        - postalCode
+        - country
+      properties:
+        street:
+          type: string
+          description: Street address with number
+          example: "Via Roma 123"
+        number:
+          type: string
+          description: Street number (separate field for countries like Brazil)
+          example: "123"
+        locality:
+          type: string
+          description: Neighborhood or locality
+          example: "Centro"
+        region:
+          type: string
+          description: City, region, or administrative area
+          example: "Milan"
+        state:
+          type: string
+          description: State/Province/Region code
+          example: "MI"
+        postalCode:
+          type: string
+          description: Postal/ZIP code
+          example: "20121"
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+          pattern: "^[A-Z]{2}$"
+          example: "IT"
+    FiscalizationEmail:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          type: string
+          format: email
+          description: Email address
+          example: "fatture@hotel-italia.it"
+        label:
+          type: string
+          description: Optional label for the email
+          example: "Invoicing"
+    FiscalizationPhone:
+      type: object
+      required:
+        - number
+      properties:
+        number:
+          type: string
+          description: Phone number (international format preferred)
+          example: "+39 02 1234567"
+        label:
+          type: string
+          description: Optional label for the phone
+          example: "Office"
+    FiscalizationRegistrationResponse:
+      allOf:
+        - $ref: '#/components/schemas/FiscalizationRegistrationRequest'
+        - type: object
+          required:
+            - propertyId
+            - status
+          properties:
+            propertyId:
+              type: integer
+              format: int64
+              description: Property ID this registration belongs to
+            status:
+              $ref: '#/components/schemas/FiscalizationRegistrationStatus'
+              description: Registration status with government systems
+            providerId:
+              type: string
+              description: Provider-specific ID (e.g., Invopop party ID)
+            isDefault:
+              type: boolean
+              description: Whether this is the default fiscalization registration
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    FiscalizationListResponse:
+      type: object
+      properties:
+        propertyId:
+          type: integer
+          format: int64
+        configs:
+          type: array
+          description: List of fiscalization registrations for this property
+          items:
+            $ref: '#/components/schemas/FiscalizationRegistrationResponse'
+    FiscalizationRegistrationRulesResponse:
+      type: object
+      required:
+        - country
+        - fields
+      properties:
+        country:
+          $ref: '#/components/schemas/CountryInfo'
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDefinition'
+        examples:
+          type: object
+          additionalProperties:
+            type: string
+          description: Example values for common fields
+    CountryInfo:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+          example: "BR"
+        name:
+          type: string
+          description: Country name
+          example: "Brazil"
+    FieldDefinition:
+      type: object
+      required:
+        - path
+        - label
+        - type
+        - required
+      properties:
+        path:
+          type: string
+          description: Field path (e.g., "name", "tax_id.code", "addresses")
+          example: "name"
+        label:
+          type: string
+          description: Display label for the field
+          example: "Legal Name"
+        type:
+          type: string
+          enum: [text, email, select, boolean, array, object]
+          description: Field input type
+        category:
+          type: string
+          enum: [company, tax, address, contact, supplementary, custom]
+          description: Field grouping category
+        required:
+          type: boolean
+          description: Whether field is required
+        primary:
+          type: boolean
+          description: Indicates primary tax ID field
+          default: false
+        validation:
+          $ref: '#/components/schemas/FieldValidation'
+        data:
+          $ref: '#/components/schemas/FieldData'
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/SelectOption'
+        item:
+          $ref: '#/components/schemas/ArrayItemDefinition'
+        properties:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FieldDefinition'
+          description: Object properties for object type fields
+        default:
+          oneOf:
+            - type: string
+            - type: boolean
+            - type: number
+        description:
+          type: string
+          description: Field description
+    SelectOption:
+      type: object
+      required:
+        - value
+        - label
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+    FieldValidation:
+      type: object
+      properties:
+        pattern:
+          type: string
+          description: Regex pattern for validation
+        min:
+          type: integer
+          description: Minimum length or items
+        max:
+          type: integer
+          description: Maximum length
+        checksum:
+          type: boolean
+          description: Whether field has checksum validation
+        format:
+          type: string
+          description: Display format mask (e.g., XX.XXX.XXX/XXXX-XX)
+    FieldData:
+      type: object
+      properties:
+        placeholder:
+          type: string
+          description: Input placeholder text
+        help:
+          type: string
+          description: Help text for the field
+        alternatives:
+          type: array
+          items:
+            type: string
+          description: Alternative accepted formats (e.g., CPF for CNPJ fields)
+    ArrayItemDefinition:
+      type: object
+      required:
+        - type
+        - fields
+      properties:
+        type:
+          type: string
+          enum: [object]
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDefinition'
+    FiscalizationValidationResult:
+      type: object
+      required:
+        - valid
+      properties:
+        valid:
+          type: boolean
+          description: Whether the data is valid
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+    ValidationError:
+      type: object
+      required:
+        - field
+        - code
+        - message
+      properties:
+        field:
+          type: string
+          description: Field path that has the error
+        code:
+          type: string
+          description: Error code (e.g., "REQUIRED", "INVALID_FORMAT")
+        message:
+          type: string
+          description: Human-readable error message
+    FiscalizationCountryOption:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+        name:
+          type: string
+          description: Country name
+    FiscalizationRegistrationStatus:
+      type: object
+      required:
+        - countryCode
+        - status
+      properties:
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+        status:
+          type: string
+          enum:
+            - NOT_REGISTERED
+            - PENDING
+            - AWAITING
+            - REGISTERED
+            - FAILED
+          description: Registration status with government systems
+        providerId:
+          type: string
+          description: Provider-specific registration ID
+        linkUrl:
+          type: string
+          description: External link URL when status is AWAITING (e.g., government portal)
+        createdAt:
+          type: string
+          format: date-time
+          description: When registration was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When status was last updated
+        error:
+          type: string
+          description: Error if registration failed
+    FiscalizationProviderInfo:
+      type: object
+      required:
+        - providerName
+        - countryCode
+      properties:
+        providerName:
+          type: string
+          description: Name of the fiscalization provider (e.g., Invopop, Fonoa, Fiskaly)
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+        countryName:
+          type: string
+          description: Human-readable country name
+    FiscalizationConsentRequest:
+      type: object
+      required:
+        - consentedBy
+      properties:
+        consentedBy:
+          type: string
+          description: Identifier of the user who provided consent (e.g., email or user ID)
+    FiscalizationConsentResponse:
+      type: object
+      required:
+        - consented
+      properties:
+        consented:
+          type: boolean
+          description: Whether the property has provided consent
+        consentedAt:
+          type: string
+          format: date-time
+          description: When consent was provided
+        consentedBy:
+          type: string
+          description: Who provided consent
+    FiscalizationTaxRulesResponse:
+      type: object
+      required:
+        - country
+        - taxes
+      properties:
+        country:
+          $ref: '#/components/schemas/CountryInfo'
+        taxes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxRule'
+          description: Flat list of selectable tax category + rate combinations
+    TaxRule:
+      type: object
+      required:
+        - category
+        - key
+        - rate
+        - name
+      properties:
+        category:
+          type: string
+          description: Tax category code (e.g., VAT, ISR)
+        key:
+          type: string
+          description: Tax key describing the tax situation (e.g., standard, exempt)
+        rate:
+          type: string
+          description: Rate within the category and key (e.g., general, reduced)
+        name:
+          type: string
+          description: Display name (e.g., "VAT - General Rate (16.0%)")
+        percent:
+          type: string
+          description: Rate percentage (e.g., "16.0%")
+    FiscalizationTaxResponse:
+      type: object
+      properties:
+        taxes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxMapping'
+    FiscalizationTaxRequest:
+      type: object
+      properties:
+        taxes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxMapping'
+    TaxMapping:
+      type: object
+      required:
+        - taxId
+        - category
+        - key
+        - rate
+      properties:
+        taxId:
+          type: integer
+          format: int64
+          description: Tax ID from the accounting system
+        category:
+          type: string
+          description: Tax category code (e.g., VAT, ISR)
+        key:
+          type: string
+          description: Tax key describing the tax situation (e.g., standard, exempt)
+        rate:
+          type: string
+          description: Rate within the category and key (e.g., general, reduced)

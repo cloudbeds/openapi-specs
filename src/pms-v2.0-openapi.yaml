@@ -30,7 +30,10 @@ paths:
           description: 'The maximum number of items to return in the response. Default is 100.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 100
+            maximum: 500
+            minimum: 1
           example: '100'
         -
           name: offset
@@ -38,7 +41,9 @@ paths:
           description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 0
+            minimum: 0
           example: '0'
         -
           name: filters
@@ -90,6 +95,549 @@ paths:
         -
           default:
             - 'read:addon'
+  /amenities/v1/catalogs/amenities:
+    get:
+      tags:
+        - Amenities
+      summary: 'Get amenity catalog'
+      description: 'Returns the complete list of amenities available for the specified scope (property or room) with their translated names and category codes.'
+      operationId: 'AmenityCatalogController::getAmenityCatalog'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: Accept-Language
+          in: header
+          description: 'RFC 5646 language preferences used for negotiation (e.g. es-ES, en;q=0.8).'
+          required: false
+          schema:
+            type: string
+            example: 'es-ES, en;q=0.8'
+        -
+          name: scope
+          in: query
+          description: 'The scope of amenities to retrieve'
+          required: true
+          schema:
+            type: string
+            enum:
+              - property
+              - room
+            example: property
+      responses:
+        '200':
+          description: 'A list of amenities in the catalog for the requested scope.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAmenityCatalogResponseSchema'
+        '400':
+          description: 'Invalid or missing scope parameter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'hotel:read'
+  /amenities/v1/catalogs/categories:
+    get:
+      tags:
+        - Amenities
+      summary: 'Get amenity category catalog'
+      description: 'Returns the complete list of amenity categories available for the specified scope (property or room) with their translated names.'
+      operationId: 'AmenityCatalogController::getAmenityCategoryCatalog'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: Accept-Language
+          in: header
+          description: 'RFC 5646 language preferences used for negotiation (e.g. es-ES, en;q=0.8).'
+          required: false
+          schema:
+            type: string
+            example: 'es-ES, en;q=0.8'
+        -
+          name: scope
+          in: query
+          description: 'The scope of amenities to retrieve'
+          required: true
+          schema:
+            type: string
+            enum:
+              - property
+              - room
+            example: property
+      responses:
+        '200':
+          description: 'A list of amenity categories in the catalog for the requested scope.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAmenityCategoryCatalogResponseSchema'
+        '400':
+          description: 'Invalid or missing scope parameter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'hotel:read'
+  '/amenities/v1/properties/{propertyId}/amenities':
+    get:
+      tags:
+        - Amenities
+      summary: 'Get property amenities'
+      description: 'Retrieve the complete set of active property amenities.'
+      operationId: 'PropertyAmenityController::getPropertyAmenities'
+      parameters:
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+        -
+          name: Accept-Language
+          in: header
+          description: 'RFC 5646 language preferences used for negotiation (e.g. es-ES, en;q=0.8).'
+          required: false
+          schema:
+            type: string
+            example: 'es-ES, en;q=0.8'
+      responses:
+        '200':
+          description: 'Property amenities retrieved successfully.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPropertyAmenitiesResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden - missing required permissions'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Property not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'hotel:read'
+    put:
+      tags:
+        - Amenities
+      summary: 'Update property amenities'
+      description: 'Replace the complete set of active property amenities in a single atomic transaction.'
+      operationId: 'PropertyAmenityController::updatePropertyAmenities'
+      parameters:
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+        -
+          name: Accept-Language
+          in: header
+          description: 'RFC 5646 language preferences used for negotiation (e.g. es-ES, en;q=0.8).'
+          required: false
+          schema:
+            type: string
+            example: 'es-ES, en;q=0.8'
+      requestBody:
+        description: 'List of amenity codes to set for the property.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePropertyAmenitiesRequestSchema'
+      responses:
+        '200':
+          description: 'Property amenities updated successfully.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePropertyAmenitiesResponseSchema'
+        '400':
+          description: 'Validation error - invalid amenity codes'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden - missing required permissions'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Property not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'hotel:write'
+  '/amenities/v1/properties/{propertyId}/room-amenities':
+    get:
+      tags:
+        - Amenities
+      summary: 'Get amenities for all rooms in a property'
+      description: 'Retrieve the complete set of active amenities for all rooms in a property.'
+      operationId: 'RoomAmenityController::getPropertyRoomsAmenities'
+      parameters:
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+        -
+          name: Accept-Language
+          in: header
+          description: 'RFC 5646 language preferences used for negotiation (e.g. es-ES, en;q=0.8).'
+          required: false
+          schema:
+            type: string
+            example: 'es-ES, en;q=0.8'
+      responses:
+        '200':
+          description: 'Room amenities retrieved successfully.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPropertyRoomsAmenitiesResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden - missing required permissions'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Property not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'hotel:read'
+    put:
+      tags:
+        - Amenities
+      summary: 'Update amenities for multiple rooms'
+      description: 'Replace the complete set of active amenities for multiple rooms in a single atomic transaction.'
+      operationId: 'RoomAmenityController::updatePropertyRoomsAmenities'
+      parameters:
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+        -
+          name: Accept-Language
+          in: header
+          description: 'RFC 5646 language preferences used for negotiation (e.g. es-ES, en;q=0.8).'
+          required: false
+          schema:
+            type: string
+            example: 'es-ES, en;q=0.8'
+      requestBody:
+        description: 'List of rooms with amenity codes to set.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePropertyRoomsAmenitiesRequestSchema'
+      responses:
+        '200':
+          description: 'Room amenities updated successfully.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePropertyRoomsAmenitiesResponseSchema'
+        '400':
+          description: 'Validation error - invalid amenity codes or room IDs'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden - missing required permissions'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Property or room not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'hotel:write'
+  '/amenities/v1/properties/{propertyId}/rooms/{roomId}/amenities':
+    get:
+      tags:
+        - Amenities
+      summary: 'Get room amenities'
+      description: 'Retrieve the complete set of active room amenities.'
+      operationId: 'RoomAmenityController::getRoomAmenities'
+      parameters:
+        -
+          name: roomId
+          in: path
+          description: 'The room id'
+          required: true
+          schema:
+            type: integer
+            example: 12345
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+        -
+          name: Accept-Language
+          in: header
+          description: 'RFC 5646 language preferences used for negotiation (e.g. es-ES, en;q=0.8).'
+          required: false
+          schema:
+            type: string
+            example: 'es-ES, en;q=0.8'
+      responses:
+        '200':
+          description: 'Room amenities retrieved successfully.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetRoomAmenitiesResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden - missing required permissions'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Property or room not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'hotel:read'
+    put:
+      tags:
+        - Amenities
+      summary: 'Update room amenities'
+      description: 'Replace the complete set of active room amenities in a single atomic transaction.'
+      operationId: 'RoomAmenityController::updateRoomAmenities'
+      parameters:
+        -
+          name: roomId
+          in: path
+          description: 'The room id'
+          required: true
+          schema:
+            type: integer
+            example: 12345
+        -
+          name: propertyId
+          in: path
+          description: 'The property ID'
+          required: true
+          schema:
+            type: integer
+            example: 1
+        -
+          name: Accept-Language
+          in: header
+          description: 'RFC 5646 language preferences used for negotiation (e.g. es-ES, en;q=0.8).'
+          required: false
+          schema:
+            type: string
+            example: 'es-ES, en;q=0.8'
+      requestBody:
+        description: 'List of amenity codes to set for the room.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoomAmenitiesRequestSchema'
+      responses:
+        '200':
+          description: 'Room amenities updated successfully.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateRoomAmenitiesResponseSchema'
+        '400':
+          description: 'Validation error - invalid amenity codes'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden - missing required permissions'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Property or room not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'hotel:write'
   /integration/v1/connected-applications:
     get:
       tags:
@@ -1139,7 +1687,10 @@ paths:
           description: 'The maximum number of items to return in the response. Default is 100.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 100
+            maximum: 500
+            minimum: 1
           example: '100'
         -
           name: offset
@@ -1147,7 +1698,9 @@ paths:
           description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 0
+            minimum: 0
           example: '0'
         -
           name: filters
@@ -1195,7 +1748,10 @@ paths:
           description: 'The maximum number of items to return in the response. Default is 100.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 100
+            maximum: 500
+            minimum: 1
           example: '100'
         -
           name: offset
@@ -1203,7 +1759,9 @@ paths:
           description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 0
+            minimum: 0
           example: '0'
         -
           name: filters
@@ -1430,7 +1988,10 @@ paths:
           description: 'The maximum number of items to return in the response. Default is 100.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 100
+            maximum: 500
+            minimum: 1
           example: '100'
         -
           name: offset
@@ -1438,7 +1999,9 @@ paths:
           description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 0
+            minimum: 0
           example: '0'
         -
           name: filters
@@ -1570,7 +2133,9 @@ paths:
           description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 0
+            minimum: 0
           example: '0'
         -
           name: limit
@@ -1578,7 +2143,10 @@ paths:
           description: 'The maximum number of items to return in the response. Default is 100.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 100
+            maximum: 500
+            minimum: 1
           example: '100'
       responses:
         '200':
@@ -1984,7 +2552,9 @@ paths:
           description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 0
+            minimum: 0
           example: '0'
         -
           name: limit
@@ -1992,7 +2562,10 @@ paths:
           description: 'The maximum number of items to return in the response. Default is 100.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 100
+            maximum: 500
+            minimum: 1
           example: '100'
         -
           name: filters
@@ -2244,7 +2817,9 @@ paths:
           description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 0
+            minimum: 0
           example: '0'
         -
           name: limit
@@ -2252,7 +2827,10 @@ paths:
           description: 'The maximum number of items to return in the response. Default is 100.'
           required: false
           schema:
-            $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+            type: integer
+            default: 100
+            maximum: 500
+            minimum: 1
           example: '100'
       responses:
         '200':
@@ -2567,96 +3145,6 @@ paths:
         -
           default:
             - 'read:hotel'
-  '/reservation/v1/reservations/{reservationId}/rooms/{reservationRoomId}':
-    patch:
-      tags:
-        - Reservations
-      summary: 'Update room assignment for a reservation'
-      description: 'Assign, reassign, or unassign a room to/from a reservation booking room'
-      operationId: 'ReservationRoomController::updateRoom'
-      parameters:
-        -
-          name: x-property-id
-          in: header
-          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
-          required: true
-          schema:
-            type: string
-            example: '1,2,3'
-        -
-          name: reservationId
-          in: path
-          description: 'Reservation identifier'
-          required: true
-          schema:
-            type: string
-            example: '12345'
-        -
-          name: reservationRoomId
-          in: path
-          description: 'Reservation room identifier'
-          required: true
-          schema:
-            type: string
-            example: '67890'
-      requestBody:
-        description: 'Room update data'
-        required: true
-        content:
-          application/json:
-            schema:
-              properties:
-                roomId:
-                  description: 'Room ID to assign (format: ''roomTypeId-roomNumber''), or null to unassign'
-                  type: string
-                  example: 10-101
-                  nullable: true
-                adjustPrice:
-                  description: 'Whether to adjust price if room assignment changes rate'
-                  type: boolean
-                  default: false
-              type: object
-      responses:
-        '200':
-          description: 'Room updated successfully'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UpdateReservationRoomResponseSchema'
-        '400':
-          description: 'Bad Request - Invalid input data'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BadRequestResponseSchema'
-        '401':
-          description: 'Unauthorized response'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForbiddenResponseSchema'
-        '403':
-          description: 'Forbidden response'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForbiddenResponseSchema'
-        '404':
-          description: 'Not Found - Reservation or reservation room not found'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotFoundResponseSchema'
-        '500':
-          description: 'Internal server error'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
-      security:
-        -
-          default:
-            - 'hotel:write'
   /rooms/v1/out-of-service:
     post:
       tags:
@@ -2709,6 +3197,7 @@ components:
         - feature.distribution.age-policy-auto-rollback-enabled
         - feature.distribution.age-policy-centralized-service-layer
         - feature.distribution.send-rate-plan-if-promo-code-removed
+        - feature.distribution.market-segmentation-debug-logs
         - feature.inventory.rate-plans
         - feature.inventory.derived-rate-plans-from-non-base-rate-plans
         - feature.inventory.derived-rate-plans-from-another-derived-rate-plans
@@ -3497,6 +3986,15 @@ components:
           format: date-time
           nullable: true
       type: object
+    DeleteRoomCustomAmenitiesRequestSchema:
+      properties:
+        customAmenities:
+          description: 'List of custom room amenities to remove from the room'
+          type: array
+          items:
+            type: string
+            example: 'in-room hammocks'
+      type: object
     GetAmenityCatalogRequestSchema: {  }
     GetAmenityCategoryCatalogRequestSchema: {  }
     GetPropertyAmenitiesRequestSchema: {  }
@@ -3605,12 +4103,18 @@ components:
     GetPropertyAmenitiesResponseSchema:
       required:
         - amenities
+        - customAmenities
       properties:
         amenities:
           description: 'List of active property amenities'
           type: array
           items:
             $ref: '#/components/schemas/AmenityItemSchema'
+        customAmenities:
+          description: 'List of custom property amenities'
+          type: array
+          items:
+            type: string
       type: object
     GetPropertyRoomsAmenitiesResponseSchema:
       required:
@@ -3625,14 +4129,41 @@ components:
     GetRoomAmenitiesResponseSchema:
       required:
         - amenities
+        - customAmenities
       properties:
         amenities:
           description: 'List of active room amenities'
           type: array
           items:
             $ref: '#/components/schemas/AmenityItemSchema'
+        customAmenities:
+          description: 'List of custom room amenities'
+          type: array
+          items:
+            type: string
       type: object
     RoomAmenitiesSchema:
+      required:
+        - id
+        - amenities
+        - customAmenities
+      properties:
+        id:
+          description: 'Room ID'
+          type: string
+          example: '101'
+        amenities:
+          description: 'List of active amenities for this room'
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenityItemSchema'
+        customAmenities:
+          description: 'List of custom amenities for this room'
+          type: array
+          items:
+            type: string
+      type: object
+    RoomAmenitiesUpdateSchema:
       required:
         - id
         - amenities
@@ -3646,6 +4177,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AmenityItemSchema'
+      type: object
+    RoomCustomAmenitiesResponseSchema:
+      required:
+        - customAmenities
+      properties:
+        customAmenities:
+          description: 'List of custom room amenities'
+          type: array
+          items:
+            type: string
       type: object
     UpdatePropertyAmenitiesResponseSchema:
       required:
@@ -3665,7 +4206,7 @@ components:
           description: 'Updated rooms with their amenities'
           type: array
           items:
-            $ref: '#/components/schemas/RoomAmenitiesSchema'
+            $ref: '#/components/schemas/RoomAmenitiesUpdateSchema'
       type: object
     UpdateRoomAmenitiesResponseSchema:
       required:
@@ -4001,6 +4542,7 @@ components:
                   - full_reservation_sync_enabled_channels
                   - is_distribution_enabled
                   - allow_ota_reservation_cancellation
+                  - allow_ota_reservation_reconciliation
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting you are updating.'
@@ -4029,6 +4571,7 @@ components:
                   - full_reservation_sync_enabled_channels
                   - is_distribution_enabled
                   - allow_ota_reservation_cancellation
+                  - allow_ota_reservation_reconciliation
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting.'
@@ -4076,6 +4619,7 @@ components:
                   - full_reservation_sync_enabled_channels
                   - is_distribution_enabled
                   - allow_ota_reservation_cancellation
+                  - allow_ota_reservation_reconciliation
                 example: example_setting_key
               message:
                 description: 'The reason why the update failed.'
@@ -6785,64 +7329,6 @@ components:
           format: 'Y-m-d\TH:i:sP'
           nullable: true
       type: object
-    UpdateReservationRoomRequestSchema:
-      required:
-        - reservationId
-        - reservationRoomId
-      properties:
-        reservationId:
-          description: 'Reservation ID'
-          type: string
-          example: '12345'
-        reservationRoomId:
-          description: 'Reservation Room ID'
-          type: string
-          example: '67890'
-        roomId:
-          description: 'Room ID to assign (format: ''roomTypeId-roomNumber''), or null to unassign'
-          type: string
-          example: 10-101
-          nullable: true
-        roomTypeId:
-          description: 'Room type ID to change to (without assigning specific room), or null'
-          type: integer
-          example: 15
-          nullable: true
-        adjustPrice:
-          description: 'Whether to adjust price if room assignment changes rate'
-          type: boolean
-          default: false
-      type: object
-    UpdateReservationRoomResponseSchema:
-      required:
-        - reservationRoomId
-        - roomId
-        - roomTypeId
-        - roomName
-        - total
-      properties:
-        reservationRoomId:
-          description: 'Reservation room ID that was updated'
-          type: integer
-        roomId:
-          description: 'Assigned room ID (null if unassigned)'
-          type: string
-          nullable: true
-        roomTypeId:
-          description: 'Room type ID'
-          type: integer
-          nullable: true
-        roomName:
-          description: 'Room name'
-          type: string
-          nullable: true
-        total:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneySchema'
-          nullable: true
-          description: 'Room total after assignment in the booking''s currency'
-      type: object
     OutOfServiceRequestSchema:
       required:
         - fromDate
@@ -6871,6 +7357,16 @@ components:
           items:
             $ref: '#/components/schemas/OutOfServiceRequestSchema'
       type: object
+    GetRoomLabelsResponseSchema:
+      required:
+        - labels
+      properties:
+        labels:
+          description: 'List of room labels in the catalog'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomLabelItemSchema'
+      type: object
     OutOfServiceResponseItemSchema:
       required:
         - event_id
@@ -6895,6 +7391,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OutOfServiceResponseItemSchema'
+      type: object
+    RoomLabelItemSchema:
+      required:
+        - code
+        - title
+        - accommodationPrivacyCode
+      properties:
+        code:
+          description: 'Unique label code'
+          type: string
+          example: STUDIO_APARTMENT
+        title:
+          description: 'Translated label title'
+          type: string
+          example: 'Studio Apartment'
+        accommodationPrivacyCode:
+          description: 'Accommodation privacy code'
+          type: string
+          enum:
+            - PRIVATE
+            - SHARED
+            - PRIVATE_SHARED
+          example: PRIVATE
       type: object
   parameters:
     roomId:
@@ -6942,6 +7461,9 @@ tags:
     name: Addons
     description: Addons
   -
+    name: Amenities
+    description: Amenities
+  -
     name: Applications
     description: Applications
   -
@@ -6968,6 +7490,3 @@ tags:
   -
     name: Reservations
     description: Reservations
-  -
-    name: Rooms
-    description: Rooms

@@ -6,38 +6,7 @@
   },
   "servers": [
     {
-      "url": "https://api.{environment}.com",
-      "variables": {
-        "environment": {
-          "default": "cloudbeds-stage",
-          "enum": [
-            "cloudbeds-stage",
-            "cloudbeds"
-          ]
-        }
-      }
-    },
-    {
-      "url": "https://api.{island}.{environment}.com",
-      "variables": {
-        "island": {
-          "default": "us2",
-          "enum": [
-            "us2"
-          ]
-        },
-        "environment": {
-          "default": "cloudbeds-stage",
-          "enum": [
-            "cloudbeds-stage",
-            "cloudbeds"
-          ]
-        }
-      }
-    },
-    {
-      "url": "http://localhost:8000/accounting/v1.0",
-      "description": "Local Host"
+      "url": "https://api.cloudbeds.com"
     }
   ],
   "paths": {

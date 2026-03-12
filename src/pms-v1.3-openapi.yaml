@@ -305,6 +305,10 @@ components:
                     items:
                         type: object
                         properties:
+                            policyId:
+                                description: 'Policy ID to associate with the interval'
+                                type: string
+                                nullable: true
                             availability:
                                 description: ''
                                 type: array
@@ -379,6 +383,12 @@ components:
                                                     description: 'If the interval dates are closed for departure'
                                                     type: integer
                                                     nullable: true
+                                            nullable: true
+                                        rooms:
+                                            description: 'Array of room IDs assigned to this date'
+                                            type: array
+                                            items:
+                                                type: string
                                             nullable: true
                     nullable: true
         PostCreateAllotmentBlockResponse:
@@ -463,6 +473,9 @@ components:
                                 items:
                                     type: object
                                     properties:
+                                        policyId:
+                                            description: 'Policy ID associated with the interval'
+                                            type: string
                                         roomTypeId:
                                             description: 'Room type ID'
                                             type: string
@@ -516,6 +529,11 @@ components:
                                                         child3:
                                                             description: 'Price for child 3'
                                                             type: string
+                                                rooms:
+                                                    description: 'Array of room IDs assigned to this date'
+                                                    type: array
+                                                    items:
+                                                        type: string
                                         restrictions:
                                             description: 'Interval restrictions if applicable'
                                             type: object
@@ -662,6 +680,9 @@ components:
                                 items:
                                     type: object
                                     properties:
+                                        policyId:
+                                            description: 'Policy ID associated with the interval'
+                                            type: string
                                         roomTypeId:
                                             description: 'Room type ID'
                                             type: string
@@ -802,6 +823,10 @@ components:
                     items:
                         type: object
                         properties:
+                            policyId:
+                                description: 'Policy ID to associate with the interval'
+                                type: string
+                                nullable: true
                             roomTypeId:
                                 description: 'Room type id'
                                 type: string
@@ -879,9 +904,15 @@ components:
                                                     type: integer
                                                     nullable: true
                                                 closedToDeparture:
-                                                    description: 'If the interval dates are closed for departure the number of applicable keys varies here based on the occupancy settings for the room type.'
+                                                    description: 'If the interval dates are closed for departure'
                                                     type: integer
                                                     nullable: true
+                                            nullable: true
+                                        rooms:
+                                            description: 'Array of room IDs assigned to this date the number of applicable keys varies here based on the occupancy settings for the room type.'
+                                            type: array
+                                            items:
+                                                type: string
                                             nullable: true
                                 nullable: true
                     nullable: true
@@ -959,6 +990,9 @@ components:
                                 items:
                                     type: object
                                     properties:
+                                        policyId:
+                                            description: 'Policy ID associated with the interval'
+                                            type: string
                                         roomTypeId:
                                             description: 'Room type ID'
                                             type: string
@@ -1004,6 +1038,11 @@ components:
                                                         child3:
                                                             description: 'Price for child 3'
                                                             type: string
+                                                rooms:
+                                                    description: 'Array of room IDs assigned to this date'
+                                                    type: array
+                                                    items:
+                                                        type: string
                                         restrictions:
                                             description: 'Interval restrictions if applicable'
                                             type: object
@@ -3067,7 +3106,7 @@ components:
                     format: date
                     nullable: true
                 guestDocumentType:
-                    description: 'It is mandatory to send all document information<br /> na - non selection<br /> dni - Identity card<br /> nie - Residence permit<br />'
+                    description: 'It is mandatory to send all document information<br /> na - non selection<br /> dni - Identity card<br /> nie - Residence permit<br /> cpf - Brazilian Tax ID<br />'
                     type: string
                     enum:
                         - na
@@ -3077,13 +3116,14 @@ components:
                         - dni
                         - nie
                         - social_security_card
+                        - cpf
                     nullable: true
                 guestDocumentNumber:
                     description: '(mandatory when guestDocumentType is sent)'
                     type: string
                     nullable: true
                 guestDocumentIssueDate:
-                    description: '(mandatory when guestDocumentType is sent and is not DNI)'
+                    description: '(mandatory when guestDocumentType is sent and is not DNI or CPF)'
                     type: string
                     format: date
                     nullable: true
@@ -3092,7 +3132,7 @@ components:
                     type: string
                     nullable: true
                 guestDocumentExpirationDate:
-                    description: '(mandatory when guestDocumentType is sent and is not DNI or NIE)'
+                    description: '(mandatory when guestDocumentType is sent and is not DNI, NIE, or CPF)'
                     type: string
                     format: date
                     nullable: true
@@ -3234,9 +3274,10 @@ components:
                     format: date
                     nullable: true
                 guestDocumentType:
-                    description: 'Document Type<br /> dni - Identity card<br /> nie - Residence permit<br /> na - non selection<br />'
+                    description: 'Document Type<br /> dni - Identity card<br /> nie - Residence permit<br /> na - non selection<br /> cpf - Brazilian Tax ID<br />'
                     type: string
                     enum:
+                        - cpf
                         - dni
                         - driver_license
                         - na
@@ -3250,7 +3291,7 @@ components:
                     type: string
                     nullable: true
                 guestDocumentIssueDate:
-                    description: '(mandatory when guestDocumentType is sent and is not DNI)'
+                    description: '(mandatory when guestDocumentType is sent and is not DNI or CPF)'
                     type: string
                     format: date
                     nullable: true
@@ -3259,7 +3300,7 @@ components:
                     type: string
                     nullable: true
                 guestDocumentExpirationDate:
-                    description: '(mandatory when guestDocumentType is sent and is not DNI or NIE)'
+                    description: '(mandatory when guestDocumentType is sent and is not DNI, NIE, or CPF)'
                     type: string
                     format: date
                     nullable: true
@@ -5160,6 +5201,9 @@ components:
                 houseAccountID:
                     description: 'House Account identifier is necessary if reservationID not sent'
                     type: string
+                groupCode:
+                    description: 'Group Code. Required if neither reservationID nor houseAccountID is sent'
+                    type: string
                 subReservationID:
                     description: 'The Sub Reservation identifier. reservationID is still mandatory if subReservationID is sent.'
                     type: string
@@ -5358,9 +5402,14 @@ components:
                 description:
                     description: 'Description of the payment to display on folio'
                     type: string
+                cardToken:
+                    description: 'cardToken provided by Cloudbeds vault'
+                    type: string
+                    nullable: true
                 paymentMethodId:
                     description: 'Payment method UUID'
                     type: string
+                    nullable: true
                 isDeposit:
                     description: 'determine if this payment is a deposit (default: false)'
                     type: boolean
@@ -8304,7 +8353,7 @@ components:
                     type: string
                     format: date
                 rooms:
-                    description: 'All rooms for room block. When multiple rooms are submitted they will be created under the same roomBlockID.'
+                    description: 'All rooms for room block. When multiple rooms are submitted they will be created under the same roomBlockID. For properties using split inventory (virtual rooms linked to physical rooms), only provide the source rooms you want to block. Linked rooms will be automatically added. Do not include auto-added linked rooms in the request - the API will reject requests that include both a source room and its linked room(s).'
                     type: array
                     items:
                         type: object
@@ -8366,17 +8415,23 @@ components:
                     type: string
                     format: date
                 rooms:
-                    description: 'All rooms for room block'
+                    description: 'All rooms for room block. For properties using split inventory, this includes both source rooms (explicitly requested) and linked rooms (automatically added based on shared inventory configuration).'
                     type: array
                     items:
                         type: object
                         properties:
+                            eventID:
+                                description: "Event ID (unique identifier for this specific room's block entry)"
+                                type: string
                             roomID:
                                 description: 'Room ID'
                                 type: string
                             roomTypeID:
                                 description: 'Room Type ID'
                                 type: string
+                            isSource:
+                                description: 'Indicates whether this room was explicitly requested (true) or automatically added due to split inventory configuration (false). Auto-added rooms cannot be individually removed or swapped; they are managed through their source room.'
+                                type: boolean
                 message:
                     description: 'To be used in case any error occurs (if success = false).  If success = true, it does not exist.'
                     type: string
@@ -8407,17 +8462,23 @@ components:
                                 type: string
                                 format: date
                             rooms:
-                                description: 'All rooms for Block ID'
+                                description: 'All rooms for Block ID. For properties using split inventory, this includes both source rooms (explicitly requested) and linked rooms (automatically added based on shared inventory configuration).'
                                 type: array
                                 items:
                                     type: object
                                     properties:
+                                        eventID:
+                                            description: "Event ID (unique identifier for this specific room's block entry)"
+                                            type: string
                                         roomID:
                                             description: 'Room ID'
                                             type: string
                                         roomTypeID:
                                             description: 'Room type ID'
                                             type: string
+                                        isSource:
+                                            description: 'Indicates whether this room was explicitly requested (true) or automatically added due to split inventory configuration (false). Auto-added rooms cannot be individually removed or swapped; they are managed through their source room.'
+                                            type: boolean
                             count:
                                 description: 'Number of results (properties) returned.'
                                 type: integer
@@ -8456,7 +8517,7 @@ components:
                     format: date
                     nullable: true
                 rooms:
-                    description: 'All rooms for room block. When multiple rooms are submitted they will be created under the same roomBlockID.'
+                    description: 'All rooms for room block. When multiple rooms are submitted they will be created under the same roomBlockID. For properties using split inventory (virtual rooms linked to physical rooms), only provide the source rooms you want to block. Linked rooms will be automatically added. Do not include auto-added linked rooms in the request - the API will reject requests that include both a source room and its linked room(s). Auto-added rooms cannot be individually swapped out; to remove an auto-added room, you must remove or swap its source room.'
                     type: array
                     items:
                         type: object
@@ -8503,7 +8564,7 @@ components:
                     description: 'Room block ID'
                     type: string
                 roomBlockType:
-                    description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold."
+                    description: "Room block type. 'blocked' - Room block. 'out_of_service' - Out of service block. 'courtesy_hold' - Courtesy hold."
                     type: string
                     enum:
                         - blocked
@@ -8521,17 +8582,23 @@ components:
                     type: string
                     format: date
                 rooms:
-                    description: 'All rooms for room block'
+                    description: 'All rooms for room block. For properties using split inventory, this includes both source rooms (explicitly requested) and linked rooms (automatically added based on shared inventory configuration).'
                     type: array
                     items:
                         type: object
                         properties:
+                            eventID:
+                                description: "Event ID (unique identifier for this specific room's block entry)"
+                                type: string
                             roomID:
                                 description: 'Room ID'
                                 type: string
                             roomTypeID:
                                 description: 'Room Type ID'
                                 type: string
+                            isSource:
+                                description: 'Indicates whether this room was explicitly requested (true) or automatically added due to split inventory configuration (false). Auto-added rooms cannot be individually removed or swapped; they are managed through their source room.'
+                                type: boolean
                 message:
                     description: 'To be used in case any error occurs (if success = false).  If success = true, it does not exist.'
                     type: string
@@ -8941,7 +9008,7 @@ components:
                                 description: Code
                                 type: string
                             kind:
-                                description: 'Tax kind. Currently supports "vat" or null. Only exists if type = tax.'
+                                description: 'Tax kind. Currently supports "vat", "municipal_tax" or null. Only exists if type = tax.'
                                 type: string
                                 nullable: true
                             amount:
@@ -12083,7 +12150,7 @@ paths:
             tags:
                 - Payment
             summary: postPayment
-            description: 'Add a payment to a specified reservation or house account. If both Reservation ID and HouseAccountID are informed, only the former is taken in consideration.'
+            description: 'Add a payment to a specified reservation, house account, or group. If multiple IDs are provided, precedence is reservationID, then houseAccountID, then groupCode.'
             responses:
                 200:
                     description: '200 Response'
