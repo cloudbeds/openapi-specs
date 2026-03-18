@@ -1,8 +1,9 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Accounting service API",
-    "version": "v0"
+    "title": "Cloudbeds Accounting Service API",
+    "version": "v0",
+    "description": "The Cloudbeds Accounting Service API provides programmatic access to financial data and operations for hospitality properties. Use this API to manage transactions, folios, deposits, accounts receivable ledgers, trial balances, and related accounting configuration.\n\n**Key concepts:**\n- **Transactions** represent individual financial entries (charges, payments,\n  taxes, fees) associated with a source such as a reservation, group profile,\n  or house account.\n\n- **Folios** organize transactions into logical groups within a source. You\n  can create custom folios and move or route transactions between them.\n\n- **Source Balances** provide a real-time financial summary (charges, payments,\n  balance due, tax/fee breakdowns) for a reservation, group profile, house\n  account, or accounts receivable ledger.\n\n- **Accounts Receivable (AR) Ledgers** track outstanding balances that have\n  been transferred from reservations or group profiles for later collection.\n\n- **Trial Balance** is a daily financial reconciliation report that summarizes\n  ledger activity across guest, deposit, and AR ledgers.\n\n- **Custom Codes** let you map Cloudbeds internal transaction codes to your\n  own chart-of-accounts codes and general ledger codes.\n\n\n**Authentication:**\nAll endpoints require a valid OAuth2 bearer token. Endpoints are protected by scopes: `read:payment` for read operations and `write:payment` for mutating operations. A few search endpoints use POST with a request body to support complex filter criteria; these require the `read:payment` scope.\n\n**Base URL:**\nUse `https://api.cloudbeds.com` for production and `https://api.cloudbeds-stage.com` for staging. All endpoint paths are prefixed with `/accounting/v1.0`.\n\n**Property context:**\nEvery request must include the `X-Property-ID` header to identify which property the request applies to.\n\n**Monetary amounts:**\nUnless otherwise noted, monetary amounts are expressed in the smallest currency unit (e.g., cents for USD). Use the `currencyScale` field to determine the number of decimal places.\n\n**Pagination:**\nPaginated endpoints return a `nextPageToken` value. Pass this token in subsequent requests to retrieve the next page of results. When `nextPageToken` is null or absent, you have reached the last page.\n"
   },
   "servers": [
     {
@@ -19,14 +20,17 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
           "Settings"
         ],
         "operationId": "getSettings",
-        "description": "Get property settings by its ID",
+        "summary": "Get property accounting settings",
+        "description": "Retrieve the accounting settings for a property. Use this endpoint to check the current configuration, such as the deposit consumption policy. Settings control how certain accounting behaviors work across the property.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -54,7 +58,9 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "tags": [
@@ -71,7 +77,8 @@
           "required": true
         },
         "operationId": "patchSettings",
-        "description": "Update partially or create settings",
+        "summary": "Update property accounting settings",
+        "description": "Update one or more accounting settings for a property. You only need to include the fields you want to change; unspecified fields remain unchanged. If no settings exist for the property, they are created automatically.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -101,7 +108,9 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "tags": [
@@ -118,6 +127,8 @@
           "required": true
         },
         "operationId": "postDepositsTransfer",
+        "summary": "Transfer deposit transactions",
+        "description": "Transfer one or more deposit transactions to the guest ledger. Provide the transaction IDs of the deposits you want to transfer. This operation is processed asynchronously; the response includes an event ID you can use to track the result.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -147,13 +158,17 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgers",
+        "summary": "List accounts receivable ledgers",
+        "description": "Retrieve a paginated list of accounts receivable (AR) ledgers for a property. You can filter by status, date range, balance range, profile, and search query. Use AR ledgers to track balances that have been transferred from reservations or group profiles for later collection.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -178,7 +193,9 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "tags": [
@@ -195,6 +212,8 @@
           "required": true
         },
         "operationId": "postAccountsReceivableLedger",
+        "summary": "Create an accounts receivable ledger",
+        "description": "Create a new accounts receivable (AR) ledger for a property. An AR ledger provides a way to track outstanding balances outside of a reservation, such as invoices sent to a corporate client. You must provide a name, and can optionally link the ledger to a profile.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -219,7 +238,9 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "tags": [
@@ -236,6 +257,8 @@
           "required": true
         },
         "operationId": "patchAccountsReceivableLedger",
+        "summary": "Update an accounts receivable ledger",
+        "description": "Update an existing accounts receivable (AR) ledger. You can change the name, description, linked profile, or status. Only include the fields you want to update. To close a ledger, set the status to CLOSED; note that a ledger can only be closed when its balance is zero.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -265,13 +288,17 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgerById",
+        "summary": "Get an accounts receivable ledger by ID",
+        "description": "Retrieve a single accounts receivable (AR) ledger by its unique identifier. The response includes the ledger name, status, total charges, amount paid, and outstanding balance.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -308,7 +335,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "page token"
+            "description": "Opaque token for cursor-based pagination. Pass the `nextPageToken` value from a previous response to retrieve the next page. Omit this parameter (or pass null) for the first page.\n"
           },
           {
             "name": "pageSize",
@@ -317,7 +344,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Size of the page"
+            "description": "Number of results to return per page. If not specified, the server uses a default page size.\n"
           },
           {
             "$ref": "#/components/parameters/accountsReceivableLedgerTransactionsFilter"
@@ -325,20 +352,24 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgerTransactions",
+        "summary": "List transactions for an AR ledger",
+        "description": "Retrieve a paginated list of transactions belonging to a specific accounts receivable (AR) ledger. You can filter by transaction state (posted or pending), date ranges, transaction type, and more. Use this endpoint to review the detailed financial activity within an AR ledger.\n",
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExtendedTransactionPaginated"
+                  "$ref": "#/components/schemas/AccountsReceivableTransactionPaginated"
                 }
               }
             }
@@ -361,13 +392,17 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgerTotals",
+        "summary": "Get AR ledger totals",
+        "description": "Retrieve aggregated totals across all accounts receivable (AR) ledgers for a property. The response includes the combined total charges, amount paid, and outstanding balance. You can optionally filter by ledger status to see totals for only open or closed ledgers.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -400,13 +435,17 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "postAccountsReceivableLedgerReservationBalanceTransfer",
+        "summary": "Transfer a reservation balance to an AR ledger",
+        "description": "Transfer the outstanding balance of a reservation to an accounts receivable (AR) ledger. This creates a transfer transaction that moves the balance from the reservation to the specified AR ledger for later collection. This operation is processed asynchronously; the response includes an event ID you can use to track the result.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -440,13 +479,72 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "deleteAccountsReceivableLedgerReservationBalanceTransfer",
+        "summary": "Reverse a reservation-to-AR balance transfer",
+        "description": "Reverse a previously created balance transfer between a reservation and an accounts receivable (AR) ledger. This moves the transferred balance back to the original reservation. This operation is processed asynchronously; the response includes an event ID you can use to track the result.\n",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncEventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/accounts-receivable-ledgers/{accountsReceivableLedgerId}/group-profile/{groupProfileId}/balance-transfer": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "$ref": "#/components/parameters/accountsReceivableLedgerId"
+          },
+          {
+            "$ref": "#/components/parameters/groupProfileId"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostGroupProfileBalanceTransferRequest"
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounts Receivable Ledger"
+        ],
+        "operationId": "postAccountsReceivableLedgerGroupBalanceTransfer",
+        "summary": "Transfer a group profile balance to an AR ledger",
+        "description": "Transfer the outstanding balance of a group profile to an accounts receivable (AR) ledger. You can optionally specify a folio ID to transfer the balance from a specific folio within the group profile. This operation is processed asynchronously; the response includes an event ID you can use to track the result.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -479,13 +577,17 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
           "Accounts Receivable Ledger"
         ],
         "operationId": "getAccountsReceivableLedgerReservationBalanceTransfer",
+        "summary": "Get AR balance transfer details for a reservation",
+        "description": "Retrieve the balance transfer details for a specific reservation. If a balance transfer exists between the reservation and an accounts receivable (AR) ledger, the response includes the transfer transaction ID, amount, and the associated AR ledger ID.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -511,9 +613,13 @@
           }
         ],
         "operationId": "getCustomGeneralLedgerCodes",
+        "summary": "List custom general ledger codes",
+        "description": "Retrieve all custom general ledger (GL) codes configured for a property. GL codes let you map Cloudbeds transaction categories to your own chart-of-accounts structure for reporting and export to external accounting systems.\n",
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
@@ -539,7 +645,8 @@
         }
       },
       "put": {
-        "description": "Create or update General Ledger Codes.\n",
+        "summary": "Create or update custom general ledger codes",
+        "description": "Create or update custom general ledger (GL) codes for a property. Send the full list of GL codes you want to persist. Each code must have a unique name and code value. You can assign codes to groups (payments, products, reservations, taxes/fees, etc.) to categorize them. To archive a code, set its `archived` flag to true.\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -558,7 +665,9 @@
         "operationId": "putCustomGeneralLedgerCodes",
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "tags": [
@@ -582,9 +691,13 @@
           }
         ],
         "operationId": "getCustomTransactionCodes",
+        "summary": "List custom transaction codes",
+        "description": "Retrieve all custom transaction code mappings for a property. Custom transaction codes let you assign your own codes to each Cloudbeds internal transaction type (e.g., room rate, tax, payment method). You must call the initialize endpoint before codes can be retrieved for the first time.\n",
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
@@ -610,7 +723,8 @@
         }
       },
       "put": {
-        "description": "Update custom transaction code mappings. Optional custom general ledger code can also be assigned.\n",
+        "summary": "Update custom transaction code mappings",
+        "description": "Update custom transaction code mappings for a property. For each mapping, provide the record ID and the new custom code value. You can also optionally assign a custom general ledger code to each transaction code. Only the mappings you include in the request are updated; others remain unchanged.\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -629,7 +743,9 @@
         "operationId": "putCustomTransactionCodes",
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "tags": [
@@ -648,6 +764,8 @@
     "/accounting/v1.0/custom-transaction-codes/initialize": {
       "description": "Before transaction custom codes can be retrieved and modified, they must be initialized. This process generates transaction custom code records without any mapping. Once the initialization is complete, the codes can be retrieved and modified.\n",
       "post": {
+        "summary": "Initialize custom transaction codes",
+        "description": "Initialize custom transaction code records for a property. You must call this endpoint before you can retrieve or update custom transaction codes. Initialization creates a record for each internal transaction type with an empty custom code mapping. If codes have already been initialized, this endpoint has no additional effect.\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -656,7 +774,9 @@
         "operationId": "initializeCustomTransactionCodes",
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "tags": [
@@ -674,7 +794,8 @@
     },
     "/accounting/v1.0/transactions": {
       "post": {
-        "description": "Supported fields for filtering:\n  - account_category\n  - chart_of_account_type\n  - created_at - Same as `transaction_datetime`\n  - customer_id\n  - custom_code\n  - external_relation_id\n  - external_relation_kind\n  - folio_id\n  - id\n  - internal_code\n  - origin_id\n  - parent_id\n  - routed_from\n  - source_id\n  - source_identifier\n  - source_kind\n  - transaction_datetime\n  - trial_balance_id\n  - service_date\n\nSupported fields for sorting:\n  - created_at - Same as `transaction_datetime`\n  - id\n  - internal_code\n  - source_id\n  - transaction_datetime\n  - service_date\n\nExample request:\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11t08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n\nThe API has certain constraints for filters so that the system is able to efficiently query the data. Filters must include on of the following:\n  - filter by 'id' with condition 'equals' or 'in'\n  - filter by both 'source_id' and 'source_kind'\n  - filter by both 'external_relation_id' and 'external_relation_kind'\n  - filter by transaction_datetime\n```\n",
+        "summary": "Search posted transactions",
+        "description": "Search and retrieve posted transactions for a property. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. You can combine multiple filters with AND/OR logic, paginate results, and sort by various fields.\n\nSupported fields for filtering:\n  - account_category\n  - chart_of_account_type\n  - created_at - Same as `transaction_datetime`\n  - customer_id\n  - custom_code\n  - external_relation_id\n  - external_relation_kind\n  - folio_id\n  - id\n  - internal_code\n  - origin_id\n  - parent_id\n  - routed_from\n  - source_id\n  - source_identifier\n  - source_kind\n  - transaction_datetime\n  - trial_balance_id\n  - service_date\n\nSupported fields for sorting:\n  - created_at - Same as `transaction_datetime`\n  - id\n  - internal_code\n  - source_id\n  - transaction_datetime\n  - service_date\n\nExample request:\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11t08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n\nThe API has certain constraints for filters so that the system is able to efficiently query the data. Filters must include on of the following:\n  - filter by 'id' with condition 'equals' or 'in'\n  - filter by both 'source_id' and 'source_kind'\n  - filter by both 'external_relation_id' and 'external_relation_kind'\n  - filter by transaction_datetime\n```\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -693,7 +814,9 @@
         "operationId": "listTransactions",
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
@@ -716,9 +839,330 @@
         }
       }
     },
+    "/accounting/v1.0/folios": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "$ref": "#/components/parameters/foliosFilter"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": [
+              "read:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "operationId": "getFolios",
+        "summary": "List folios for a source",
+        "description": "Retrieve all folios for a given source (reservation, group profile, or house account). Folios organize transactions into logical groups, such as separating room charges from incidentals. The filter requires both a sourceId and sourceKind to identify the source.\n",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FolioResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a folio",
+        "description": "Create a new folio for a source (reservation, group profile, or house account). You must provide a name, the folio configuration ID, and the source details. You can optionally specify a parent folio ID to create a sub-folio within an existing folio hierarchy.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFolioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "operationId": "createFolio",
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateFolioResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/{id}": {
+      "put": {
+        "summary": "Update a folio",
+        "description": "Update an existing folio. You can change the folio name and the transaction types assigned to it. Transaction types control which kinds of transactions are automatically routed to this folio. Other folio properties (source, configuration, parent) cannot be changed after creation.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Folio ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFolioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "operationId": "updateFolio",
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a folio",
+        "description": "Delete a folio. The folio is soft-deleted and will no longer appear in listings. You cannot delete a folio that still has transactions assigned to it; move or unroute all transactions before deleting.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Folio ID"
+          }
+        ],
+        "operationId": "deleteFolio",
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/transactions/move": {
+      "post": {
+        "summary": "Move transactions between folios",
+        "description": "Move transactions to a different folio within the same source. You can specify individual transaction IDs or transaction types (by origin ID and external relation kind) to move all matching transactions at once. At least one of `transactions` or `transactionTypes` must be provided.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveTransactionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "operationId": "moveTransactions",
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/transactions/route": {
+      "post": {
+        "summary": "Route transactions to a group profile",
+        "description": "Route reservation transactions to a group profile folio. Routing binds reservation transactions to a group profile and assigns them to the specified folio. You can specify individual transaction IDs or transaction types (by origin ID and external relation kind) to route all matching transactions at once. At least one of `transactions` or `transactionTypes` must be provided.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteTransactionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "operationId": "routeTransactions",
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/transactions/unroute": {
+      "post": {
+        "summary": "Unroute transactions from a group profile",
+        "description": "Unroute transactions from a group profile back to the original reservation. This reverses a previous routing operation, removing the transactions from the group profile and returning them to the reservation they originated from. Unlike move and route operations, only individual transaction IDs are supported (transaction types are not accepted).\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnrouteTransactionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "operationId": "unrouteTransactions",
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
     "/accounting/v1.0/pending-transactions": {
       "post": {
-        "description": "Supported fields for filtering:\n  - account_category\n  - chart_of_account_type\n  - created_at - Same as `transaction_datetime`\n  - customer_id\n  - custom_code\n  - external_relation_id\n  - external_relation_kind\n  - folio_id\n  - id\n  - internal_code\n  - origin_id\n  - parent_id\n  - routed_from\n  - source_id\n  - source_identifier\n  - source_kind\n  - transaction_datetime\n  - trial_balance_id\n  - service_date\n\nSupported fields for sorting:\n  - created_at - Same as `transaction_datetime`\n  - id\n  - internal_code\n  - source_id\n  - transaction_datetime\n  - service_date\n\nExample request:\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11t08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n\nThe API has certain constraints for filters so that the system is able to efficiently query the data. Filters must include on of the following:\n  - filter by 'id' with condition 'equals' or 'in'\n  - filter by both 'source_id' and 'source_kind'\n  - filter by both 'external_relation_id' and 'external_relation_kind'\n  - filter by transaction_datetime\n```\n",
+        "summary": "Search pending transactions",
+        "description": "Search and retrieve pending (not yet posted) transactions for a property. Pending transactions represent charges, payments, or adjustments that have been created but not yet finalized. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. The filter and sort options are the same as for posted transactions.\n\nSupported fields for filtering:\n  - account_category\n  - chart_of_account_type\n  - created_at - Same as `transaction_datetime`\n  - customer_id\n  - custom_code\n  - external_relation_id\n  - external_relation_kind\n  - folio_id\n  - id\n  - internal_code\n  - origin_id\n  - parent_id\n  - routed_from\n  - source_id\n  - source_identifier\n  - source_kind\n  - transaction_datetime\n  - trial_balance_id\n  - service_date\n\nSupported fields for sorting:\n  - created_at - Same as `transaction_datetime`\n  - id\n  - internal_code\n  - source_id\n  - transaction_datetime\n  - service_date\n\nExample request:\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11t08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n\nThe API has certain constraints for filters so that the system is able to efficiently query the data. Filters must include on of the following:\n  - filter by 'id' with condition 'equals' or 'in'\n  - filter by both 'source_id' and 'source_kind'\n  - filter by both 'external_relation_id' and 'external_relation_kind'\n  - filter by transaction_datetime\n```\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -737,7 +1181,9 @@
         "operationId": "listPendingTransactions",
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
@@ -760,6 +1206,53 @@
         }
       }
     },
+    "/accounting/v1.0/folios/transactions": {
+      "post": {
+        "summary": "Search folio transactions",
+        "description": "Search and retrieve both posted and pending transactions for a source (reservation, group profile, or house account), merged into a single response. This endpoint uses POST (instead of GET) to support complex filter and grouping criteria in the request body. Results can be grouped by date, transaction type, folio, or other fields.\n\nResults are always wrapped in groups. When groupBy is specified, transactions are grouped by that field. When omitted, all transactions are placed in a single group with key \"default\". Pagination is applied first (cursor-based on flat transactions), then grouping is applied to the page results. Groups at page boundaries may be partial.\n\nWhen includeTotal is true, totals and foreign currency totals are computed on the first page and cached in Redis. Subsequent pages return cached totals. When no filters are applied, the total amount is read from the pre-computed source balance for optimal performance.\n\nSupported filter fields: folioId, posted, descriptionFilters, transactionDate range, serviceDate range, subSourceIds, searchQuery.\n\nSupported sort fields: transaction_datetime, service_date, id, internal_code.\n\nSupported groupBy fields: transaction_date, service_date, internal_code_group, description, sub_source_identifier, folio_id, user_id.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListFolioTransactionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "operationId": "listFolioTransactions",
+        "security": [
+          {
+            "bearerAuth": [
+              "read:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListFolioTransactionsPaginated"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
     "/accounting/v1.0/trial-balance/configuration/status": {
       "get": {
         "parameters": [
@@ -768,13 +1261,16 @@
           }
         ],
         "operationId": "isTrialBalanceConfigured",
-        "description": "Returns information if property has configured trial balance report.\n",
+        "summary": "Check trial balance configuration status",
+        "description": "Check whether a property has configured its trial balance. The response indicates whether the trial balance is configured and, if so, the date it was set up. You must configure the trial balance before you can generate daily reports.\n",
         "tags": [
           "Trial balance"
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "responses": {
@@ -799,13 +1295,16 @@
           }
         ],
         "operationId": "calculateTrialBalance",
-        "description": "Get initial Trial Balance based transaction records (till end of yesterday in property time)\n",
+        "summary": "Calculate initial trial balance",
+        "description": "Calculate the initial trial balance for a property based on all historical transaction records up to the end of yesterday (in property local time). Use this endpoint to preview the opening balances before committing the trial balance configuration. The response contains the computed deposit ledger, accounts receivable ledger, and guest ledger opening balances.\n",
         "tags": [
           "Trial balance"
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "responses": {
@@ -830,13 +1329,16 @@
           }
         ],
         "operationId": "getTrialBalanceConfiguration",
-        "description": "Get configured trial balance.\n",
+        "summary": "Get trial balance configuration",
+        "description": "Retrieve the saved trial balance configuration for a property, including the configured opening balances for the deposit ledger, accounts receivable ledger, and guest ledger. Returns the configuration date and the opening balance values that were set when the trial balance was initialized.\n",
         "tags": [
           "Trial balance"
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "responses": {
@@ -854,7 +1356,8 @@
       },
       "post": {
         "operationId": "setTrialBalance",
-        "description": "Configure trial balance for property by saving opening balances for today.\nFail if trial balance configuration already exists.\n",
+        "summary": "Configure trial balance",
+        "description": "Configure the trial balance for a property by saving the opening balances as of today. You must provide opening balances for the deposit ledger, accounts receivable ledger, and guest ledger. This operation can only be performed once per property; it returns an error if a trial balance configuration already exists. Use the calculate endpoint first to preview the recommended opening balance values.\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -865,7 +1368,9 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "write:payment"
+            ]
           }
         ],
         "requestBody": {
@@ -906,9 +1411,9 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int64",
-              "description": "Source Id"
-            }
+              "format": "int64"
+            },
+            "description": "Identifier of the source to get the deposit balance for (e.g., a reservation ID). Omit along with sourceKind to get the property-wide deposit balance.\n"
           },
           {
             "name": "sourceKind",
@@ -916,17 +1421,21 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/SourceKind"
-            }
+            },
+            "description": "Type of the source entity. Required when sourceId is provided.\n"
           }
         ],
         "operationId": "getDepositBalance",
-        "description": "Get Deposit Balance For Source or Property\n",
+        "summary": "Get deposit balance",
+        "description": "Retrieve the deposit balance for a specific source or the entire property. To get the balance for a specific reservation or other source, provide both sourceId and sourceKind. To get the aggregate deposit balance for the whole property, omit both parameters. The response includes the posted balance and pending balance in the smallest currency unit.\n",
         "tags": [
           "Deposits"
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "responses": {
@@ -956,7 +1465,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "page token"
+            "description": "Opaque token for cursor-based pagination. Pass the `nextPageToken` value from a previous response to retrieve the next page. Omit this parameter (or pass null) for the first page.\n"
           },
           {
             "name": "pageSize",
@@ -965,20 +1474,23 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Size of the page"
+            "description": "Number of results to return per page. If not specified, the server uses a default page size.\n"
           },
           {
             "$ref": "#/components/parameters/depositTransactionsFilter"
           }
         ],
         "operationId": "getDepositTransactions",
-        "description": "Get Deposit Transactions\n",
+        "summary": "List deposit transactions",
+        "description": "Retrieve a paginated list of deposit transactions for a property. You can filter by transaction state, reservation, date ranges (transaction date, check-in, check-out), reservation status, and user. Use this endpoint to review deposit activity including payments received, transfers, and refunds.\n",
         "tags": [
           "Deposits"
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "responses": {
@@ -1010,20 +1522,23 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "2024-07-21T00:00:00.000Z",
+              "example": "2024-07-21",
               "description": "Requested date",
               "format": "date"
             }
           }
         ],
         "operationId": "getTrialBalanceReport",
-        "description": "Get Trial Balance Report for specific date\n",
+        "summary": "Get trial balance report",
+        "description": "Retrieve the trial balance report for a specific date. The report provides a daily financial reconciliation showing opening and closing balances, ledger activity, deposit and AR transfers, and a detailed breakdown of guest ledger charges, taxes, and payments by transaction code. The property must have a configured trial balance before reports can be generated.\n",
         "tags": [
           "Trial balance"
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "responses": {
@@ -1043,12 +1558,16 @@
     "/accounting/v1.0/internal-transaction-codes": {
       "get": {
         "operationId": "getInternalTransactionCodes",
+        "summary": "List internal transaction codes",
+        "description": "Retrieve the complete list of Cloudbeds internal transaction codes. These are system-defined codes that categorize each type of transaction (e.g., room rate, tax, fee, payment). Internal codes cannot be modified, but you can map them to your own custom codes using the custom transaction codes endpoints.\n",
         "tags": [
           "Internal transaction codes"
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "responses": {
@@ -1083,14 +1602,17 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read:payment"
+            ]
           }
         ],
         "tags": [
           "SourceBalance"
         ],
         "operationId": "getSourceBalanceBySource",
-        "description": "Get source balance information for a reservation / house account / group profile / accounts receivable ledger",
+        "summary": "Get source balance",
+        "description": "Retrieve the financial balance summary for a specific source. The source can be a reservation, house account, group profile, or accounts receivable ledger, identified by the sourceKind and sourceId path parameters. The response includes a detailed breakdown of charges (subtotal, additional items, taxes, fees), payments, refunds, upcoming payments, and the overall balance due. Use the optional Accept-Language header to receive localized tax and fee names.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -1110,14 +1632,555 @@
           }
         }
       }
+    },
+    "/accounting/v1.0/source-balances/snapshots/{reservationId}": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "$ref": "#/components/parameters/reservationId"
+          },
+          {
+            "$ref": "#/components/parameters/acceptLanguageHeader"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "SourceBalance"
+        ],
+        "operationId": "getSourceBalanceSnapshotBySource",
+        "description": "Get source balance snapshot information for a reservation",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceBalanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/configurations": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "includeFolios",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Whether to include folios and their transaction types"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "getFolioConfigurations",
+        "description": "Get all folio configurations for a property",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FolioConfigurationData"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "propagateDownstream",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Whether to propagate changes to downstream reservation and group folios"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "saveFolioConfiguration",
+        "summary": "Create or update a folio configuration",
+        "description": "Create a new folio configuration or update an existing one for a property. A folio configuration defines a template for how folios are structured, including which booking sources are included and which transaction types are assigned to each folio. To update an existing configuration, include its ID in the request body.\n",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FolioConfigurationData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolioConfigurationSaveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/configurations/{id}/set-default": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "ID of the folio configuration"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "setFolioConfigurationDefault",
+        "summary": "Set the default folio configuration",
+        "description": "Set a folio configuration as the default for the property. The default configuration is automatically applied when new reservations or other sources are created. Only one configuration can be the default at a time; setting a new default removes the previous one.\n",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolioConfigurationSaveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/configurations/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "ID of the folio configuration"
+          },
+          {
+            "name": "includeFolios",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Whether to include folios and their transaction types"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "getFolioConfiguration",
+        "description": "Get a folio configuration by ID",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolioConfigurationData"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "ID of the folio configuration"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "deleteFolioConfiguration",
+        "summary": "Delete a folio configuration",
+        "description": "Delete a folio configuration by its ID. This removes the configuration template from the property. Existing folios that were created from this configuration are not affected.\n",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/configurations/sources": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "sourceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Source ID (e.g., Reservation ID, Group Profile ID)"
+          },
+          {
+            "name": "sourceKind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FolioSourceKind"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "getFolioConfigurationSource",
+        "description": "Get which folio configuration is assigned to a source",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolioConfigurationToSourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "assignFolioConfigurationToSource",
+        "description": "Assign a folio configuration to a source, replacing existing folios",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignFolioConfigurationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolioConfigurationToSourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/rules": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "sourceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Source ID (e.g., Group Profile ID)"
+          },
+          {
+            "name": "sourceKind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FolioSourceKind"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": [
+              "read:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "getRoutingRules",
+        "summary": "Get autorouting rules",
+        "description": "Retrieve the autorouting rules configured for a specific source, such as a group profile. Autorouting rules define which transaction types are automatically routed from reservations to a group profile folio. Both sourceId and sourceKind are required.\n",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoutingRuleResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "createRoutingRule",
+        "summary": "Create an autorouting rule",
+        "description": "Create a new autorouting rule for a specific source, such as a group profile. The rule defines which transaction types are automatically routed from reservations to a group profile folio.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoutingRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingRuleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "updateRoutingRule",
+        "summary": "Update an autorouting rule",
+        "description": "Update an existing autorouting rule. Only the provided fields will be updated.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoutingRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingRuleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
     }
   },
   "components": {
     "securitySchemes": {
       "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
+        "type": "oauth2",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "https://hotels.cloudbeds.com/api/v1.2/oauth",
+            "scopes": {
+              "read:payment": "Read payment and transaction information",
+              "write:payment": "Create, update, or delete payment and transaction data"
+            }
+          }
+        }
       }
     },
     "parameters": {
@@ -1378,6 +2441,29 @@
           }
         }
       },
+      "foliosFilter": {
+        "name": "filter",
+        "in": "query",
+        "required": true,
+        "explode": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "sourceId",
+            "sourceKind"
+          ],
+          "properties": {
+            "sourceId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Filter by source ID"
+            },
+            "sourceKind": {
+              "$ref": "#/components/schemas/FolioSourceKind"
+            }
+          }
+        }
+      },
       "propertyId": {
         "name": "propertyId",
         "in": "path",
@@ -1396,7 +2482,7 @@
           "type": "integer",
           "format": "int64"
         },
-        "description": "Property id"
+        "description": "Unique identifier of the property. Required for all requests to scope data to a specific property.\n"
       },
       "apiVersion": {
         "name": "apiVersion",
@@ -1418,7 +2504,7 @@
           "type": "integer",
           "format": "int64"
         },
-        "description": "Accounts Receivable ID"
+        "description": "Unique identifier of the accounts receivable ledger."
       },
       "reservationId": {
         "name": "reservationId",
@@ -1430,6 +2516,16 @@
         },
         "description": "Reservation ID"
       },
+      "groupProfileId": {
+        "name": "groupProfileId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "description": "Group Profile ID"
+      },
       "sourceId": {
         "name": "sourceId",
         "in": "path",
@@ -1438,12 +2534,13 @@
           "type": "integer",
           "format": "int64"
         },
-        "description": "Reservation ID | House Account ID | Group Profile ID | Accounts Receivable Ledger ID"
+        "description": "Unique identifier of the source entity. The meaning depends on the sourceKind parameter: a reservation ID, house account ID, group profile ID, or accounts receivable ledger ID.\n"
       },
       "sourceKind": {
         "name": "sourceKind",
         "in": "path",
         "required": true,
+        "description": "The type of source entity. Determines how the sourceId is interpreted.\n",
         "schema": {
           "$ref": "#/components/schemas/SourceKind"
         }
@@ -1504,6 +2601,7 @@
     "schemas": {
       "TransactionItemGroup": {
         "type": "string",
+        "description": "Category grouping for transaction item codes. Used to classify custom transaction codes and general ledger codes.\n- `items_services` — Products and services sold to guests (minibar, restaurant, spa, etc.).\n- `reservations` — Room rate charges and room revenue adjustments.\n- `taxes_fees` — Tax and fee line items applied to charges.\n- `payments` — Payment transactions (cash, card, bank transfer, etc.).\n- `accrual_accounting` — Accrual accounting entries for revenue recognition.\n- `custom_item` — Custom POS or manually created charge items.\n- `spaces` — Charges related to bookable spaces (meeting rooms, event venues, etc.).\n- `accounts_receivable_transfers` — Transfers to or from accounts receivable ledgers.\n- `deposit_transfers` — Transfers to or from the deposit ledger.\n",
         "enum": [
           "items_services",
           "reservations",
@@ -1511,12 +2609,14 @@
           "payments",
           "accrual_accounting",
           "custom_item",
+          "spaces",
           "accounts_receivable_transfers",
           "deposit_transfers"
         ]
       },
       "DepositConsumptionEnum": {
         "type": "string",
+        "description": "Controls when deposit transactions are automatically transferred to the guest ledger. MANUAL means deposits are only transferred when explicitly requested. CHECK_IN means deposits are automatically transferred when the guest checks in. CHECK_OUT means deposits are automatically transferred when the guest checks out.\n",
         "enum": [
           "MANUAL",
           "CHECK_IN",
@@ -1570,6 +2670,7 @@
       },
       "AccountsReceivableLedgerStatus": {
         "type": "string",
+        "description": "Status of an accounts receivable ledger. OPEN ledgers can receive balance transfers and payments. CLOSED ledgers are settled and no longer accept new transactions.\n",
         "enum": [
           "OPEN",
           "CLOSED"
@@ -1577,6 +2678,7 @@
       },
       "TransactionState": {
         "type": "string",
+        "description": "The state of a transaction. POSTED transactions are finalized and appear on the guest folio. PENDING transactions have been created but are not yet finalized (e.g., an authorized payment that has not been captured).\n",
         "enum": [
           "POSTED",
           "PENDING"
@@ -1594,6 +2696,7 @@
       },
       "ApiErrorCode": {
         "type": "string",
+        "description": "Error code indicating the type of failure. Use this value for programmatic error handling.\n- `UNKNOWN_ERROR` — An unclassified error occurred. Contact support if this persists.\n- `UNEXPECTED_ERROR` — An unexpected internal error occurred. Retry the request or contact support.\n- `ACCESS_DENIED` — You do not have permission to perform this operation on the specified property.\n- `INVALID_REQUEST` — The request body or parameters are invalid. Check the errorDetails field for specifics.\n- `NOT_UNIQUE_VALUE` — A value that must be unique (such as a name or code) already exists.\n- `INVALID_USER_INFORMATION` — The user information provided is invalid or could not be resolved.\n- `ENTITY_NOT_FOUND` — The requested entity was not found.\n- `ACCOUNTS_RECEIVABLE_LEDGER_FEATURE_DISABLED` — The accounts receivable ledger feature is not enabled for this property.\n- `BOOKING_NOT_FOUND` — The specified reservation or booking was not found.\n- `ACCOUNTS_RECEIVABLE_LEDGER_NOT_FOUND` — The specified accounts receivable ledger was not found.\n- `ACCOUNTS_RECEIVABLE_LEDGER_STATUS_ERROR` — The AR ledger is in a status that does not allow this operation (e.g., attempting to transfer to a closed ledger).\n- `BOOKING_STATUS_ERROR` — The reservation is in a status that does not allow this operation.\n- `GROUP_PROFILE_NOT_FOUND` — The specified group profile was not found.\n- `GROUP_PROFILE_STATUS_ERROR` — The group profile is in a status that does not allow this operation.\n- `GROUP_PROFILE_FOLIO_ERROR` — An error occurred with the group profile folio (e.g., the specified folio does not belong to the group profile).\n",
         "enum": [
           "UNKNOWN_ERROR",
           "UNEXPECTED_ERROR",
@@ -1606,7 +2709,10 @@
           "BOOKING_NOT_FOUND",
           "ACCOUNTS_RECEIVABLE_LEDGER_NOT_FOUND",
           "ACCOUNTS_RECEIVABLE_LEDGER_STATUS_ERROR",
-          "BOOKING_STATUS_ERROR"
+          "BOOKING_STATUS_ERROR",
+          "GROUP_PROFILE_NOT_FOUND",
+          "GROUP_PROFILE_STATUS_ERROR",
+          "GROUP_PROFILE_FOLIO_ERROR"
         ]
       },
       "sortDirection": {
@@ -1703,7 +2809,8 @@
               "reservations",
               "taxes_fees",
               "deposit_transfers",
-              "accounts_receivable_transfers"
+              "accounts_receivable_transfers",
+              "spaces"
             ]
           },
           "archived": {
@@ -1767,6 +2874,10 @@
           "paymentId": {
             "type": "string",
             "description": "Payment ID for payments group"
+          },
+          "spaceId": {
+            "type": "string",
+            "description": "Space ID for spaces group"
           }
         }
       },
@@ -1807,6 +2918,16 @@
             "items": {
               "$ref": "#/components/schemas/CustomTransactionCodesUpdateModel"
             }
+          }
+        }
+      },
+      "PostGroupProfileBalanceTransferRequest": {
+        "type": "object",
+        "properties": {
+          "folioId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Group profile folio ID"
           }
         }
       },
@@ -1868,6 +2989,144 @@
             }
           }
         }
+      },
+      "MoveTransactionsRequest": {
+        "type": "object",
+        "description": "Request to move transactions to a target folio. At least one of `transactions` or `transactionTypes` must be provided and non-empty.\n",
+        "required": [
+          "sourceKind",
+          "sourceId",
+          "targetFolioId"
+        ],
+        "properties": {
+          "sourceKind": {
+            "$ref": "#/components/schemas/SourceKind"
+          },
+          "sourceId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Source ID (reservation ID, group profile ID, etc.)"
+          },
+          "targetFolioId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Target folio ID where transactions will be moved"
+          },
+          "transactions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "List of transaction IDs to move. Required if transactionTypes is not provided."
+          },
+          "transactionTypes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/TransactionTypeIdentifier"
+            },
+            "description": "List of transaction types to move (by origin ID and external relation kind). Required if transactions is not provided."
+          }
+        }
+      },
+      "RouteTransactionsRequest": {
+        "type": "object",
+        "description": "Request to route reservation transactions to a group profile folio. At least one of `transactions` or `transactionTypes` must be provided and non-empty. Route operation binds reservation transactions to a group profile.\n",
+        "required": [
+          "reservationId",
+          "groupProfileId",
+          "targetFolioId"
+        ],
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Reservation ID (source of the transactions to route)"
+          },
+          "groupProfileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Group profile ID (target of the routing)"
+          },
+          "targetFolioId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Target folio ID where transactions will be assigned"
+          },
+          "transactions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "List of transaction IDs to route. Required if transactionTypes is not provided."
+          },
+          "transactionTypes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/TransactionTypeIdentifier"
+            },
+            "description": "List of transaction types to route (by origin ID and external relation kind). Required if transactions is not provided."
+          }
+        }
+      },
+      "UnrouteTransactionsRequest": {
+        "type": "object",
+        "description": "Request to unroute transactions from a group profile back to the original reservation. Only transaction IDs are supported (no transaction types).\n",
+        "required": [
+          "transactions"
+        ],
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "List of transaction IDs to unroute from the group profile."
+          }
+        }
+      },
+      "TransactionTypeIdentifier": {
+        "type": "object",
+        "required": [
+          "originId",
+          "externalRelationKind"
+        ],
+        "properties": {
+          "originId": {
+            "type": "string",
+            "description": "Origin ID of the transaction type"
+          },
+          "externalRelationKind": {
+            "$ref": "#/components/schemas/ExternalRelationKind"
+          }
+        }
+      },
+      "ExternalRelationKind": {
+        "type": "string",
+        "enum": [
+          "ROOM",
+          "PAYMENT",
+          "ITEM",
+          "ITEM_POS",
+          "ADDON",
+          "RESERVATION",
+          "ACCOUNTS_RECEIVABLE",
+          "ROOM_REVENUE",
+          "TAX",
+          "FEE",
+          "ADJUSTMENT",
+          "PAYMENT_FEE",
+          "BOOKABLE_RESOURCE",
+          "CITY_LEDGER"
+        ],
+        "description": "Kind of the external relation"
       },
       "ListTransactionsRequest": {
         "type": "object",
@@ -1977,22 +3236,25 @@
             "description": "Profile ID associated with this accounts receivable ledger"
           },
           "total": {
-            "type": "number"
+            "type": "number",
+            "description": "Total amount of all charges transferred to this AR ledger, in the smallest currency unit."
           },
           "paid": {
-            "type": "number"
+            "type": "number",
+            "description": "Total amount of payments applied to this AR ledger, in the smallest currency unit."
           },
           "balance": {
-            "type": "number"
+            "type": "number",
+            "description": "Outstanding balance (total minus paid), in the smallest currency unit."
           },
           "createdAt": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
+            "example": "2017-07-21T17:32:28Z",
             "description": "Created datetime (ISO 8601) in UTC"
           },
           "updatedAt": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
+            "example": "2017-07-21T17:32:28Z",
             "description": "Updated datetime (ISO 8601) in UTC"
           }
         }
@@ -2135,7 +3397,8 @@
               "TAX",
               "FEE",
               "ADJUSTMENT",
-              "PAYMENT_FEE"
+              "PAYMENT_FEE",
+              "BOOKABLE_RESOURCE"
             ],
             "description": "Kind of the external relation id, for example if transaction is a payment it will contain PAYMENT."
           },
@@ -2162,13 +3425,13 @@
           },
           "sourceDatetime": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
+            "example": "2017-07-21T17:32:28Z",
             "description": "Date time the source was created. (ISO 8601) in UTC",
             "format": "date-time"
           },
           "transactionDatetime": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
+            "example": "2017-07-21T17:32:28Z",
             "description": "Date time when the transaction should be created at. (ISO 8601) in UTC",
             "format": "date-time"
           },
@@ -2179,13 +3442,13 @@
           },
           "serviceDate": {
             "type": "string",
-            "example": "2017-07-21T00:00:00.000Z",
+            "example": "2017-07-21",
             "description": "Date when the posted transaction was created (property time).",
             "format": "date"
           },
           "createdAt": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
+            "example": "2017-07-21T17:32:28Z",
             "description": "Date time when the transaction was inserted on the database. (ISO 8601) in UTC",
             "format": "date-time"
           },
@@ -2212,6 +3475,20 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ExtendedTransactionResponse"
+            }
+          },
+          "nextPageToken": {
+            "$ref": "#/components/schemas/NextPageToken"
+          }
+        }
+      },
+      "AccountsReceivableTransactionPaginated": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountsReceivableTransactionResponse"
             }
           },
           "nextPageToken": {
@@ -2306,6 +3583,113 @@
           }
         }
       },
+      "AccountsReceivableTransactionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Id of the transaction."
+          },
+          "transactionDate": {
+            "type": "string",
+            "description": "Date time of the transaction.",
+            "format": "date-time"
+          },
+          "amount": {
+            "type": "number",
+            "description": "amount of the transaction."
+          },
+          "internalTransactionCode": {
+            "type": "string",
+            "description": "Internal Transaction Code"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Notes"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency ISO code"
+          },
+          "currencyScale": {
+            "type": "integer",
+            "description": "Number of decimal places for the currency."
+          },
+          "posted": {
+            "type": "boolean",
+            "description": "Flag to mark if transaction is posted"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserModel"
+          },
+          "actions": {
+            "$ref": "#/components/schemas/Actions"
+          },
+          "transferDetails": {
+            "type": "object",
+            "description": "Reservation or Group Profile details for which the transfer was made.",
+            "properties": {
+              "reservation": {
+                "$ref": "#/components/schemas/ReservationTransferDetails"
+              },
+              "groupProfile": {
+                "$ref": "#/components/schemas/GroupProfileTransferDetails"
+              }
+            }
+          }
+        }
+      },
+      "ReservationTransferDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Reservation ID."
+          },
+          "identifier": {
+            "type": "string",
+            "description": "Reservation Identifier."
+          },
+          "guestName": {
+            "type": "string",
+            "description": "Guest Name."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReservationStatus"
+          },
+          "checkinDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Check in date."
+          },
+          "checkoutDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Checkout in date."
+          }
+        }
+      },
+      "GroupProfileTransferDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Group Profile ID."
+          },
+          "name": {
+            "type": "string",
+            "description": "Group Profile Name."
+          },
+          "code": {
+            "type": "string",
+            "description": "Group Profile Code."
+          }
+        }
+      },
       "DepositBalanceResponse": {
         "type": "object",
         "properties": {
@@ -2321,15 +3705,19 @@
       },
       "AccountsReceivableLedgerTotalsResponse": {
         "type": "object",
+        "description": "Aggregated totals across all matching accounts receivable ledgers.",
         "properties": {
           "total": {
-            "type": "number"
+            "type": "number",
+            "description": "Sum of all charges across matching AR ledgers, in the smallest currency unit."
           },
           "paid": {
-            "type": "number"
+            "type": "number",
+            "description": "Sum of all payments across matching AR ledgers, in the smallest currency unit."
           },
           "balance": {
-            "type": "number"
+            "type": "number",
+            "description": "Sum of outstanding balances across matching AR ledgers (total minus paid), in the smallest currency unit."
           }
         }
       },
@@ -2512,7 +3900,126 @@
           "GROUP_PROFILE",
           "ACCOUNTS_RECEIVABLE_LEDGER"
         ],
-        "description": "Source Kind. At the moment only available RESERVATION | GROUP_PROFILE | HOUSE_ACCOUNT | ACCOUNTS_RECEIVABLE."
+        "description": "The type of financial source that owns transactions and balances. RESERVATION is an individual guest booking, HOUSE_ACCOUNT is a property-level account for miscellaneous charges, GROUP_PROFILE is a group booking that can aggregate charges from multiple reservations, and ACCOUNTS_RECEIVABLE_LEDGER tracks balances transferred for later collection.\n"
+      },
+      "RoutingRuleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Routing rule ID"
+          },
+          "propertyId": {
+            "type": "string",
+            "description": "Property ID"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Source ID (e.g., Group Profile ID)"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/FolioSourceKind"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the rule is enabled"
+          },
+          "routeChildrenTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalRelationKind"
+            },
+            "description": "Child transaction types that should follow their parent to the same folio"
+          },
+          "transactionTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingRuleTransactionTypeResponse"
+            }
+          }
+        }
+      },
+      "RoutingRuleTransactionTypeResponse": {
+        "type": "object",
+        "properties": {
+          "externalRelationKind": {
+            "$ref": "#/components/schemas/ExternalRelationKind"
+          },
+          "originId": {
+            "type": "string",
+            "description": "Origin ID for the transaction type (e.g., fee ID, tax ID)"
+          }
+        }
+      },
+      "CreateRoutingRuleRequest": {
+        "type": "object",
+        "required": [
+          "sourceId",
+          "sourceKind",
+          "enabled",
+          "routeChildrenTypes",
+          "transactionTypes"
+        ],
+        "properties": {
+          "sourceId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Source ID (e.g., Group Profile ID)"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/FolioSourceKind"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the rule is enabled"
+          },
+          "routeChildrenTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalRelationKind"
+            },
+            "description": "Child transaction types that should follow their parent to the same folio"
+          },
+          "transactionTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingRuleTransactionTypeResponse"
+            }
+          }
+        }
+      },
+      "UpdateRoutingRuleRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "enabled",
+          "routeChildrenTypes",
+          "transactionTypes"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Routing rule ID"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the rule is enabled"
+          },
+          "routeChildrenTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalRelationKind"
+            },
+            "description": "Child transaction types that should follow their parent to the same folio"
+          },
+          "transactionTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingRuleTransactionTypeResponse"
+            }
+          }
+        }
       },
       "AccountCategory": {
         "type": "string",
@@ -2545,6 +4052,7 @@
           "TAX",
           "PAYMENT",
           "ACCOUNTS_RECEIVABLE",
+          "SPACE",
           "N_A"
         ]
       },
@@ -2623,7 +4131,7 @@
         "properties": {
           "configuredAt": {
             "type": "string",
-            "example": "2017-07-21T17:32:28.000Z",
+            "example": "2017-07-21T17:32:28Z",
             "description": "Configured datetime (ISO 8601) in UTC"
           },
           "configured": {
@@ -2798,7 +4306,10 @@
               "AR_BALANCE_PREVIOUS_DAY",
               "AR_TRANSFER_IN",
               "AR_TRANSFER_OUT",
-              "AR_PAYMENTS"
+              "AR_PAYMENTS",
+              "SPACE",
+              "SPACE_A",
+              "SPACE_V"
             ]
           },
           "amount": {
@@ -2821,7 +4332,7 @@
       },
       "ReservationStatus": {
         "type": "string",
-        "description": "Enum of reservation statuses",
+        "description": "Current status of a reservation. The status affects which accounting operations are permitted (e.g., charges cannot be added to a checked-out reservation).\n",
         "enum": [
           "checked_out",
           "checked_in",
@@ -2965,6 +4476,856 @@
       "NextPageToken": {
         "type": "string",
         "description": "Token for fetching the next page of results"
+      },
+      "FolioConfigurationData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolioConfigurationSourceData"
+            }
+          },
+          "folios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolioConfigurationFolioData"
+            }
+          }
+        }
+      },
+      "FolioConfigurationSourceData": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "description": "Booking source ID"
+          },
+          "isRootSource": {
+            "type": "boolean"
+          },
+          "isHotelCollectBooking": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FolioConfigurationFolioData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "folioName": {
+            "type": "string"
+          },
+          "linkType": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Converted to SourceKind"
+          },
+          "transactionTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolioConfigurationFolioTransactionTypeData"
+            }
+          }
+        }
+      },
+      "FolioConfigurationFolioTransactionTypeData": {
+        "type": "object",
+        "properties": {
+          "folioId": {
+            "type": "string"
+          },
+          "transactionType": {
+            "type": "string"
+          }
+        }
+      },
+      "FolioConfigurationSaveResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FolioConfigurationSaveResponseData"
+          }
+        }
+      },
+      "FolioConfigurationSaveResponseData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "AssignFolioConfigurationRequest": {
+        "type": "object",
+        "required": [
+          "configId",
+          "sourceId",
+          "sourceKind"
+        ],
+        "properties": {
+          "configId": {
+            "type": "string",
+            "description": "Folio configuration ID to assign"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Source ID (reservation ID, group profile ID, etc.)"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/FolioSourceKind"
+          }
+        }
+      },
+      "FolioConfigurationToSourceResponse": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "description": "Source ID"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/FolioSourceKind"
+          },
+          "folioConfigurationId": {
+            "type": "string",
+            "description": "Folio configuration ID"
+          }
+        }
+      },
+      "CreateFolioRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "sourceId",
+          "sourceKind",
+          "transactionTypes"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Folio name"
+          },
+          "folioConfigurationId": {
+            "type": "string",
+            "description": "Folio configuration ID"
+          },
+          "parentId": {
+            "type": "string",
+            "description": "Parent folio ID (for sub-folios)"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Source ID (reservation ID, group profile ID, or house account ID)"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/FolioSourceKind"
+          },
+          "transactionTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionTypeIdentifier"
+            },
+            "description": "Transaction types to assign to this folio"
+          }
+        }
+      },
+      "CreateFolioResponse": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Created folio ID"
+          }
+        }
+      },
+      "UpdateFolioRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Folio name"
+          },
+          "transactionTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionTypeIdentifier"
+            },
+            "description": "Transaction types to assign to this folio"
+          }
+        }
+      },
+      "FolioResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Folio ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Folio name"
+          },
+          "propertyId": {
+            "type": "string",
+            "description": "Property ID"
+          },
+          "folioConfigurationId": {
+            "type": "string",
+            "description": "Folio configuration ID"
+          },
+          "parentId": {
+            "type": "string",
+            "description": "Parent folio ID (null for root folios)"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Source ID (reservation ID, group profile ID, or config ID)"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/FolioSourceKind"
+          },
+          "transactionTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolioTransactionTypeResponse"
+            },
+            "description": "Transaction types assigned to this folio"
+          }
+        }
+      },
+      "FolioTransactionTypeResponse": {
+        "type": "object",
+        "properties": {
+          "originId": {
+            "type": "string",
+            "description": "Origin ID of the transaction type"
+          },
+          "externalRelationKind": {
+            "$ref": "#/components/schemas/ExternalRelationKind"
+          }
+        }
+      },
+      "FolioSourceKind": {
+        "type": "string",
+        "enum": [
+          "CONFIG",
+          "RESERVATION",
+          "HOUSE_ACCOUNT",
+          "GROUP_PROFILE"
+        ],
+        "description": "The type of source a folio belongs to. CONFIG indicates a folio configuration template, RESERVATION is an individual guest booking, HOUSE_ACCOUNT is a property-level account, and GROUP_PROFILE is a group booking profile.\n"
+      },
+      "ListFolioTransactionsRequest": {
+        "type": "object",
+        "required": [
+          "sourceId",
+          "sourceKind"
+        ],
+        "properties": {
+          "sourceId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Source ID (reservation ID, group profile ID, house account ID)"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/SourceKind"
+          },
+          "folioId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Filter by specific folio"
+          },
+          "posted": {
+            "type": "boolean",
+            "description": "Filter by posted status. Omit to include both posted and pending."
+          },
+          "descriptionFilters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Filter by transaction description identifiers. Accepts composite identifiers in the format: \"{type}_{originId}\" for item-level filtering (e.g. \"product_123\", \"tax_456\", \"addon_789\", \"fee_101\", \"custom_item_202\", \"bookable_resource_303\"), literal group names for room revenue (\"rate\", \"roomRevenue_manual\", \"roomRevenue_cancellation\", \"roomRevenue_no_show\", \"accountsReceivable\"), or payment method codes (\"cash\", \"ebanking\", \"cards_visa\", \"cards_master\", \"pay_pal\"). Server translates these to internalTransactionCode group + originId query conditions.\n",
+            "example": [
+              "product_109574517547138",
+              "ebanking",
+              "rate"
+            ]
+          },
+          "transactionDateFrom": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Filter transactions from this datetime (UTC, inclusive)"
+          },
+          "transactionDateTo": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Filter transactions to this datetime (UTC, inclusive)"
+          },
+          "serviceDateFrom": {
+            "type": "string",
+            "format": "date",
+            "description": "Filter by service date from (inclusive)"
+          },
+          "serviceDateTo": {
+            "type": "string",
+            "format": "date",
+            "description": "Filter by service date to (inclusive)"
+          },
+          "subSourceIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Filter by sub-source IDs (booking room IDs for reservations)"
+          },
+          "searchQuery": {
+            "type": "string",
+            "description": "Free text search on transaction description"
+          },
+          "groupBy": {
+            "$ref": "#/components/schemas/FolioTransactionGroupByField"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sort"
+            }
+          },
+          "pageToken": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "default": 100,
+            "description": "Page size. Default 100, max 1100."
+          },
+          "includeVoided": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include voided transactions. When false, both void transactions and the original transactions they voided are excluded (full chain removal via rootId matching).\n"
+          },
+          "includeTotal": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include totals in response. On first page, totals are computed and cached in Redis. Subsequent pages return cached totals. When no filters are applied, total amount is read from the pre-computed source balance.\n"
+          }
+        }
+      },
+      "FolioTransactionGroupByField": {
+        "type": "string",
+        "enum": [
+          "transaction_date",
+          "service_date",
+          "internal_code_group",
+          "description",
+          "sub_source_identifier",
+          "folio_id",
+          "user_id",
+          "reservation_name"
+        ],
+        "x-enum-varnames": [
+          "transaction_date",
+          "service_date",
+          "internal_code_group",
+          "description",
+          "sub_source_identifier",
+          "folio_id",
+          "user_id",
+          "reservation_name"
+        ],
+        "description": "Field to group transactions by. When omitted, all transactions are placed in a single group with key \"default\".\n"
+      },
+      "ListFolioTransactionsPaginated": {
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FolioTransactionGroup"
+            },
+            "description": "Ordered map of groupKey to group. Key is the string value of the groupBy field (e.g. \"2026-02-25\" for transaction_date). Pagination is applied first, then grouping.\n"
+          },
+          "nextPageToken": {
+            "$ref": "#/components/schemas/NextPageToken"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/FolioTransactionTotals",
+            "description": "Present only when includeTotal=true. Covers all matching transactions across all pages."
+          },
+          "foreignCurrencyTotals": {
+            "$ref": "#/components/schemas/ForeignCurrencyTotals",
+            "description": "Present only when includeTotal=true. Covers all matching transactions across all pages."
+          }
+        }
+      },
+      "FolioTransactionGroup": {
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolioTransactionResponse"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/FolioTransactionGroupTotals",
+            "description": "Per-group totals for the items in the current page only."
+          }
+        }
+      },
+      "FolioTransactionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "propertyId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Transaction amount in decimal form (e.g. 150.00, not 15000). Sign depends on account type."
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency ISO code"
+          },
+          "currencyScale": {
+            "type": "integer",
+            "description": "Number of decimal places for the currency"
+          },
+          "description": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "transactionType": {
+            "type": "string",
+            "enum": [
+              "payment",
+              "product",
+              "addon",
+              "rate",
+              "roomRevenue_manual",
+              "roomRevenue_cancellation",
+              "roomRevenue_no_show",
+              "tax",
+              "fee",
+              "custom_item",
+              "accountsReceivable",
+              "adjustment",
+              "space"
+            ],
+            "description": "UI-facing transaction type. Derived from internalTransactionCode: if code suffix is \"A\" → \"adjustment\", otherwise mapped from internalCodeGroup. Maps 1:1 to MFD ReservationTransactionType except roomRevenue is split into 3.\n"
+          },
+          "internalTransactionCode": {
+            "type": "string",
+            "description": "Internal code managed by Cloudbeds (e.g. \"1000\", \"9000\")"
+          },
+          "internalCodeGroup": {
+            "$ref": "#/components/schemas/InternalTransactionCodeGroupEnum",
+            "description": "Coarse transaction type group derived from internalTransactionCode (e.g. PAYMENT, TAX, ITEM_SERVICE).\n"
+          },
+          "customTransactionCode": {
+            "type": "string",
+            "description": "Custom code managed by Property"
+          },
+          "generalLedgerCustomCode": {
+            "type": "string"
+          },
+          "transactionDatetime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Transaction datetime (UTC)"
+          },
+          "transactionDatetimePropertyTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Transaction datetime in property timezone"
+          },
+          "serviceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/SourceKind"
+          },
+          "subSourceId": {
+            "type": "string",
+            "description": "Booking room ID for reservations"
+          },
+          "subSourceIdentifier": {
+            "type": "string",
+            "description": "Booking room identifier"
+          },
+          "sourceIdentifier": {
+            "type": "string",
+            "description": "Reservation identifier or group code"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "rootId": {
+            "type": "string"
+          },
+          "originId": {
+            "type": "string"
+          },
+          "routedFrom": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "externalRelationId": {
+            "type": "string"
+          },
+          "externalRelationKind": {
+            "$ref": "#/components/schemas/ExternalRelationKind"
+          },
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "folioId": {
+            "type": "string"
+          },
+          "posted": {
+            "type": "boolean",
+            "description": "Whether the transaction is posted"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "VOIDED",
+              "TRANSFERRED",
+              "CANCELLED",
+              "REFUNDED",
+              "DELETED"
+            ]
+          },
+          "readOnly": {
+            "type": "boolean",
+            "description": "Whether the transaction is read-only (no void/refund/allocation actions allowed). Computed from reservation status, property config, and transaction state.\n"
+          },
+          "reservationName": {
+            "type": "string"
+          },
+          "roomName": {
+            "type": "string",
+            "description": "Room name/identifier for the booking room associated with this transaction"
+          },
+          "checkinDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "checkoutDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "reservationStatus": {
+            "$ref": "#/components/schemas/ReservationStatus"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserModel"
+          },
+          "actions": {
+            "type": "array",
+            "nullable": true,
+            "description": "Returns the list of actions available for the transaction",
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            }
+          },
+          "paymentDetails": {
+            "$ref": "#/components/schemas/PaymentDetails"
+          },
+          "routingContext": {
+            "$ref": "#/components/schemas/RoutingContext"
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "Whether transaction is locked by fiscal documents"
+          },
+          "lockedByFiscalDocuments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FiscalDocumentSummary"
+            }
+          },
+          "allocatedPayments": {
+            "type": "array",
+            "nullable": true,
+            "description": "Payment allocations for payment-type transactions. Only present for PAYMENT transactions.",
+            "items": {
+              "$ref": "#/components/schemas/FolioPaymentAllocation"
+            }
+          },
+          "foreignCurrency": {
+            "type": "string",
+            "description": "Original payment currency code when different from property currency"
+          },
+          "foreignCurrencyAmount": {
+            "type": "number",
+            "format": "double",
+            "description": "Amount in foreign currency"
+          }
+        }
+      },
+      "FolioPaymentAllocation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "allocatedAmount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Amount allocated in smallest currency unit"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "ID of the transaction (invoice/expense) this payment is allocated to"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the allocated transaction"
+          },
+          "totalToAllocate": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total amount of the allocated transaction in smallest currency unit"
+          }
+        }
+      },
+      "FiscalDocumentSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "INVOICE",
+              "CREDIT_NOTE",
+              "RECEIPT",
+              "RECTIFY_INVOICE",
+              "PRO_FORMA_INVOICE",
+              "REFUND_RECEIPT",
+              "INVOICE_RECEIPT",
+              "ADVANCE_INVOICE",
+              "SETTLEMENT_INVOICE"
+            ],
+            "x-enum-varnames": [
+              "INVOICE",
+              "CREDIT_NOTE",
+              "RECEIPT",
+              "RECTIFY_INVOICE",
+              "PRO_FORMA_INVOICE",
+              "REFUND_RECEIPT",
+              "INVOICE_RECEIPT",
+              "ADVANCE_INVOICE",
+              "SETTLEMENT_INVOICE"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FolioTransactionTotals": {
+        "type": "object",
+        "description": "Global totals across all matching transactions (all pages).",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total number of matching transactions"
+          },
+          "totalDebit": {
+            "type": "number",
+            "format": "double",
+            "description": "Sum of all debit amounts in smallest currency unit"
+          },
+          "totalCredit": {
+            "type": "number",
+            "format": "double",
+            "description": "Sum of all credit amounts in smallest currency unit"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Property currency ISO code"
+          },
+          "currencyScale": {
+            "type": "integer"
+          }
+        }
+      },
+      "FolioTransactionGroupTotals": {
+        "type": "object",
+        "description": "Per-group totals for the current page only.",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Sum of quantities (product/addon types)"
+          },
+          "totalDebit": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalCredit": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "ForeignCurrencyTotals": {
+        "type": "object",
+        "description": "Multi-currency totals across all matching transactions (all pages).",
+        "properties": {
+          "debit": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "Map of currency code to total debit amount (e.g. {\"RON\": 724.82, \"EUR\": 5})"
+          },
+          "credit": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "Map of currency code to total credit amount"
+          }
+        }
+      },
+      "PaymentDetails": {
+        "type": "object",
+        "description": "Payment-specific fields. Only present on transactions where internalCodeGroup=PAYMENT. Enriched via batch PaymentService lookup.\n",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "description": "Payment ID from the payment service"
+          },
+          "transactionType": {
+            "type": "string",
+            "enum": [
+              "Purchase",
+              "Capture",
+              "Refund",
+              "Authorize",
+              "Void",
+              "Record"
+            ],
+            "description": "Payment processing transaction type"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "Payment method code (e.g. \"cash\", \"cards\", \"terminal\", \"ebanking\", \"pay_pal\", \"oxxo\")"
+          },
+          "gateway": {
+            "type": "string",
+            "description": "Payment gateway identifier (e.g. \"StripeConnectGateway\", \"AdyenGateway\")"
+          },
+          "creditCardType": {
+            "type": "string",
+            "description": "Card brand code (e.g. \"visa\", \"master\", \"amex\")"
+          },
+          "cardTrailingDigits": {
+            "type": "string",
+            "description": "Last 4 digits of the card number"
+          },
+          "amountPaid": {
+            "type": "number",
+            "format": "double",
+            "description": "Total captured/paid amount"
+          },
+          "amountRefunded": {
+            "type": "number",
+            "format": "double",
+            "description": "Total refunded amount"
+          },
+          "processingStatus": {
+            "type": "string",
+            "enum": [
+              "unconfirmed",
+              "confirmed"
+            ],
+            "description": "Payment processing status (for scheduled payments)"
+          }
+        }
+      },
+      "RoutingContext": {
+        "type": "object",
+        "description": "Routing context info. Present when the transaction is involved in routing — either routed from another source (routedFrom is set) or routed to another source.\n",
+        "properties": {
+          "groupProfileId": {
+            "type": "string"
+          },
+          "groupProfileName": {
+            "type": "string"
+          },
+          "groupProfileIdentifier": {
+            "type": "string"
+          },
+          "reservationId": {
+            "type": "string"
+          },
+          "reservationName": {
+            "type": "string"
+          }
+        }
       }
     }
   }
