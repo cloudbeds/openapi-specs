@@ -181,6 +181,13 @@ paths:
               type: integer
               format: int64
             minItems: 1
+        - name: nestTaxes
+          in: query
+          description: When true, tax transactions are nested inside their parent transaction's taxes field and removed from the top-level list.
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: OK
@@ -576,6 +583,13 @@ paths:
               type: integer
               format: int64
             minItems: 1
+        - name: nestTaxes
+          in: query
+          description: When true, tax transactions are nested inside their parent transaction's taxes field and removed from the top-level list.
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: OK
@@ -680,6 +694,33 @@ paths:
             application/json:
               schema:
                 type: object
+  "/fiscal-document/v1/fiscal-documents/{id}/require-attention":
+    patch:
+      summary: Update require attention flag for a fiscal document
+      description: Sets the requireAttention flag on a fiscal document.
+      operationId: updateRequireAttention
+      security:
+        - bearerAuth: []
+      tags:
+        - Fiscal Documents
+      parameters:
+        - $ref: "#/components/parameters/fiscalDocumentId"
+        - $ref: "#/components/parameters/propertyIdHeader"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/UpdateRequireAttentionRequest"
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/FiscalDocumentSummaryResponse"
+        '404':
+          description: Fiscal document not found
   "/fiscal-document/v1/fiscal-documents/invoice":
     post:
       summary: Create a fiscal document of the type invoice
@@ -1791,6 +1832,125 @@ paths:
                 $ref: '#/components/schemas/FiscalizationTaxResponse'
       security:
         - bearerAuth: []
+  /fiscal-document/v1/fiscalization/credentials:
+    put:
+      tags:
+        - Fiscalization
+      summary: Set AT credentials for a property
+      description: |
+        Sets or updates the AT web services credentials for the property's supplier.
+        Credentials are validated against the Portuguese Tax Authority before being stored.
+        Required before series registration.
+      operationId: setFiscalizationCredentials
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalizationCredentialsRequest'
+        required: true
+      responses:
+        '204':
+          description: Credentials validated and saved successfully
+        '422':
+          description: Invalid credentials (rejected by AT)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/series/rules:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get available series rules for a country
+      description: |
+        Returns the available document type prefixes and series types for the given country.
+        Used by the frontend to build the series registration UI.
+      operationId: getFiscalizationSeriesRules
+      parameters:
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ISO 3166-1 alpha-2 country code (e.g., PT)
+      responses:
+        '200':
+          description: Successfully retrieved series rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationSeriesRulesResponse'
+        '400':
+          description: Invalid or unsupported country code
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/series:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get series configuration for a property
+      description: Returns the series configuration (document kind to series name mappings) for the given property
+      operationId: getFiscalizationSeries
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationSeriesResponse'
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - Fiscalization
+      summary: Update series configuration for a property
+      description: |
+        Creates or updates the series configuration for the given property.
+        Each entry maps a document kind to a registered AT series name.
+      operationId: updateFiscalizationSeries
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalizationSeriesRequest'
+        required: true
+      responses:
+        '200':
+          description: Series configuration saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationSeriesResponse'
+      security:
+        - bearerAuth: []
 components:
   securitySchemes:
     bearerAuth:
@@ -2725,6 +2885,14 @@ components:
           type: boolean
           nullable: false
           description: Applies to invoices only.
+        requireAttention:
+          type: boolean
+          nullable: false
+          description: Indicates whether this document requires manual attention.
+        hasDiscrepancies:
+          type: boolean
+          nullable: false
+          description: Indicates whether this document has pending transaction discrepancies.
     FiscalDocumentSummaryResponse:
       type: object
       properties:
@@ -2788,6 +2956,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FiscalDocumentTransactionAllocation'
+        taxes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalDocumentTransactionResponse'
     FiscalDocumentTransactionsForAllocationPaginated:
       type: object
       properties:
@@ -3055,6 +3227,14 @@ components:
           nullable: true
         dateDisplay:
           $ref: '#/components/schemas/DateDisplay'
+    UpdateRequireAttentionRequest:
+      type: object
+      required:
+        - requireAttention
+      properties:
+        requireAttention:
+          type: boolean
+          description: Whether the fiscal document requires attention.
     FiscalDocumentPatchRequest:
       type: object
       properties:
@@ -3867,6 +4047,38 @@ components:
           additionalProperties:
             type: string
           description: Example values for common fields
+        requires:
+          $ref: '#/components/schemas/CountryRequirements'
+          description: Country-specific requirements for the onboarding UI
+    CountryRequirements:
+      type: object
+      properties:
+        series:
+          type: boolean
+          description: Whether this country requires series registration (e.g., PT)
+          default: false
+        taxMapping:
+          type: boolean
+          description: Whether this country requires tax ID mapping
+          default: true
+        credentials:
+          type: boolean
+          description: Whether registration includes government credentials (shown within registration tab)
+          default: false
+    FiscalizationCredentialsRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: AT web services username (e.g., NIF/sequence like 515097365/4)
+          example: "515097365/4"
+        password:
+          type: string
+          format: password
+          description: AT web services password
     CountryInfo:
       type: object
       required:
@@ -4178,3 +4390,101 @@ components:
         rate:
           type: string
           description: Rate within the category and key (e.g., general, reduced)
+    FiscalizationSeriesRulesResponse:
+      type: object
+      required:
+        - country
+        - documentTypes
+        - seriesTypes
+      properties:
+        country:
+          $ref: '#/components/schemas/CountryInfo'
+        documentTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeriesDocumentType'
+          description: Available document types that require series registration
+        seriesTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeriesType'
+          description: Available series types for this environment
+    SeriesDocumentType:
+      type: object
+      required:
+        - documentKind
+        - prefix
+        - name
+      properties:
+        documentKind:
+          type: string
+          description: Document kind enum value (e.g., INVOICE, CREDIT_NOTE)
+        prefix:
+          type: string
+          description: SAF-T series prefix (e.g., FT, NC, FR, ND, RG)
+        name:
+          type: string
+          description: Display name (e.g., "Fatura (Standard Invoice)")
+    SeriesType:
+      type: object
+      required:
+        - code
+        - name
+        - description
+      properties:
+        code:
+          type: string
+          description: Series type code (N, F, R)
+        name:
+          type: string
+          description: Series type name (e.g., Normal, Training, Recovery)
+        description:
+          type: string
+          description: Description of the series type
+    FiscalizationSeriesResponse:
+      type: object
+      properties:
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeriesMapping'
+    FiscalizationSeriesRequest:
+      type: object
+      required:
+        - baseName
+        - documentTypes
+        - seriesType
+      properties:
+        baseName:
+          type: string
+          description: Base name for the series (without prefix). E.g., "CB-2026"
+          example: CB-2026
+        documentTypes:
+          type: array
+          items:
+            type: string
+          description: SAF-T document type prefixes to register (e.g., ["FT", "NC", "FR"])
+          example: ["FT", "NC", "FR", "ND", "RG"]
+        seriesType:
+          type: string
+          enum: ["N", "F", "R"]
+          description: "Series type: N (Normal/Production), F (Training), R (Recovery)"
+          example: "F"
+    SeriesMapping:
+      type: object
+      required:
+        - documentKind
+        - seriesName
+      properties:
+        documentKind:
+          type: string
+          description: Document kind (e.g., INVOICE, CREDIT_NOTE, INVOICE_RECEIPT)
+        seriesName:
+          type: string
+          description: Registered series name (e.g., "FT CB-2026")
+        documentType:
+          type: string
+          description: SAF-T document type prefix (e.g., FT, NC)
+        validationCode:
+          type: string
+          description: AT validation code for ATCUD generation
