@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Cloudbeds Accounting Service API",
+    "title": "Accounting API",
     "version": "v0",
-    "description": "The Cloudbeds Accounting Service API provides programmatic access to financial data and operations for hospitality properties. Use this API to manage transactions, folios, deposits, accounts receivable ledgers, trial balances, and related accounting configuration.\n\n**Key concepts:**\n- **Transactions** represent individual financial entries (charges, payments,\n  taxes, fees) associated with a source such as a reservation, group profile,\n  or house account.\n\n- **Folios** organize transactions into logical groups within a source. You\n  can create custom folios and move or route transactions between them.\n\n- **Source Balances** provide a real-time financial summary (charges, payments,\n  balance due, tax/fee breakdowns) for a reservation, group profile, house\n  account, or accounts receivable ledger.\n\n- **Accounts Receivable (AR) Ledgers** track outstanding balances that have\n  been transferred from reservations or group profiles for later collection.\n\n- **Trial Balance** is a daily financial reconciliation report that summarizes\n  ledger activity across guest, deposit, and AR ledgers.\n\n- **Custom Codes** let you map Cloudbeds internal transaction codes to your\n  own chart-of-accounts codes and general ledger codes.\n\n\n**Authentication:**\nAll endpoints require a valid OAuth2 bearer token. Endpoints are protected by scopes: `read:payment` for read operations and `write:payment` for mutating operations. A few search endpoints use POST with a request body to support complex filter criteria; these require the `read:payment` scope.\n\n**Base URL:**\nUse `https://api.cloudbeds.com` for production and `https://api.cloudbeds-stage.com` for staging. All endpoint paths are prefixed with `/accounting/v1.0`.\n\n**Property context:**\nEvery request must include the `X-Property-ID` header to identify which property the request applies to.\n\n**Monetary amounts:**\nUnless otherwise noted, monetary amounts are expressed in the smallest currency unit (e.g., cents for USD). Use the `currencyScale` field to determine the number of decimal places.\n\n**Pagination:**\nPaginated endpoints return a `nextPageToken` value. Pass this token in subsequent requests to retrieve the next page of results. When `nextPageToken` is null or absent, you have reached the last page.\n"
+    "description": "The Accounting API provides programmatic access to financial data and operations for hospitality properties. Use this API to manage transactions, folios, deposits, accounts receivable ledgers, trial balances, and related accounting configuration.\n\n**Key concepts:**\n- **Transactions** represent individual financial entries (charges, payments,\n  taxes, fees) associated with a source such as a reservation, group profile,\n  or house account.\n\n- **Folios** organize transactions into logical groups within a source. You\n  can create custom folios and move or route transactions between them.\n\n- **Source Balances** provide a real-time financial summary (charges, payments,\n  balance due, tax/fee breakdowns) for a reservation, group profile, house\n  account, or accounts receivable ledger.\n\n- **Accounts Receivable (AR) Ledgers** track outstanding balances that have\n  been transferred from reservations or group profiles for later collection.\n\n- **Trial Balance** is a daily financial reconciliation report that summarizes\n  ledger activity across guest, deposit, and AR ledgers.\n\n- **Custom Codes** let you map Cloudbeds internal transaction codes to your\n  own chart-of-accounts codes and general ledger codes.\n\n\n**Authentication:**\nAll endpoints require a valid OAuth2 bearer token. Endpoints are protected by scopes: `read:payment` for read operations and `write:payment` for mutating operations. A few search endpoints use POST with a request body to support complex filter criteria; these require the `read:payment` scope.\n\n**Base URL:**\nUse `https://api.cloudbeds.com` for production and `https://api.cloudbeds-stage.com` for staging. All endpoint paths are prefixed with `/accounting/v1.0`.\n\n**Property context:**\nEvery request must include the `X-Property-ID` header to identify which property the request applies to.\n\n**Monetary amounts:**\nUnless otherwise noted, monetary amounts are expressed in the smallest currency unit (e.g., cents for USD). Use the `currencyScale` field to determine the number of decimal places.\n\n**Pagination:**\nPaginated endpoints return a `nextPageToken` value. Pass this token in subsequent requests to retrieve the next page of results. When `nextPageToken` is null or absent, you have reached the last page.\n"
   },
   "servers": [
     {
@@ -4634,7 +4634,7 @@
           },
           "sourceId": {
             "type": "string",
-            "description": "Source ID (reservation ID, group profile ID, or house account ID)"
+            "description": "Source ID (reservation ID or group profile ID)"
           },
           "sourceKind": {
             "$ref": "#/components/schemas/FolioSourceKind"
@@ -4732,7 +4732,6 @@
         "enum": [
           "CONFIG",
           "RESERVATION",
-          "HOUSE_ACCOUNT",
           "GROUP_PROFILE"
         ],
         "description": "The type of source a folio belongs to. CONFIG indicates a folio configuration template, RESERVATION is an individual guest booking, HOUSE_ACCOUNT is a property-level account, and GROUP_PROFILE is a group booking profile.\n"
