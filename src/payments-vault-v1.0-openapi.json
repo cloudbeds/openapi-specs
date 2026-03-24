@@ -1,0 +1,217 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Payments Tokenization API",
+    "description": "API for tokenizing and securely storing payment method data",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.payments.cloudbeds.com"
+    }
+  ],
+  "paths": {
+    "/vault/v1/tokens/card": {
+      "post": {
+        "summary": "Tokenize a Card",
+        "operationId": "tokenizeACard",
+        "description": "Accepts card data along with optional billing details, tokenizes the card,\nand securely stores the tokenized payment method. Returns a token ID that can be\nused in place of the card number for future transactions.\n\nAuthentication is done via Cloudbeds JWT",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Property-Id",
+            "description": "",
+            "example": "123456789",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenizeCardResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Card Tokenization"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenizeCardRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Card Tokenization",
+      "description": "Endpoints for tokenizing card PAN data and securely storing the resulting payment method tokens for future usage."
+    }
+  ],
+  "components": {
+    "schemas": {
+      "TokenizeCardRequest": {
+        "type": "object",
+        "description": "Tokenize Card Request",
+        "properties": {
+          "card_number": {
+            "type": "string",
+            "description": "The full card number.",
+            "example": "4111111111111111",
+            "nullable": false
+          },
+          "cvv": {
+            "type": "string",
+            "description": "The card verification value.",
+            "example": "123",
+            "nullable": false
+          },
+          "card_brand": {
+            "type": "string",
+            "description": "The card brand. Supported values: VISA, MASTERCARD, AMEX, DISCOVER, etc.",
+            "example": "VISA",
+            "nullable": false
+          },
+          "cardholder_name": {
+            "type": "string",
+            "description": "The name on the card.",
+            "example": "Sara Ryder",
+            "nullable": false
+          },
+          "expiration": {
+            "$ref": "#/components/schemas/Expiration"
+          },
+          "billing_details": {
+            "$ref": "#/components/schemas/BillingDetails"
+          }
+        },
+        "required": [
+          "card_number",
+          "cvv",
+          "card_brand",
+          "cardholder_name",
+          "expiration"
+        ]
+      },
+      "TokenizeCardResponse": {
+        "type": "object",
+        "description": "Tokenize Card Response",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "019c4d7e-4feb-73af-99f2-34c2771042f6",
+            "description": "The UUID of the tokenized payment method."
+          }
+        }
+      },
+      "Expiration": {
+        "type": "object",
+        "description": "Card expiration date.",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "Two-digit expiration month.",
+            "example": "08",
+            "nullable": false
+          },
+          "year": {
+            "type": "string",
+            "description": "Four-digit expiration year.",
+            "example": "2028",
+            "nullable": false
+          }
+        },
+        "required": [
+          "month",
+          "year"
+        ]
+      },
+      "BillingDetails": {
+        "type": "object",
+        "description": "Billing address and contact information.",
+        "properties": {
+          "address1": {
+            "type": "string",
+            "description": "Street address line 1.",
+            "example": "3033 5th Ave.",
+            "nullable": false
+          },
+          "address2": {
+            "type": "string",
+            "description": "Street address line 2.",
+            "example": "Ste 100",
+            "nullable": false
+          },
+          "city": {
+            "type": "string",
+            "description": "City.",
+            "example": "San Diego",
+            "nullable": false
+          },
+          "country": {
+            "type": "string",
+            "description": "Two-letter country code (ISO 3166-1 alpha-2).",
+            "example": "US",
+            "nullable": false
+          },
+          "document_number": {
+            "type": "string",
+            "description": "Tax or identification document number.",
+            "example": "142-test",
+            "nullable": false
+          },
+          "name": {
+            "type": "string",
+            "description": "Billing contact name.",
+            "example": "Denise Foreman",
+            "nullable": false
+          },
+          "postal_code": {
+            "type": "string",
+            "description": "Postal or ZIP code.",
+            "example": "60601",
+            "nullable": false
+          },
+          "phone": {
+            "type": "string",
+            "description": "Phone number.",
+            "example": "1234567890",
+            "nullable": false
+          },
+          "state": {
+            "type": "string",
+            "description": "State or province code.",
+            "example": "IL",
+            "nullable": false
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "JWT Bearer token authentication",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
