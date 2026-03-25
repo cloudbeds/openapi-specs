@@ -1,4 +1,4 @@
-openapi: 3.1.2
+openapi: 3.0.3
 info:
   title: Cloudbeds OTA Build-To-Us API
   version: '5.3'
@@ -872,15 +872,10 @@ paths:
                             minimum: 0
                             description: |
                               Last Minute restriction: The number of days before the arrival date guests can book. The value of 0 resets to no restriction, which is the default. This restriction is mainly used to boost last-minute reservations.
-                        patternProperties:
-                          ^adult_\d+$:
-                            type: string
-                            pattern: ^\d+(\.\d+)?$
-                            description: Extra price for the Nth adult (e.g., adult_3, adult_4). Sent for OBP enabled channels.
-                          ^child_\d+$:
-                            type: string
-                            pattern: ^\d+(\.\d+)?$
-                            description: Extra price for the Nth child (e.g., child_3, child_4). Sent for OBP enabled channels.
+                        additionalProperties:
+                          type: string
+                          pattern: ^\d+(\.\d+)?$
+                          description: Extra price for additional adults/children (e.g., adult_3, child_4). Sent for OBP enabled channels.
                         required:
                           - ota_room_id
                           - ota_rate_id
@@ -952,9 +947,8 @@ paths:
                       enum:
                         - GetBookingList
                     ota_booking_version:
-                      type:
-                        - string
-                        - 'null'
+                      type: string
+                      nullable: true
                       description: |-
                         With each request we send along `ota_booking_version`, which
                         has the format `YYYY-MM-DD HH:MM:SS` and indicates the time
@@ -1635,29 +1629,24 @@ paths:
                           description: Address of the property.
                           properties:
                             address_line_1:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: First address line of the property (usually the street name and house number)
                             address_line_2:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Second address line of the property (if applicable)
                             city:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: City or locality the property is located in
                             zip:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Post Code (ZIP) of the property
                             state:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: State of the property (if applicable)
                             country:
                               type: string
@@ -1665,32 +1654,27 @@ paths:
                               description: |
                                 2-letter ISO 3166-1 alpha-2 country code. This is the country the property is located in. Same as `country` on the top level.
                             website:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Homepage of the property
                             lon:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: |
                                 Geographic longitude of the property, given as decimal degrees. Positive for east, negative for west. Example: `-117.15292`
                             lat:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: |
                                 Geographic latitude of the property, given as decimal degrees. Positive for north, negative for south. Example: `32.70954`
                             phone:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: |
                                 Phone number for the property with international country code (eg. `+44 350 5697864`)
                             fax:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: |
                                 Fax number for the property with international country code (eg. `+44 350 5697864`)
                           required:
@@ -1700,49 +1684,40 @@ paths:
                           description: Contact information for invoicing
                           properties:
                             main_contact_name:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Name of the main contact for the property
                             company_name:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Name of the company owning the property
                             account_manager_name:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Name of the account manager responsible for the property
                             vat_id:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Tax ID for the property
                             address_line_1:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: First address line of the company or property owner (usually the street name and house number)
                             address_line_2:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Second address line of the company or property owner (if applicable)
                             state:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: State of the company or property owner (if applicable)
                             zip:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Post Code (ZIP) of the company or property owner
                             city:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: City or locality the company or property owner is located in
                             country:
                               type: string
@@ -1810,9 +1785,8 @@ paths:
                                 description: |
                                   Short string that describes the room for displaying purposes.
                               description:
-                                type:
-                                  - string
-                                  - 'null'
+                                type: string
+                                nullable: true
                                 description: |
                                   Longer description of the room which describes a room to a potential guest.
                               images:
@@ -1825,9 +1799,8 @@ paths:
                                       type: string
                                       description: Publicly accessible URL to the full resolution image
                                     description:
-                                      type:
-                                        - string
-                                        - 'null'
+                                      type: string
+                                      nullable: true
                                       description: Description of the image to show on a channel (max. 2000 characters)
                                     sort_order:
                                       type: integer
@@ -1850,15 +1823,13 @@ paths:
                                       description: |
                                         Rate plan ID on the Cloudbeds channel manager. Every room has a default rate plan, and the ID (even across different rooms) is always `0`. Any non-default rate plans have a higher ID.
                                     label_public:
-                                      type:
-                                        - string
-                                        - 'null'
+                                      type: string
+                                      nullable: true
                                       description: |
                                         Name or short summary of the rate plan, suitable for display to guests. The label is chosen by the property.
                                     label_private:
-                                      type:
-                                        - string
-                                        - 'null'
+                                      type: string
+                                      nullable: true
                                       description: |
                                         Name or short summary of the rate plan, aimed to be shown just to the property. This could for example be a code like `NF` for "Non-refundable". The label is chosen by the property.
                                     meal_codes:
@@ -1892,22 +1863,19 @@ paths:
                               - description
                               - images
                         property_description:
-                          type:
-                            - string
-                            - 'null'
+                          type: string
+                          nullable: true
                           description: |
                             A description of the property to display to potential guests. Only transmitted for API version 3 and above.
                         check_in_time:
-                          type:
-                            - string
-                            - 'null'
+                          type: string
+                          nullable: true
                           pattern: ^\d{2}:\d{2}$
                           description: |
                             Standard check-in time of the property in `HH:MM` format (e.g. `14:00`). Only transmitted for API version 3 and above.
                         check_out_time:
-                          type:
-                            - string
-                            - 'null'
+                          type: string
+                          nullable: true
                           pattern: ^\d{2}:\d{2}$
                           description: |
                             Standard check-out time of the property in `HH:MM` format (e.g. `11:00`). Only transmitted for API version 3 and above.
@@ -2235,29 +2203,24 @@ paths:
                           description: Address of the property.
                           properties:
                             address_line_1:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: First address line of the property (usually the street name and house number)
                             address_line_2:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Second address line of the property (if applicable)
                             city:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: City or locality the property is located in
                             zip:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Post Code (ZIP) of the property
                             state:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: State of the property (if applicable)
                             country:
                               type: string
@@ -2265,32 +2228,27 @@ paths:
                               description: |
                                 2-letter ISO 3166-1 alpha-2 country code. This is the country the property is located in. Same as `country` on the top level.
                             website:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Homepage of the property
                             lon:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: |
                                 Geographic longitude of the property, given as decimal degrees. Positive for east, negative for west. Example: `-117.15292`
                             lat:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: |
                                 Geographic latitude of the property, given as decimal degrees. Positive for north, negative for south. Example: `32.70954`
                             phone:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: |
                                 Phone number for the property with international country code (eg. `+44 350 5697864`)
                             fax:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: |
                                 Fax number for the property with international country code (eg. `+44 350 5697864`)
                           required:
@@ -2300,49 +2258,40 @@ paths:
                           description: Contact information for invoicing
                           properties:
                             main_contact_name:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Name of the main contact for the property
                             company_name:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Name of the company owning the property
                             account_manager_name:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Name of the account manager responsible for the property
                             vat_id:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Tax ID for the property
                             address_line_1:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: First address line of the company or property owner (usually the street name and house number)
                             address_line_2:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Second address line of the company or property owner (if applicable)
                             state:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: State of the company or property owner (if applicable)
                             zip:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: Post Code (ZIP) of the company or property owner
                             city:
-                              type:
-                                - string
-                                - 'null'
+                              type: string
+                              nullable: true
                               description: City or locality the company or property owner is located in
                             country:
                               type: string
@@ -2689,9 +2638,8 @@ paths:
                           description: |
                             Short string that describes the room for displaying purposes.
                         description:
-                          type:
-                            - string
-                            - 'null'
+                          type: string
+                          nullable: true
                           description: |
                             Longer description of the room which describes a room to a potential guest.
                         images:
@@ -2704,9 +2652,8 @@ paths:
                                 type: string
                                 description: Publicly accessible URL to the full resolution image
                               description:
-                                type:
-                                  - string
-                                  - 'null'
+                                type: string
+                                nullable: true
                                 description: Description of the image to show on a channel (max. 2000 characters)
                               sort_order:
                                 type: integer
@@ -2729,15 +2676,13 @@ paths:
                                 description: |
                                   Rate plan ID on the Cloudbeds channel manager. Every room has a default rate plan, and the ID (even across different rooms) is always `0`. Any non-default rate plans have a higher ID.
                               label_public:
-                                type:
-                                  - string
-                                  - 'null'
+                                type: string
+                                nullable: true
                                 description: |
                                   Name or short summary of the rate plan, suitable for display to guests. The label is chosen by the property.
                               label_private:
-                                type:
-                                  - string
-                                  - 'null'
+                                type: string
+                                nullable: true
                                 description: |
                                   Name or short summary of the rate plan, aimed to be shown just to the property. This could for example be a code like `NF` for "Non-refundable". The label is chosen by the property.
                               meal_codes:
@@ -4162,44 +4107,40 @@ paths:
                         group_block_ari:
                           type: object
                           description: keys of this object - OTA room type IDs
-                          patternProperties:
-                            ^.+$:
-                              type: object
-                              properties:
-                                ota_rate_id:
-                                  type: string
-                                data:
-                                  type: array
-                                  items:
-                                    type: object
-                                    patternProperties:
-                                      ^rate_adult_\d+$:
-                                        type: number
-                                      ^rate_child_\d+$:
-                                        type: number
-                                    properties:
-                                      start_date:
-                                        type: string
-                                        format: date
-                                      end_date:
-                                        type: string
-                                        format: date
-                                      units_allotted:
-                                        type: integer
-                                      units_remaining:
-                                        type: integer
-                                      units_confirmed:
-                                        type: integer
-                                      mins:
-                                        type: integer
-                                      maxs:
-                                        type: integer
-                                      min_advanced_offset:
-                                        type: integer
-                                      max_advanced_offset:
-                                        type: integer
-                                      rate:
-                                        type: number
+                          additionalProperties:
+                            type: object
+                            properties:
+                              ota_rate_id:
+                                type: string
+                              data:
+                                type: array
+                                items:
+                                  type: object
+                                  additionalProperties:
+                                    type: number
+                                  properties:
+                                    start_date:
+                                      type: string
+                                      format: date
+                                    end_date:
+                                      type: string
+                                      format: date
+                                    units_allotted:
+                                      type: integer
+                                    units_remaining:
+                                      type: integer
+                                    units_confirmed:
+                                      type: integer
+                                    mins:
+                                      type: integer
+                                    maxs:
+                                      type: integer
+                                    min_advanced_offset:
+                                      type: integer
+                                    max_advanced_offset:
+                                      type: integer
+                                    rate:
+                                      type: number
               required:
                 - verb
                 - group_block_data
@@ -4372,44 +4313,40 @@ paths:
                         group_block_ari:
                           type: object
                           description: keys of this object - OTA room type IDs
-                          patternProperties:
-                            ^.+$:
-                              type: object
-                              properties:
-                                ota_rate_id:
-                                  type: string
-                                data:
-                                  type: array
-                                  items:
-                                    type: object
-                                    patternProperties:
-                                      ^rate_adult_\d+$:
-                                        type: number
-                                      ^rate_child_\d+$:
-                                        type: number
-                                    properties:
-                                      start_date:
-                                        type: string
-                                        format: date
-                                      end_date:
-                                        type: string
-                                        format: date
-                                      units_allotted:
-                                        type: integer
-                                      units_remaining:
-                                        type: integer
-                                      units_confirmed:
-                                        type: integer
-                                      mins:
-                                        type: integer
-                                      maxs:
-                                        type: integer
-                                      min_advanced_offset:
-                                        type: integer
-                                      max_advanced_offset:
-                                        type: integer
-                                      rate:
-                                        type: number
+                          additionalProperties:
+                            type: object
+                            properties:
+                              ota_rate_id:
+                                type: string
+                              data:
+                                type: array
+                                items:
+                                  type: object
+                                  additionalProperties:
+                                    type: number
+                                  properties:
+                                    start_date:
+                                      type: string
+                                      format: date
+                                    end_date:
+                                      type: string
+                                      format: date
+                                    units_allotted:
+                                      type: integer
+                                    units_remaining:
+                                      type: integer
+                                    units_confirmed:
+                                      type: integer
+                                    mins:
+                                      type: integer
+                                    maxs:
+                                      type: integer
+                                    min_advanced_offset:
+                                      type: integer
+                                    max_advanced_offset:
+                                      type: integer
+                                    rate:
+                                      type: number
               required:
                 - verb
                 - group_block_data
@@ -4644,9 +4581,8 @@ components:
           description: |
             Short string that describes the room for displaying purposes.
         description:
-          type:
-            - string
-            - 'null'
+          type: string
+          nullable: true
           description: |
             Longer description of the room which describes a room to a potential guest.
       required:
