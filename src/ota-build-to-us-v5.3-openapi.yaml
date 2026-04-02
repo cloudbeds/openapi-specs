@@ -31,8 +31,6 @@ tags:
     description: Manage group bookings and room blocks.
   - name: Callbacks
     description: Endpoints called by Cloudbeds to the OTA.
-  - name: Channels
-    description: Retrieve channel information.
 paths:
   /HealthCheck:
     post:
@@ -4341,7 +4339,15 @@ paths:
     post:
       operationId: channel_list
       description: |
+        **Endpoint:** `https://api.myallocator.com/callback/ota/{ota}/v202203` (replace `{ota}` with your channel ID)
+
         Returns a list of all channels known to Cloudbeds, including their names and corresponding IDs.
+      servers:
+        - url: https://api.myallocator.com/callback/ota/{ota}/v202203
+          variables:
+            ota:
+              description: OTA channel ID as assigned by Cloudbeds
+              default: replace_with_ota_id
       requestBody:
         content:
           application/json:
@@ -4429,7 +4435,7 @@ paths:
           description: ChannelList
       summary: ChannelList
       tags:
-        - Channels
+        - Callbacks
 components:
   securitySchemes:
     shared_secret:
