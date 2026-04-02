@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.2
 info:
   title: Cloudbeds OTA Build-To-Us API
   version: '5.3'
@@ -7,257 +7,32 @@ info:
   license:
     name: Cloudbeds API Terms
     url: https://www.cloudbeds.com/terms/api/
-  description: |
-    # Introduction
-
-    This API allows an OTA ("Online Travel Agency", also called "channel",
-    or "travel booking website") to integrate with the Cloudbeds channel
-    manager by implementing an API receiver in their environment.
-
-    # Getting Started
-
-    ## Becoming A Partner
-
-    To be considered as a partner, please complete our
-    [partnership form](https://www.cloudbeds.com/partner-with-cloudbeds/).
-    Your application will be placed in a queue to be reviewed for fit and
-    compatibility. We will reach out if the partnership is approved.
-
-    If approved, you will be provided with a 72-hour link to our API Credential
-    Request form, which will help you create a test account and define your
-    channel on Cloudbeds.
-
-    Upon completion of the API Credentialing, you will then have access to your
-    Test Account login information, channel ID (`cid`), and the `shared_secret`
-    that is required for the API calls.
-
-    At this point, the channel will be hidden from our user base while in
-    development and only viewable by your designated test account. You will be
-    able to use your trial account as a test harness for sending updates to
-    your channel. We request that you update our team at least once every two
-    weeks while in development with your estimated completion date.
-
-    Partners that fail to provide an estimated completion date may have their
-    participation eligibility rescinded.
-
-    We have a self-certification tool. Once you have finished your development
-    process, you will be guided on how to use this tool in order to test and
-    get your integration certified.
-
-    Once you get certified, our team will inform you of the next steps,
-    including providing us with:
-
-    * Logos
-    * Information about your service
-    * Property setup information (obtaining setup credentials, activating the channel manager, etc.)
-    * Contact Information to various departments of your business (support, marketing, etc.)
-
-    When everything is tested and all documentation is received your application
-    will be released in a beta stage for 2-3 weeks before going live.
-
-    ## Flow
-
-    For a new property to connect to the OTA they will go to the channel setup
-    on Cloudbeds, and either enter their OTA credentials, or go through some
-    activation process, where the OTA is automatically emailed to enable the
-    property and a support team member of Cloudbeds sets the credentials.
-
-    The property owner then maps the rooms and rate plans to complete the
-    connection.
-
-    After a property has been setup, Cloudbeds will push a full refresh to the
-    OTA. This means Cloudbeds sends all availability, rates and restrictions
-    for the next 2+ years (depending on how many years of ARI data the OTA
-    supports) for all rooms and rate plans. After this initial sync has been
-    completed Cloudbeds will update the OTA whenever there is a change to
-    ARI, eg. because a booking has been imported or pricing has been altered.
-
-    Cloudbeds will poll for bookings in regular configurable intervals.
-    Bookings can and should be sent via a callback to Cloudbeds to speed up
-    the import.
-
-    # Booking Format
-
-    The full booking format is
-    [documented here](https://github.com/MyAllocator/build2us-apidocs/blob/gh-pages/booking_format_b2u.md).
-    Please take note of which fields are required and which fields are optional.
-
-    # Error Codes
-
-    You can respond with error IDs listed in our
-    [error code](https://apidocs.myallocator.com/ota-errors.html) list. Please
-    use the numeric codes in the `ID` column. Only errors whose code starts with
-    `FAULT.OTA.` are supported.
-
-    # Rate Plans
-
-    On the Cloudbeds channel manager rooms and rate plans have a one-to-many relationship. This
-    means that a room has one or more rate plans, and each rate plan has
-    exactly one room. For the `ARIUpdate` calls we can send different
-    `ota_rate_id` values for the same `ota_room_id`. Rates and restrictions are
-    tied to rate plans, while availability is tied to rooms, so the `units`
-    will be constant across different rate plans for the same dates and for the
-    same room, but rates and restrictions can vary. To close off a rate plan we
-    are using the `close` flag.
-
-    # FAQ
-
-    ## Terminology
-
-    * OTA: Online travel agency (ex: booking.com, or competitor)
-    * cid: Channel ID - a two to four character code used by Cloudbeds uniquely identify an OTA.
-    * guid: Globally unique identifier, a unique 36 character code which identifies a request. Useful for seeing if a request is a retry and for debugging.
-
-    ## Requests
-
-    Cloudbeds will send requests to the OTA with content-type
-    `application/json`, with the payload being in the body of the request. Gzip
-    compression and keep-alives will be used if supported. HTTPS
-    (SSL encryption) is required for the OTA's endpoint. If an endpoint with
-    a port other than 443 is to be used Cloudbeds will need to allow-list
-    this port first.
-
-    HTTP response codes from Cloudbeds should always be 200. They have the
-    content-type `application/json`.
-
-    ## Required API calls
-
-    As a minimum these API calls need to be implemented on the OTA side:
-
-    * HealthCheck
-    * SetupProperty
-    * GetRoomTypes
-    * GetRatePlans
-    * ARIUpdate
-    * GetBookingList
-    * GetBookingId
-
-    If the OTA has multiple properties under one user account these API calls
-    are required in addition:
-
-    * GetSubProperties
-
-    ## Channel Manager, CRS and Broker handling
-
-    If the OTA is a channel manager, a CRS (central reservation system) or otherwise
-    a broker that relays bookings from other OTAs/sources then Cloudbeds need to be
-    notified about this to mark the OTA as a "broker". Additionally, the booking
-    format requires providing additional fields to ensure that properties can
-    correctly map sources for reports, tax/fee handling and display purposes.
-
-    The following booking format fields are required for brokered bookings to work correctly:
-
-    * `OrderSource`
-    * `OrderSourceId`
-    * `ExternalReferences`
-
-    Please check [booking format](https://github.com/MyAllocator/build2us-apidocs/blob/gh-pages/booking_format_b2u.md)
-    on how to use these fields. We also recommend implementing the `SourceTree` field if multiple
-    sources can be involved in a booking.
-
-    Following is an example of a booking that originally came through Expedia:
-
-    ```
-    {
-      "OrderSource": "Expedia",
-      "OrderSourceId" : "exp",
-      "ExternalReferences" : [
-         {
-            "Type" : "OTA",
-            "Reference" : "2280949650"
-         }
-      ],
-    }
-    ```
-
-    # Changelog
-
-    ## Version 5.5
-
-    ### 2025-12-01
-    * **ChannelList**: Added new method to get a list of Cloudbeds channels with their IDs and names
-
-    ## Version 5.4
-
-    ### 2025-11-18
-    * **CreateProperty, UpdateRoom, UpdateRatePlan**: Added optional `refundable` and `refundable_until_days` fields for a rate plan.
-
-    ## Version 5.3
-
-    ### 2025-11-10
-    * **CreateProperty**: Added optional `ota_property_sub_id` response parameter. For channels that support multiple properties under one account, this sub-property ID will be saved by Cloudbeds and included in future API calls for the property.
-    * **UpdateProperty**: Added new method to update general property data
-
-    ### 2025-10-15
-    * **CreateProperty, UpdateRoom**: Added `max_adults` and `max_children` fields
-
-    ## Version 5.2
-
-    ### 2025-10-07
-    * **Documentation**: Improved OpenAPI documentation structure and added new required fields to booking format
-    * **Booking Format**: Added new mandatory fields to booking schema
-
-    ### 2025-09-02
-    * **CreateProperty, UpdateRoom, UpdateRatePlan**: Added `meal_codes` field to support meal plan information (All-Inclusive, Breakfast, Lunch, Dinner)
-
-    ### 2025-08-06
-    * **UpdateRoom, UpdateRatePlan**: Added mapping return fields in responses to automatically map OTA IDs to Cloudbeds IDs
-
-    ### 2025-07-16
-    * **Groups**: Added group booking support with new methods: `CreateGroup`, `UpdateGroup`, `DeleteGroup`, `CreateGroupBlock`, `UpdateGroupBlock`, `DeleteGroupBlock`
-
-    ### 2025-07-15
-    * **Booking Format**: Enhanced broker/CRS support with detailed documentation for `OrderSource`, `OrderSourceId`, `ExternalReferences`, and `SourceTree` fields
-
-    ### 2025-06-16
-    * **AckBooking**: Added new method to acknowledge successful booking receipt
-
-    ## Version 5.1
-
-    ### 2024-04-16
-    * **UpdateTaxes**: Added new method to manage property taxes and fees
-    * **CreateProperty**: Added taxes and fees support in property creation
-
-    ### 2024-07-18
-    * **Booking Format**: Extended booking format with additional fields
-
-    ### 2024-08-01
-    * **Booking Format**: Added `DepositType` field
-
-    ### 2024-06-12
-    * **UpdateRoom, DeleteRoom**: Added new methods for room management
-
-    ### 2024-06-16
-    * **UpdateRatePlan, DeleteRatePlan**: Added new methods for rate plan management
-    * **Room Data**: Added gender field to room data for dormitory support
-
-    ### 2024-09-16
-    * **UpdateRoom**: Added missing `ota_room_id` field
-
-    ### 2025-03-27
-    * **Payment**: Added support for new card types: Cabal, ItalCred, Naranja, and Nativa
-
-    ## Version 5.0
-
-    ### 2022-08-31
-    * **Endpoints**: Moved to single endpoint URLs (all methods can use the same base URL)
-
-    ## Version 4.0
-
-    * **CreateProperty**: Added `rateplans` field for rooms
-
-    ## Version 3.0
-
-    * **CreateProperty**: Added new fields: `images`, `description`, `check_in_time`, `check_out_time`
-
-    ## Version 1.0
-
-    * Initial release
+  description: >-
+    API for Online Travel Agencies (OTAs) to integrate with the Cloudbeds
+    channel manager. Enables pushing availability, rates, and restrictions
+    (ARI), managing property setup, and retrieving bookings.
 servers:
   - url: https://api.your-ota.com/cloudbeds
     description: OTA endpoint
 security:
   - shared_secret: []
+tags:
+  - name: Connection
+    description: Health checks, property setup, and sub-property discovery.
+  - name: Rooms & Rate Plans
+    description: Manage room types, rate plans, and room information.
+  - name: ARI
+    description: Push and refresh availability, rates, and restrictions.
+  - name: Bookings
+    description: Retrieve, create, acknowledge, and cancel bookings.
+  - name: Taxes & Fees
+    description: Manage property taxes and fees.
+  - name: Groups
+    description: Manage group bookings and room blocks.
+  - name: Callbacks
+    description: Endpoints called by Cloudbeds to the OTA.
+  - name: Channels
+    description: Retrieve channel information.
 paths:
   /HealthCheck:
     post:
@@ -348,6 +123,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: HealthCheck
       summary: HealthCheck
+      tags:
+        - Connection
   /SetupProperty:
     post:
       operationId: setup_property
@@ -484,6 +261,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: SetupProperty
       summary: SetupProperty
+      tags:
+        - Connection
   /GetRoomTypes:
     post:
       operationId: get_room_types
@@ -608,6 +387,8 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: GetRoomTypes
       summary: GetRoomTypes
+      tags:
+        - Rooms & Rate Plans
   /GetRatePlans:
     post:
       operationId: get_rate_plans
@@ -711,6 +492,8 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: GetRatePlans
       summary: GetRatePlans
+      tags:
+        - Rooms & Rate Plans
   /ARIUpdate:
     post:
       operationId: ari_update
@@ -872,10 +655,22 @@ paths:
                             minimum: 0
                             description: |
                               Last Minute restriction: The number of days before the arrival date guests can book. The value of 0 resets to no restriction, which is the default. This restriction is mainly used to boost last-minute reservations.
-                        additionalProperties:
-                          type: string
-                          pattern: ^\d+(\.\d+)?$
-                          description: Extra price for additional adults/children (e.g., adult_3, child_4). Sent for OBP enabled channels.
+                          adult_3:
+                            type: string
+                            pattern: ^\d+(\.\d+)?$
+                            description: Extra price for the 3rd adult. Additional adults follow the same pattern (adult_4, adult_5, etc.). Sent for OBP enabled channels.
+                          adult_4:
+                            type: string
+                            pattern: ^\d+(\.\d+)?$
+                            description: Extra price for the 4th adult.
+                          child_3:
+                            type: string
+                            pattern: ^\d+(\.\d+)?$
+                            description: Extra price for the 3rd child. Additional children follow the same pattern (child_4, child_5, etc.). Sent for OBP enabled channels.
+                          child_4:
+                            type: string
+                            pattern: ^\d+(\.\d+)?$
+                            description: Extra price for the 4th child.
                         required:
                           - ota_room_id
                           - ota_rate_id
@@ -907,6 +702,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: ARIUpdate
       summary: ARIUpdate
+      tags:
+        - ARI
   /GetBookingList:
     post:
       operationId: get_booking_list
@@ -947,8 +744,9 @@ paths:
                       enum:
                         - GetBookingList
                     ota_booking_version:
-                      type: string
-                      nullable: true
+                      type:
+                        - string
+                        - 'null'
                       description: |-
                         With each request we send along `ota_booking_version`, which
                         has the format `YYYY-MM-DD HH:MM:SS` and indicates the time
@@ -1022,6 +820,8 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: GetBookingList
       summary: GetBookingList
+      tags:
+        - Bookings
   /GetBookingId:
     post:
       operationId: get_booking_id
@@ -1172,6 +972,8 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: GetBookingId
       summary: GetBookingId
+      tags:
+        - Bookings
   /AckBooking:
     post:
       operationId: ack_booking
@@ -1238,6 +1040,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: AckBooking
       summary: AckBooking
+      tags:
+        - Bookings
   /CancelBooking:
     post:
       operationId: cancel_booking
@@ -1312,6 +1116,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: CancelBooking
       summary: CancelBooking
+      tags:
+        - Bookings
   /CreateProperty:
     post:
       operationId: create_property
@@ -1370,7 +1176,6 @@ paths:
                         calculation_basis: rate
                         category: vat
                         code: IVA
-                        description: Impuesto
                         id: 4761
                         is_fee: false
                         is_inclusive: true
@@ -1629,24 +1434,29 @@ paths:
                           description: Address of the property.
                           properties:
                             address_line_1:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: First address line of the property (usually the street name and house number)
                             address_line_2:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Second address line of the property (if applicable)
                             city:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: City or locality the property is located in
                             zip:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Post Code (ZIP) of the property
                             state:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: State of the property (if applicable)
                             country:
                               type: string
@@ -1654,27 +1464,32 @@ paths:
                               description: |
                                 2-letter ISO 3166-1 alpha-2 country code. This is the country the property is located in. Same as `country` on the top level.
                             website:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Homepage of the property
                             lon:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: |
                                 Geographic longitude of the property, given as decimal degrees. Positive for east, negative for west. Example: `-117.15292`
                             lat:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: |
                                 Geographic latitude of the property, given as decimal degrees. Positive for north, negative for south. Example: `32.70954`
                             phone:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: |
                                 Phone number for the property with international country code (eg. `+44 350 5697864`)
                             fax:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: |
                                 Fax number for the property with international country code (eg. `+44 350 5697864`)
                           required:
@@ -1684,40 +1499,49 @@ paths:
                           description: Contact information for invoicing
                           properties:
                             main_contact_name:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Name of the main contact for the property
                             company_name:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Name of the company owning the property
                             account_manager_name:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Name of the account manager responsible for the property
                             vat_id:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Tax ID for the property
                             address_line_1:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: First address line of the company or property owner (usually the street name and house number)
                             address_line_2:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Second address line of the company or property owner (if applicable)
                             state:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: State of the company or property owner (if applicable)
                             zip:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Post Code (ZIP) of the company or property owner
                             city:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: City or locality the company or property owner is located in
                             country:
                               type: string
@@ -1785,8 +1609,9 @@ paths:
                                 description: |
                                   Short string that describes the room for displaying purposes.
                               description:
-                                type: string
-                                nullable: true
+                                type:
+                                  - string
+                                  - 'null'
                                 description: |
                                   Longer description of the room which describes a room to a potential guest.
                               images:
@@ -1799,8 +1624,9 @@ paths:
                                       type: string
                                       description: Publicly accessible URL to the full resolution image
                                     description:
-                                      type: string
-                                      nullable: true
+                                      type:
+                                        - string
+                                        - 'null'
                                       description: Description of the image to show on a channel (max. 2000 characters)
                                     sort_order:
                                       type: integer
@@ -1823,13 +1649,15 @@ paths:
                                       description: |
                                         Rate plan ID on the Cloudbeds channel manager. Every room has a default rate plan, and the ID (even across different rooms) is always `0`. Any non-default rate plans have a higher ID.
                                     label_public:
-                                      type: string
-                                      nullable: true
+                                      type:
+                                        - string
+                                        - 'null'
                                       description: |
                                         Name or short summary of the rate plan, suitable for display to guests. The label is chosen by the property.
                                     label_private:
-                                      type: string
-                                      nullable: true
+                                      type:
+                                        - string
+                                        - 'null'
                                       description: |
                                         Name or short summary of the rate plan, aimed to be shown just to the property. This could for example be a code like `NF` for "Non-refundable". The label is chosen by the property.
                                     meal_codes:
@@ -1863,19 +1691,22 @@ paths:
                               - description
                               - images
                         property_description:
-                          type: string
-                          nullable: true
+                          type:
+                            - string
+                            - 'null'
                           description: |
                             A description of the property to display to potential guests. Only transmitted for API version 3 and above.
                         check_in_time:
-                          type: string
-                          nullable: true
+                          type:
+                            - string
+                            - 'null'
                           pattern: ^\d{2}:\d{2}$
                           description: |
                             Standard check-in time of the property in `HH:MM` format (e.g. `14:00`). Only transmitted for API version 3 and above.
                         check_out_time:
-                          type: string
-                          nullable: true
+                          type:
+                            - string
+                            - 'null'
                           pattern: ^\d{2}:\d{2}$
                           description: |
                             Standard check-out time of the property in `HH:MM` format (e.g. `11:00`). Only transmitted for API version 3 and above.
@@ -2026,6 +1857,8 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: CreateProperty
       summary: CreateProperty
+      tags:
+        - Connection
   /UpdateProperty:
     post:
       operationId: update_property
@@ -2203,24 +2036,29 @@ paths:
                           description: Address of the property.
                           properties:
                             address_line_1:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: First address line of the property (usually the street name and house number)
                             address_line_2:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Second address line of the property (if applicable)
                             city:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: City or locality the property is located in
                             zip:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Post Code (ZIP) of the property
                             state:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: State of the property (if applicable)
                             country:
                               type: string
@@ -2228,27 +2066,32 @@ paths:
                               description: |
                                 2-letter ISO 3166-1 alpha-2 country code. This is the country the property is located in. Same as `country` on the top level.
                             website:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Homepage of the property
                             lon:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: |
                                 Geographic longitude of the property, given as decimal degrees. Positive for east, negative for west. Example: `-117.15292`
                             lat:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: |
                                 Geographic latitude of the property, given as decimal degrees. Positive for north, negative for south. Example: `32.70954`
                             phone:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: |
                                 Phone number for the property with international country code (eg. `+44 350 5697864`)
                             fax:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: |
                                 Fax number for the property with international country code (eg. `+44 350 5697864`)
                           required:
@@ -2258,40 +2101,49 @@ paths:
                           description: Contact information for invoicing
                           properties:
                             main_contact_name:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Name of the main contact for the property
                             company_name:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Name of the company owning the property
                             account_manager_name:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Name of the account manager responsible for the property
                             vat_id:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Tax ID for the property
                             address_line_1:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: First address line of the company or property owner (usually the street name and house number)
                             address_line_2:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Second address line of the company or property owner (if applicable)
                             state:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: State of the company or property owner (if applicable)
                             zip:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: Post Code (ZIP) of the company or property owner
                             city:
-                              type: string
-                              nullable: true
+                              type:
+                                - string
+                                - 'null'
                               description: City or locality the company or property owner is located in
                             country:
                               type: string
@@ -2338,6 +2190,8 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: UpdateProperty
       summary: UpdateProperty
+      tags:
+        - Connection
   /GetSubProperties:
     post:
       operationId: get_sub_properties
@@ -2464,6 +2318,8 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: GetSubProperties
       summary: GetSubProperties
+      tags:
+        - Connection
   /DeleteRoom:
     post:
       operationId: delete_room
@@ -2529,6 +2385,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: DeleteRoom
       summary: DeleteRoom
+      tags:
+        - Rooms & Rate Plans
   /UpdateRoom:
     post:
       operationId: update_room
@@ -2638,8 +2496,9 @@ paths:
                           description: |
                             Short string that describes the room for displaying purposes.
                         description:
-                          type: string
-                          nullable: true
+                          type:
+                            - string
+                            - 'null'
                           description: |
                             Longer description of the room which describes a room to a potential guest.
                         images:
@@ -2652,8 +2511,9 @@ paths:
                                 type: string
                                 description: Publicly accessible URL to the full resolution image
                               description:
-                                type: string
-                                nullable: true
+                                type:
+                                  - string
+                                  - 'null'
                                 description: Description of the image to show on a channel (max. 2000 characters)
                               sort_order:
                                 type: integer
@@ -2676,13 +2536,15 @@ paths:
                                 description: |
                                   Rate plan ID on the Cloudbeds channel manager. Every room has a default rate plan, and the ID (even across different rooms) is always `0`. Any non-default rate plans have a higher ID.
                               label_public:
-                                type: string
-                                nullable: true
+                                type:
+                                  - string
+                                  - 'null'
                                 description: |
                                   Name or short summary of the rate plan, suitable for display to guests. The label is chosen by the property.
                               label_private:
-                                type: string
-                                nullable: true
+                                type:
+                                  - string
+                                  - 'null'
                                 description: |
                                   Name or short summary of the rate plan, aimed to be shown just to the property. This could for example be a code like `NF` for "Non-refundable". The label is chosen by the property.
                               meal_codes:
@@ -2784,6 +2646,8 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: UpdateRoom
       summary: UpdateRoom
+      tags:
+        - Rooms & Rate Plans
   /UpdateTaxes:
     post:
       operationId: update_taxes
@@ -2811,7 +2675,6 @@ paths:
                         calculation_basis: rate
                         category: vat
                         code: IVA
-                        description: Impuesto
                         id: 4761
                         is_fee: false
                         is_inclusive: true
@@ -2824,7 +2687,6 @@ paths:
                       - amount: 5
                         applies_per: pet
                         category: other_fee
-                        description: Pet fee applies for each pet when total number of pets is more than one.
                         id: 4762
                         is_fee: true
                         is_inclusive: false
@@ -2840,7 +2702,6 @@ paths:
                         applies_per: adult
                         calculation_basis: rate
                         category: tourism_tax
-                        description: Per person per night when number of nights are greater than 2
                         id: 4763
                         is_fee: false
                         is_inclusive: false
@@ -2886,7 +2747,6 @@ paths:
                         applies_per: booking
                         calculation_basis: rate
                         category: other_fee
-                        description: Weekend service fee
                         id: 4765
                         is_fee: true
                         is_inclusive: false
@@ -2959,6 +2819,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: UpdateTaxes
       summary: UpdateTaxes
+      tags:
+        - Taxes & Fees
   /DeleteRatePlan:
     post:
       operationId: delete_rateplan
@@ -3024,6 +2886,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: DeleteRatePlan
       summary: DeleteRatePlan
+      tags:
+        - Rooms & Rate Plans
   /UpdateRatePlan:
     post:
       operationId: update_rateplan
@@ -3046,6 +2910,8 @@ paths:
                   ota_cid: ota
                   rateplan:
                     mya_rate_id: 115629
+                    mya_room_id: 45829
+                    ota_room_id: '11111'
                     label_private: NR
                     label_public: Non-refundable
                     max_occupancy: 3
@@ -3071,6 +2937,13 @@ paths:
                         ota_rate_id:
                           type: string
                           description: Channel rate plan ID.
+                        mya_room_id:
+                          type: integer
+                          minimum: 1
+                          description: Room ID on the Cloudbeds channel manager.
+                        ota_room_id:
+                          type: string
+                          description: Channel room ID.
                         label_private:
                           type: string
                           description: The private name of the rate plan, only shown to the property.
@@ -3172,11 +3045,14 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: UpdateRatePlan
       summary: UpdateRatePlan
+      tags:
+        - Rooms & Rate Plans
   /ARIFullRefresh:
     post:
       operationId: ari_full_refresh
       description: |
-        *Note that the endpoint for this API call is on Cloudbeds!*
+        **Endpoint:** `https://api.myallocator.com/callback/ota/{ota}/v202203` (replace `{ota}` with your channel ID)
+
         This is for technical support on the remote OTA to enqueue a full refresh of the property. You may use either `ota_property_id` (it may be resolved into a number of Cloudbeds channel manager IDs) or `mya_property_id`.
         Note that full refreshes are heavy operations, so only call this when absolutely necessary. Under no circumstances use this callback on a scheduled basis.
       servers:
@@ -3257,7 +3133,7 @@ paths:
     post:
       operationId: check_availability
       description: |-
-        *Note that the endpoint for this API call is on Cloudbeds!*
+        **Endpoint:** `https://api.myallocator.com/callback/ota/{ota}/v202203` (replace `{ota}` with your channel ID)
 
         Use this callback to check if a room (rateplan) is available for booking.
 
@@ -3386,7 +3262,7 @@ paths:
     post:
       operationId: booking_create
       description: |-
-        *Note that the endpoint for this API call is on Cloudbeds!*
+        **Endpoint:** `https://api.myallocator.com/callback/ota/{ota}/v202203` (replace `{ota}` with your channel ID)
 
         Use this callback to send us new bookings. Using this callback ensures that
         there is no delay between the creation of the booking and import on
@@ -3533,7 +3409,7 @@ paths:
     post:
       operationId: notify_booking
       description: |-
-        *Note that the endpoint for this API call is on Cloudbeds!*
+        **Endpoint:** `https://api.myallocator.com/callback/ota/{ota}/v202203` (replace `{ota}` with your channel ID)
 
         With this API call the OTA can notify Cloudbeds to immediately request a
         `GetBookingList` call based on the `ota_property_id`/`ota_property_sub_id`
@@ -3620,7 +3496,7 @@ paths:
     post:
       operationId: room_info
       description: |-
-        *Note that the endpoint for this API call is on Cloudbeds!*
+        **Endpoint:** `https://api.myallocator.com/callback/ota/{ota}/v202203` (replace `{ota}` with your channel ID)
 
         Returns the rooms configured on Cloudbeds. It's only necessary for deep
         integrations or situations where the OTA plans to automatically/create
@@ -3803,6 +3679,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: CreateGroup
       summary: CreateGroup
+      tags:
+        - Groups
   /UpdateGroup:
     post:
       operationId: update_group
@@ -3900,6 +3778,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: UpdateGroup
       summary: UpdateGroup
+      tags:
+        - Groups
   /DeleteGroup:
     post:
       operationId: delete_group
@@ -3959,6 +3839,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: DeleteGroup
       summary: DeleteGroup
+      tags:
+        - Groups
   /CreateGroupBlock:
     post:
       operationId: create_group_block
@@ -4106,7 +3988,7 @@ paths:
                               description: HH:MM
                         group_block_ari:
                           type: object
-                          description: keys of this object - OTA room type IDs
+                          description: Object keyed by OTA room type IDs. Each key is a room type ID on your system.
                           additionalProperties:
                             type: object
                             properties:
@@ -4116,9 +3998,19 @@ paths:
                                 type: array
                                 items:
                                   type: object
-                                  additionalProperties:
-                                    type: number
                                   properties:
+                                    rate_adult_1:
+                                      type: number
+                                      description: Rate for the 1st adult. Additional adults follow the same pattern (rate_adult_2, rate_adult_3, etc.).
+                                    rate_adult_2:
+                                      type: number
+                                      description: Rate for the 2nd adult.
+                                    rate_child_1:
+                                      type: number
+                                      description: Rate for the 1st child. Additional children follow the same pattern (rate_child_2, rate_child_3, etc.).
+                                    rate_child_2:
+                                      type: number
+                                      description: Rate for the 2nd child.
                                     start_date:
                                       type: string
                                       format: date
@@ -4165,6 +4057,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: CreateGroupBlock
       summary: CreateGroupBlock
+      tags:
+        - Groups
   /UpdateGroupBlock:
     post:
       operationId: update_group_block
@@ -4312,7 +4206,7 @@ paths:
                               description: HH:MM
                         group_block_ari:
                           type: object
-                          description: keys of this object - OTA room type IDs
+                          description: Object keyed by OTA room type IDs. Each key is a room type ID on your system.
                           additionalProperties:
                             type: object
                             properties:
@@ -4322,9 +4216,19 @@ paths:
                                 type: array
                                 items:
                                   type: object
-                                  additionalProperties:
-                                    type: number
                                   properties:
+                                    rate_adult_1:
+                                      type: number
+                                      description: Rate for the 1st adult. Additional adults follow the same pattern (rate_adult_2, rate_adult_3, etc.).
+                                    rate_adult_2:
+                                      type: number
+                                      description: Rate for the 2nd adult.
+                                    rate_child_1:
+                                      type: number
+                                      description: Rate for the 1st child. Additional children follow the same pattern (rate_child_2, rate_child_3, etc.).
+                                    rate_child_2:
+                                      type: number
+                                      description: Rate for the 2nd child.
                                     start_date:
                                       type: string
                                       format: date
@@ -4371,6 +4275,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: UpdateGroupBlock
       summary: UpdateGroupBlock
+      tags:
+        - Groups
   /DeleteGroupBlock:
     post:
       operationId: delete_group_block
@@ -4429,6 +4335,8 @@ paths:
                 $ref: '#/components/schemas/response_simple'
           description: DeleteGroupBlock
       summary: DeleteGroupBlock
+      tags:
+        - Groups
   /ChannelList:
     post:
       operationId: channel_list
@@ -4520,6 +4428,8 @@ paths:
                   - $ref: '#/components/schemas/response_error'
           description: ChannelList
       summary: ChannelList
+      tags:
+        - Channels
 components:
   securitySchemes:
     shared_secret:
@@ -4581,8 +4491,9 @@ components:
           description: |
             Short string that describes the room for displaying purposes.
         description:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: |
             Longer description of the room which describes a room to a potential guest.
       required:
@@ -4995,9 +4906,6 @@ components:
           type: string
           description: |
             Optional custom field to store an external system ID. Not guaranteed to be unique.
-        description:
-          type: string
-          description: Tax/fee description.
         name:
           type: string
           description: Tax/fee name.
