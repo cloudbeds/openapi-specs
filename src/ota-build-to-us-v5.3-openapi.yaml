@@ -19,14 +19,14 @@ security:
 tags:
   - name: Connection
     description: Health checks, property setup, and sub-property discovery.
+  - name: Content
+    description: Manage property details, rooms, rate plans, and taxes.
   - name: Rooms & Rate Plans
     description: Manage room types, rate plans, and room information.
   - name: ARI
     description: Push and refresh availability, rates, and restrictions.
   - name: Bookings
     description: Retrieve, create, acknowledge, and cancel bookings.
-  - name: Taxes & Fees
-    description: Manage property taxes and fees.
   - name: Groups
     description: Manage group bookings and room blocks.
   - name: Callbacks
@@ -824,40 +824,7 @@ paths:
     post:
       operationId: get_booking_id
       description: |-
-        Returns detailed bookings made on the OTA.
-
-        The booking format is described
-        [here in full detail](https://github.com/MyAllocator/build2us-apidocs/blob/gh-pages/booking_format_b2u.md).
-
-        Most fields are optional. This specification lists only the minimum required
-        fields to be eligible for a successful Build-To-Us integration.
-
-        Prices: Send us sell rates (rates including taxes and fees). The sum of all
-        room prices should equal the `TotalPrice` field. Day rates should be per
-        unit, so the sum of all day rates multiplied by the number of units should
-        equal the room price.
-
-        Country codes: For CustomerCountry and CustomerNationality (if you include
-        those fields) make sure to pass the country code as uppercase Alpha-2
-        ISO-3166 codes.
-
-        Currency codes: Make sure they are valid ISO-4217 (uppercase).
-
-        Make sure to provide `OrderDate` and `OrderTime`. They have to be provided in
-        UTC.
-
-        Guest's credit/debit card details can be provided with the `Payments` field.
-
-        Implementation suggestions: when testing make sure the Cloudbeds test
-        property has "download bookings" enabled on the Cloudbeds channel manager or
-        the booking will be saved in a
-        queue and not visible during testing. To enable login and go to MANAGE /
-        General Details / Download new bookings from channels. Default setting
-        is "Off". Once enabled please allow 30 minutes for the backend to start
-        processing bookings. Also there may be a normal 1-2 minute period after a
-        `GetBookingId` response before the booking is visible in the
-        inbox.myallocator.com interface (the bookings are held in a temporary queue
-        on our backend).
+        Returns detailed bookings made on the OTA. See the Booking Format section of the documentation for the full booking format specification.
       requestBody:
         content:
           application/json:
@@ -1856,7 +1823,7 @@ paths:
           description: CreateProperty
       summary: CreateProperty
       tags:
-        - Connection
+        - Content
   /UpdateProperty:
     post:
       operationId: update_property
@@ -2189,7 +2156,7 @@ paths:
           description: UpdateProperty
       summary: UpdateProperty
       tags:
-        - Connection
+        - Content
   /GetSubProperties:
     post:
       operationId: get_sub_properties
@@ -2318,73 +2285,6 @@ paths:
       summary: GetSubProperties
       tags:
         - Connection
-  /DeleteRoom:
-    post:
-      operationId: delete_room
-      description: |
-        Delete room after it has been deleted on Cloudbeds.
-      requestBody:
-        content:
-          application/json:
-            examples:
-              DeleteRoom:
-                summary: DeleteRoom
-                value:
-                  verb: DeleteRoom
-                  ota_property_id: lake_view_hotel
-                  ota_property_password: very-secret-password
-                  ota_property_sub_id: '10034818'
-                  mya_property_id: 25678
-                  guid: 6C08B96E-450D-4E6A-9933-7D0305730305
-                  shared_secret: s3cr3ts4uc3
-                  ota_cid: ota
-                  room:
-                    mya_room_id: 45769
-            schema:
-              allOf:
-                - $ref: '#/components/schemas/auth'
-                - type: object
-                  properties:
-                    room:
-                      type: object
-                      description: Room data
-                      properties:
-                        mya_room_id:
-                          type: integer
-                          minimum: 1
-                          description: Room ID on the Cloudbeds channel manager.
-                      required:
-                        - mya_room_id
-                    verb:
-                      type: string
-                      enum:
-                        - DeleteRoom
-                  required:
-                    - room
-                    - verb
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              examples:
-                Success:
-                  summary: Success
-                  value:
-                    success: true
-                Failure:
-                  summary: Invalid credentials sent
-                  value:
-                    success: false
-                    errors:
-                      - id: 1001
-                        msg: The login details you provided are incorrect.
-              schema:
-                $ref: '#/components/schemas/response_simple'
-          description: DeleteRoom
-      summary: DeleteRoom
-      tags:
-        - Rooms & Rate Plans
   /UpdateRoom:
     post:
       operationId: update_room
@@ -2645,7 +2545,300 @@ paths:
           description: UpdateRoom
       summary: UpdateRoom
       tags:
-        - Rooms & Rate Plans
+        - Content
+  /DeleteRoom:
+    post:
+      operationId: delete_room
+      description: |
+        Delete room after it has been deleted on Cloudbeds.
+      requestBody:
+        content:
+          application/json:
+            examples:
+              DeleteRoom:
+                summary: DeleteRoom
+                value:
+                  verb: DeleteRoom
+                  ota_property_id: lake_view_hotel
+                  ota_property_password: very-secret-password
+                  ota_property_sub_id: '10034818'
+                  mya_property_id: 25678
+                  guid: 6C08B96E-450D-4E6A-9933-7D0305730305
+                  shared_secret: s3cr3ts4uc3
+                  ota_cid: ota
+                  room:
+                    mya_room_id: 45769
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/auth'
+                - type: object
+                  properties:
+                    room:
+                      type: object
+                      description: Room data
+                      properties:
+                        mya_room_id:
+                          type: integer
+                          minimum: 1
+                          description: Room ID on the Cloudbeds channel manager.
+                      required:
+                        - mya_room_id
+                    verb:
+                      type: string
+                      enum:
+                        - DeleteRoom
+                  required:
+                    - room
+                    - verb
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              examples:
+                Success:
+                  summary: Success
+                  value:
+                    success: true
+                Failure:
+                  summary: Invalid credentials sent
+                  value:
+                    success: false
+                    errors:
+                      - id: 1001
+                        msg: The login details you provided are incorrect.
+              schema:
+                $ref: '#/components/schemas/response_simple'
+          description: DeleteRoom
+      summary: DeleteRoom
+      tags:
+        - Content
+  /UpdateRatePlan:
+    post:
+      operationId: update_rateplan
+      description: |
+        Create of update rate plan after it has been changed on the Cloudbeds channel manager.
+      requestBody:
+        content:
+          application/json:
+            examples:
+              UpdateRatePlan:
+                summary: UpdateRateplan
+                value:
+                  verb: UpdateRatePlan
+                  ota_property_id: lake_view_hotel
+                  ota_property_password: very-secret-password
+                  ota_property_sub_id: '10034818'
+                  mya_property_id: 25678
+                  guid: 6C08B96E-450D-4E6A-9933-7D0305730305
+                  shared_secret: s3cr3ts4uc3
+                  ota_cid: ota
+                  rateplan:
+                    mya_rate_id: 115629
+                    mya_room_id: 45829
+                    ota_room_id: '11111'
+                    label_private: NR
+                    label_public: Non-refundable
+                    max_occupancy: 3
+                    min_occupancy: 1
+                    meal_codes:
+                      - 19
+                      - 21
+                      - 22
+                    refundable: false
+                    ota_rate_id: '3456'
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/auth'
+                - type: object
+                  properties:
+                    rateplan:
+                      type: object
+                      properties:
+                        mya_rate_id:
+                          type: integer
+                          minimum: 1
+                          description: Rate plan ID on the Cloudbeds channel manager.
+                        ota_rate_id:
+                          type: string
+                          description: Channel rate plan ID.
+                        mya_room_id:
+                          type: integer
+                          minimum: 1
+                          description: Room ID on the Cloudbeds channel manager.
+                        ota_room_id:
+                          type: string
+                          description: Channel room ID.
+                        label_private:
+                          type: string
+                          description: The private name of the rate plan, only shown to the property.
+                        label_public:
+                          type: string
+                          description: The public name of the rate plan, that can also be shown to customers.
+                        max_occupancy:
+                          type: integer
+                          minimum: 0
+                          description: Maximum occupancy, `0` means no restrictions.
+                        min_occupancy:
+                          type: integer
+                          minimum: 0
+                          description: Minimum occupancy, `0` means no restrictions.
+                        meal_codes:
+                          type: array
+                          description: |
+                            Combination (list) of meal codes that are available for this rate plan. `1` for All-Inclusive, `19` for Breakfast, `21` for Lunch, `22` for Dinner
+                          items:
+                            type: integer
+                            enum:
+                              - 1
+                              - 19
+                              - 21
+                              - 22
+                        refundable:
+                          type: boolean
+                          description: If present specifies if rate plan is refundable
+                        refundable_until_days:
+                          type: integer
+                          description: |
+                            Minimal number of days before check-in required for a rate plan to be refundable
+                      required:
+                        - mya_rate_id
+                        - label_public
+                        - label_private
+                    verb:
+                      type: string
+                      enum:
+                        - UpdateRatePlan
+                  required:
+                    - rateplan
+                    - verb
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              examples:
+                Success:
+                  summary: Success
+                  value:
+                    success: true
+                Success with mapping:
+                  summary: Success with mapping
+                  value:
+                    success: true
+                    room_mappings:
+                      - ota_room_id: '11111'
+                        mya_room_id: 45829
+                        ota_rate_id: '3456'
+                Failure:
+                  summary: Invalid credentials
+                  value:
+                    success: false
+                    errors:
+                      - id: 1001
+                        msg: The login details you provided are incorrect
+              schema:
+                oneOf:
+                  - type: object
+                    title: Success
+                    properties:
+                      success:
+                        type: boolean
+                        enum:
+                          - true
+                      room_mappings:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            mya_room_id:
+                              type: integer
+                              minimum: 1
+                              description: Room ID on the Cloudbeds channel manager
+                            ota_room_id:
+                              type: string
+                              description: OTA room ID
+                            ota_rate_id:
+                              type: string
+                              description: OTA rate plan ID
+                          required:
+                            - mya_room_id
+                            - ota_room_id
+                            - ota_rate_id
+                    required:
+                      - success
+                  - $ref: '#/components/schemas/response_error'
+          description: UpdateRatePlan
+      summary: UpdateRatePlan
+      tags:
+        - Content
+  /DeleteRatePlan:
+    post:
+      operationId: delete_rateplan
+      description: |
+        Delete rateplan after it has been deleted on Cloudbeds.
+      requestBody:
+        content:
+          application/json:
+            examples:
+              DeleteRatePlan:
+                summary: DeleteRatePlan
+                value:
+                  verb: DeleteRatePlan
+                  ota_property_id: lake_view_hotel
+                  ota_property_password: very-secret-password
+                  ota_property_sub_id: '10034818'
+                  mya_property_id: 25678
+                  guid: 6C08B96E-450D-4E6A-9933-7D0305730305
+                  shared_secret: s3cr3ts4uc3
+                  ota_cid: ota
+                  rateplan:
+                    mya_rate_id: 115326
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/auth'
+                - type: object
+                  properties:
+                    rateplan:
+                      type: object
+                      description: Rate plan to delete
+                      properties:
+                        mya_rate_id:
+                          type: integer
+                          minimum: 1
+                          description: Rate plan ID on the Cloudbeds channel manager.
+                      required:
+                        - mya_rate_id
+                    verb:
+                      type: string
+                      enum:
+                        - DeleteRatePlan
+                  required:
+                    - rateplan
+                    - verb
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              examples:
+                Success:
+                  summary: Success
+                  value:
+                    success: true
+                Failure:
+                  summary: Invalid credentials sent
+                  value:
+                    success: false
+                    errors:
+                      - id: 1001
+                        msg: The login details you provided are incorrect.
+              schema:
+                $ref: '#/components/schemas/response_simple'
+          description: DeleteRatePlan
+      summary: DeleteRatePlan
+      tags:
+        - Content
   /UpdateTaxes:
     post:
       operationId: update_taxes
@@ -2818,233 +3011,7 @@ paths:
           description: UpdateTaxes
       summary: UpdateTaxes
       tags:
-        - Taxes & Fees
-  /DeleteRatePlan:
-    post:
-      operationId: delete_rateplan
-      description: |
-        Delete rateplan after it has been deleted on Cloudbeds.
-      requestBody:
-        content:
-          application/json:
-            examples:
-              DeleteRatePlan:
-                summary: DeleteRatePlan
-                value:
-                  verb: DeleteRatePlan
-                  ota_property_id: lake_view_hotel
-                  ota_property_password: very-secret-password
-                  ota_property_sub_id: '10034818'
-                  mya_property_id: 25678
-                  guid: 6C08B96E-450D-4E6A-9933-7D0305730305
-                  shared_secret: s3cr3ts4uc3
-                  ota_cid: ota
-                  rateplan:
-                    mya_rate_id: 115326
-            schema:
-              allOf:
-                - $ref: '#/components/schemas/auth'
-                - type: object
-                  properties:
-                    rateplan:
-                      type: object
-                      description: Rate plan to delete
-                      properties:
-                        mya_rate_id:
-                          type: integer
-                          minimum: 1
-                          description: Rate plan ID on the Cloudbeds channel manager.
-                      required:
-                        - mya_rate_id
-                    verb:
-                      type: string
-                      enum:
-                        - DeleteRatePlan
-                  required:
-                    - rateplan
-                    - verb
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              examples:
-                Success:
-                  summary: Success
-                  value:
-                    success: true
-                Failure:
-                  summary: Invalid credentials sent
-                  value:
-                    success: false
-                    errors:
-                      - id: 1001
-                        msg: The login details you provided are incorrect.
-              schema:
-                $ref: '#/components/schemas/response_simple'
-          description: DeleteRatePlan
-      summary: DeleteRatePlan
-      tags:
-        - Rooms & Rate Plans
-  /UpdateRatePlan:
-    post:
-      operationId: update_rateplan
-      description: |
-        Create of update rate plan after it has been changed on the Cloudbeds channel manager.
-      requestBody:
-        content:
-          application/json:
-            examples:
-              UpdateRatePlan:
-                summary: UpdateRateplan
-                value:
-                  verb: UpdateRatePlan
-                  ota_property_id: lake_view_hotel
-                  ota_property_password: very-secret-password
-                  ota_property_sub_id: '10034818'
-                  mya_property_id: 25678
-                  guid: 6C08B96E-450D-4E6A-9933-7D0305730305
-                  shared_secret: s3cr3ts4uc3
-                  ota_cid: ota
-                  rateplan:
-                    mya_rate_id: 115629
-                    mya_room_id: 45829
-                    ota_room_id: '11111'
-                    label_private: NR
-                    label_public: Non-refundable
-                    max_occupancy: 3
-                    min_occupancy: 1
-                    meal_codes:
-                      - 19
-                      - 21
-                      - 22
-                    refundable: false
-                    ota_rate_id: '3456'
-            schema:
-              allOf:
-                - $ref: '#/components/schemas/auth'
-                - type: object
-                  properties:
-                    rateplan:
-                      type: object
-                      properties:
-                        mya_rate_id:
-                          type: integer
-                          minimum: 1
-                          description: Rate plan ID on the Cloudbeds channel manager.
-                        ota_rate_id:
-                          type: string
-                          description: Channel rate plan ID.
-                        mya_room_id:
-                          type: integer
-                          minimum: 1
-                          description: Room ID on the Cloudbeds channel manager.
-                        ota_room_id:
-                          type: string
-                          description: Channel room ID.
-                        label_private:
-                          type: string
-                          description: The private name of the rate plan, only shown to the property.
-                        label_public:
-                          type: string
-                          description: The public name of the rate plan, that can also be shown to customers.
-                        max_occupancy:
-                          type: integer
-                          minimum: 0
-                          description: Maximum occupancy, `0` means no restrictions.
-                        min_occupancy:
-                          type: integer
-                          minimum: 0
-                          description: Minimum occupancy, `0` means no restrictions.
-                        meal_codes:
-                          type: array
-                          description: |
-                            Combination (list) of meal codes that are available for this rate plan. `1` for All-Inclusive, `19` for Breakfast, `21` for Lunch, `22` for Dinner
-                          items:
-                            type: integer
-                            enum:
-                              - 1
-                              - 19
-                              - 21
-                              - 22
-                        refundable:
-                          type: boolean
-                          description: If present specifies if rate plan is refundable
-                        refundable_until_days:
-                          type: integer
-                          description: |
-                            Minimal number of days before check-in required for a rate plan to be refundable
-                      required:
-                        - mya_rate_id
-                        - label_public
-                        - label_private
-                    verb:
-                      type: string
-                      enum:
-                        - UpdateRatePlan
-                  required:
-                    - rateplan
-                    - verb
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              examples:
-                Success:
-                  summary: Success
-                  value:
-                    success: true
-                Success with mapping:
-                  summary: Success with mapping
-                  value:
-                    success: true
-                    room_mappings:
-                      - ota_room_id: '11111'
-                        mya_room_id: 45829
-                        ota_rate_id: '3456'
-                Failure:
-                  summary: Invalid credentials
-                  value:
-                    success: false
-                    errors:
-                      - id: 1001
-                        msg: The login details you provided are incorrect
-              schema:
-                oneOf:
-                  - type: object
-                    title: Success
-                    properties:
-                      success:
-                        type: boolean
-                        enum:
-                          - true
-                      room_mappings:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            mya_room_id:
-                              type: integer
-                              minimum: 1
-                              description: Room ID on the Cloudbeds channel manager
-                            ota_room_id:
-                              type: string
-                              description: OTA room ID
-                            ota_rate_id:
-                              type: string
-                              description: OTA rate plan ID
-                          required:
-                            - mya_room_id
-                            - ota_room_id
-                            - ota_rate_id
-                    required:
-                      - success
-                  - $ref: '#/components/schemas/response_error'
-          description: UpdateRatePlan
-      summary: UpdateRatePlan
-      tags:
-        - Rooms & Rate Plans
+        - Content
   /ARIFullRefresh:
     post:
       operationId: ari_full_refresh
