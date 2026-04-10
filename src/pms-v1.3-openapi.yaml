@@ -3190,7 +3190,7 @@ components:
                     description: 'Guest Unique Identifier'
                     type: string
                 file:
-                    description: 'Form-based File Upload<br/> Allowed file types: <code>*.pdf, *.rtf, *.doc, *.docx, *.txt, *.jpg, *.jpeg, *.png, *.gif, *.csv, *.xls, *.xlsx, *.xml</code><br/> Allowed max file size: 100MB'
+                    description: 'Form-based File Upload<br/> Allowed file types: <code>*.pdf, *.rtf, *.doc, *.docx, *.txt, *.jpg, *.jpeg, *.png, *.gif, *.csv, *.xls, *.xlsx, *.xml, *.json</code><br/> Allowed max file size: 100MB'
                     type: string
                     format: binary
         PostGuestDocumentResponse:
@@ -3636,7 +3636,7 @@ components:
                     type: string
                     nullable: true
                 file:
-                    description: 'Form-based File Upload<br/> Allowed file types: <code>*.pdf, *.rtf, *.doc, *.docx, *.txt, *.jpg, *.jpeg, *.png, *.gif, *.csv, *.xls, *.xlsx, *.xml</code><br/> Allowed max file size: 100MB'
+                    description: 'Form-based File Upload<br/> Allowed file types: <code>*.pdf, *.rtf, *.doc, *.docx, *.txt, *.jpg, *.jpeg, *.png, *.gif, *.csv, *.xls, *.xlsx, *.xml, *.json</code><br/> Allowed max file size: 100MB'
                     type: string
                     format: binary
                 groupCode:
@@ -4799,11 +4799,10 @@ components:
                     nullable: true
                     default: false
                 saleDate:
-                    description: 'posting date'
+                    description: 'Posting date. Defaults to current date.'
                     type: string
                     format: date-time
                     nullable: true
-                    default: current_timestamp
                 payments:
                     description: 'list of payments If the item is already paid'
                     type: array
@@ -4945,11 +4944,10 @@ components:
                                             type: number
                                 nullable: true
                 saleDate:
-                    description: 'posting date'
+                    description: 'Posting date. Defaults to current date.'
                     type: string
                     format: date-time
                     nullable: true
-                    default: current_timestamp
                 guestID:
                     description: 'Guest identifier'
                     type: string
@@ -5011,8 +5009,17 @@ components:
                     type: string
                     nullable: true
                 reservationID:
-                    description: 'Reservation identifier. Required if no houseAccountID is provided.'
+                    description: 'Reservation identifier. Required if no houseAccountID or groupCode is provided.'
                     type: string
+                    nullable: true
+                houseAccountID:
+                    description: 'House Account identifier. Required if no reservationID or groupCode is provided.'
+                    type: string
+                    nullable: true
+                groupCode:
+                    description: 'Group code. Required if no reservationID or houseAccountID is provided.'
+                    type: string
+                    nullable: true
                 referenceID:
                     description: "partner's transaction reference. If exist then Cloudbeds will prevent adding of duplicates"
                     type: string
@@ -5081,11 +5088,10 @@ components:
                                             type: number
                                 nullable: true
                 saleDate:
-                    description: 'posting date'
+                    description: 'Posting date. Defaults to now.'
                     type: string
                     format: date-time
                     nullable: true
-                    default: current_timestamp
                 guestID:
                     description: 'Guest identifier'
                     type: string
@@ -6787,10 +6793,10 @@ components:
                                 nullable: true
                             adults:
                                 description: ''
-                                type: integer
+                                type: string
                             children:
                                 description: ''
-                                type: integer
+                                type: string
                             balance:
                                 description: ''
                                 type: number
@@ -6977,7 +6983,6 @@ components:
                                         guestBirthdate:
                                             description: ''
                                             type: string
-                                            format: date
                                             nullable: true
                                         guestDocumentType:
                                             description: ''
@@ -6990,7 +6995,6 @@ components:
                                         guestDocumentIssueDate:
                                             description: ''
                                             type: string
-                                            format: date
                                             nullable: true
                                         guestDocumentIssuingCountry:
                                             description: ''
@@ -6999,7 +7003,6 @@ components:
                                         guestDocumentExpirationDate:
                                             description: ''
                                             type: string
-                                            format: date
                                             nullable: true
                                         taxID:
                                             description: "Guest's tax ID"
@@ -7029,7 +7032,7 @@ components:
                                             nullable: true
                                         assignedRoom:
                                             description: 'Returns true if guest has roomed assigned, false if not'
-                                            type: string
+                                            type: boolean
                                             nullable: true
                                         roomID:
                                             description: 'Room ID where guest is assigned'
@@ -7253,7 +7256,7 @@ components:
                                 type: string
                             guestCountry:
                                 description: 'Main guest Country'
-                                type: integer
+                                type: string
                             sourceName:
                                 description: 'Reservation source'
                                 type: string
@@ -7278,15 +7281,15 @@ components:
                                         type: string
                             sourceCategory:
                                 description: 'Reservation source category'
-                                type: integer
+                                type: string
                                 nullable: true
                             sourceReservationID:
                                 description: 'Reservation ID on the source'
-                                type: integer
+                                type: string
                                 nullable: true
                             propertyCurrency:
                                 description: 'Property currency ISO-formatted (3 characters)'
-                                type: integer
+                                type: string
                                 nullable: true
                             balanceDetailed:
                                 description: 'Reservation balance detailed with the information available on MyFrontdesk, describing the financial items calculated'
@@ -7312,9 +7315,7 @@ components:
                                         type: number
                             detailedRates:
                                 description: 'Associative object, where key is the date, and value is the total rate for that date.'
-                                type: array
-                                items:
-                                    type: object
+                                type: object
                             rooms:
                                 description: 'Array with rooms information'
                                 type: array
@@ -7376,10 +7377,8 @@ components:
                                                 - checked_out
                                                 - not_checked_in
                                         detailedRoomRates:
-                                            description: 'Associative object, with dates as indexes, and rates as values'
-                                            type: array
-                                            items:
-                                                type: object
+                                            description: 'A map of dates to rates (key is date). It contains an entry for each reserved date.'
+                                            type: object
                                         marketName:
                                             description: 'Market segmentation name'
                                             type: string
@@ -7475,7 +7474,6 @@ components:
                                         guestDocumentIssueDate:
                                             description: ''
                                             type: string
-                                            format: date
                                             nullable: true
                                         guestDocumentIssuingCountry:
                                             description: ''
@@ -7484,7 +7482,6 @@ components:
                                         guestDocumentExpirationDate:
                                             description: ''
                                             type: string
-                                            format: date
                                             nullable: true
                                         taxID:
                                             description: "Guest's tax ID"
@@ -7514,7 +7511,7 @@ components:
                                             nullable: true
                                         assignedRoom:
                                             description: 'Returns true if guest has roomed assigned, false if not'
-                                            type: string
+                                            type: boolean
                                             nullable: true
                                         roomID:
                                             description: 'Room ID where guest is assigned'
@@ -7866,7 +7863,7 @@ components:
                     description: 'Reservation Unique Identifier'
                     type: string
                 file:
-                    description: 'Form-based File Upload<br/> Allowed file types: <code>*.pdf, *.rtf, *.doc, *.docx, *.txt, *.jpg, *.jpeg, *.png, *.gif, *.csv, *.xls, *.xlsx, *.xml</code><br/> Allowed max file size: 100MB'
+                    description: 'Form-based File Upload<br/> Allowed file types: <code>*.pdf, *.rtf, *.doc, *.docx, *.txt, *.jpg, *.jpeg, *.png, *.gif, *.csv, *.xls, *.xlsx, *.xml, *.json</code><br/> Allowed max file size: 100MB'
                     type: string
                     format: binary
         PostReservationDocumentResponse:
@@ -7978,6 +7975,14 @@ components:
                     description: 'Date reservation was made. Do not change if omitted.'
                     type: string
                     format: date-time
+                    nullable: true
+                allotmentBlockCode:
+                    description: 'Allotment block code to link the reservation to. Send null to unlink. If provided along with eventCode, the allotment block must belong to the event.'
+                    type: string
+                    nullable: true
+                eventCode:
+                    description: 'Event (group profile) code to link the reservation to. Send null to unlink. When sent without allotmentBlockCode, links to the group profile only.'
+                    type: string
                     nullable: true
                 sendStatusChangeEmail:
                     description: 'Send email on reservation status change to property and guest.'
@@ -8432,6 +8437,18 @@ components:
                             isSource:
                                 description: 'Indicates whether this room was explicitly requested (true) or automatically added due to split inventory configuration (false). Auto-added rooms cannot be individually removed or swapped; they are managed through their source room.'
                                 type: boolean
+                            sourceEventIds:
+                                description: 'Event IDs of source events that triggered this auto-added room. Null for source rooms. Present only for properties using split inventory.'
+                                type: array
+                                items:
+                                    type: string
+                                nullable: true
+                            linkedEventIds:
+                                description: 'Event IDs of auto-added rooms triggered by this source room. Null for auto-added rooms. Present only for properties using split inventory.'
+                                type: array
+                                items:
+                                    type: string
+                                nullable: true
                 message:
                     description: 'To be used in case any error occurs (if success = false).  If success = true, it does not exist.'
                     type: string
@@ -8442,53 +8459,79 @@ components:
                     description: 'Returns if the request could be completed'
                     type: boolean
                 data:
-                    description: 'Room block details'
-                    type: array
-                    items:
-                        type: object
-                        properties:
-                            roomBlockID:
-                                description: 'Room block ID'
-                                type: string
-                            roomBlockReason:
-                                description: 'Room block reason'
-                                type: string
-                            startDate:
-                                description: 'Room block start date'
-                                type: string
-                                format: date
-                            endDate:
-                                description: 'Room block end date'
-                                type: string
-                                format: date
-                            rooms:
-                                description: 'All rooms for Block ID. For properties using split inventory, this includes both source rooms (explicitly requested) and linked rooms (automatically added based on shared inventory configuration).'
-                                type: array
-                                items:
-                                    type: object
-                                    properties:
-                                        eventID:
-                                            description: "Event ID (unique identifier for this specific room's block entry)"
-                                            type: string
-                                        roomID:
-                                            description: 'Room ID'
-                                            type: string
-                                        roomTypeID:
-                                            description: 'Room type ID'
-                                            type: string
-                                        isSource:
-                                            description: 'Indicates whether this room was explicitly requested (true) or automatically added due to split inventory configuration (false). Auto-added rooms cannot be individually removed or swapped; they are managed through their source room.'
-                                            type: boolean
-                            count:
-                                description: 'Number of results (properties) returned.'
-                                type: integer
-                roomBlockType:
-                    description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold block."
-                    type: string
-                    enum:
-                        - blocked
-                        - out_of_service
-                        - courtesy_hold
+                    description: 'Property room block details'
+                    type: object
+                    properties:
+                        propertyID:
+                            description: 'Property ID'
+                            type: string
+                        roomBlocks:
+                            description: 'Room blocks for the property'
+                            type: array
+                            items:
+                                type: object
+                                properties:
+                                    roomBlockID:
+                                        description: 'Room block ID'
+                                        type: string
+                                    roomBlockType:
+                                        description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold block."
+                                        type: string
+                                        enum:
+                                            - blocked
+                                            - out_of_service
+                                            - courtesy_hold
+                                    roomBlockReason:
+                                        description: 'Room block reason'
+                                        type: string
+                                    startDate:
+                                        description: 'Room block start date'
+                                        type: string
+                                        format: date
+                                    endDate:
+                                        description: 'Room block end date'
+                                        type: string
+                                        format: date
+                                    rooms:
+                                        description: 'All rooms for Block ID. For properties using split inventory, this includes both source rooms (explicitly requested) and linked rooms (automatically added based on shared inventory configuration).'
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                eventID:
+                                                    description: 'Event ID (unique identifier for this specific room’s block entry)'
+                                                    type: string
+                                                roomID:
+                                                    description: 'Room ID'
+                                                    type: string
+                                                roomTypeID:
+                                                    description: 'Room type ID'
+                                                    oneOf:
+                                                        -
+                                                            type: string
+                                                        -
+                                                            type: number
+                                                isSource:
+                                                    description: 'Indicates whether this room was explicitly requested (true) or automatically added due to split inventory configuration (false). Auto-added rooms cannot be individually removed or swapped; they are managed through their source room.'
+                                                    type: boolean
+                                                sourceEventIds:
+                                                    description: 'Event IDs of source events that triggered this auto-added room. Null for source rooms. Present only for properties using split inventory.'
+                                                    type: array
+                                                    items:
+                                                        type: string
+                                                    nullable: true
+                                                linkedEventIds:
+                                                    description: 'Event IDs of auto-added rooms triggered by this source room. Null for auto-added rooms. Present only for properties using split inventory.'
+                                                    type: array
+                                                    items:
+                                                        type: string
+                                                    nullable: true
+                count:
+                    description: 'Number of results returned.'
+                    type: integer
+                total:
+                    description: 'Total number of results.'
+                    type: integer
                 message:
                     description: 'To be used in case any error occurs (if success = false).  If success = true, it does not exist.'
                     type: string
@@ -8599,6 +8642,18 @@ components:
                             isSource:
                                 description: 'Indicates whether this room was explicitly requested (true) or automatically added due to split inventory configuration (false). Auto-added rooms cannot be individually removed or swapped; they are managed through their source room.'
                                 type: boolean
+                            sourceEventIds:
+                                description: 'Event IDs of source events that triggered this auto-added room. Null for source rooms. Present only for properties using split inventory.'
+                                type: array
+                                items:
+                                    type: string
+                                nullable: true
+                            linkedEventIds:
+                                description: 'Event IDs of auto-added rooms triggered by this source room. Null for auto-added rooms. Present only for properties using split inventory.'
+                                type: array
+                                items:
+                                    type: string
+                                nullable: true
                 message:
                     description: 'To be used in case any error occurs (if success = false).  If success = true, it does not exist.'
                     type: string
@@ -9013,7 +9068,11 @@ components:
                                 nullable: true
                             amount:
                                 description: Amount
-                                type: string
+                                oneOf:
+                                    -
+                                        type: string
+                                    -
+                                        type: number
                             amountAdult:
                                 description: 'Amount charged per adult. Only applicable if amountType = fixed_per_person (Per Person Per Night)'
                                 oneOf:
@@ -9070,7 +9129,13 @@ components:
                                         - fee
                                         - custom_item
                             feesCharged:
-                                description: 'List of Fee IDs charged by the current tax. Only exists if type = tax.'
+                                description: 'List of Fee IDs charged by the current tax (tax-on-fee). Only exists if type = tax.'
+                                type: array
+                                items:
+                                    type: string
+                                nullable: true
+                            taxesCharged:
+                                description: 'List of Tax IDs charged by the current tax (tax-on-tax). Only exists if type = tax.'
                                 type: array
                                 items:
                                     type: string
@@ -9192,15 +9257,27 @@ components:
                                                                         nullable: true
                                                                     amount:
                                                                         description: 'Amount for this range'
-                                                                        type: number
+                                                                        oneOf:
+                                                                            -
+                                                                                type: string
+                                                                            -
+                                                                                type: number
                                                                         nullable: true
                                                                     amountAdult:
                                                                         description: 'Amount per adult for this range'
-                                                                        type: number
+                                                                        oneOf:
+                                                                            -
+                                                                                type: string
+                                                                            -
+                                                                                type: number
                                                                         nullable: true
                                                                     amountChild:
                                                                         description: 'Amount per child for this range'
-                                                                        type: number
+                                                                        oneOf:
+                                                                            -
+                                                                                type: string
+                                                                            -
+                                                                                type: number
                                                                         nullable: true
                                                                     amountRateBased:
                                                                         description: 'Rate-based amounts for this range'
@@ -9236,15 +9313,27 @@ components:
                                                                             nullable: true
                                                                         amount:
                                                                             description: 'Amount for this range'
-                                                                            type: number
+                                                                            oneOf:
+                                                                                -
+                                                                                    type: string
+                                                                                -
+                                                                                    type: number
                                                                             nullable: true
                                                                         amountAdult:
                                                                             description: 'Amount per adult for this range'
-                                                                            type: number
+                                                                            oneOf:
+                                                                                -
+                                                                                    type: string
+                                                                                -
+                                                                                    type: number
                                                                             nullable: true
                                                                         amountChild:
                                                                             description: 'Amount per child for this range'
-                                                                            type: number
+                                                                            oneOf:
+                                                                                -
+                                                                                    type: string
+                                                                                -
+                                                                                    type: number
                                                                             nullable: true
                                                                         amountRateBased:
                                                                             description: 'Rate-based amounts for this range'
@@ -9276,22 +9365,42 @@ components:
                                                     properties:
                                                         minimumNights:
                                                             description: 'Minimum number of nights required for this range'
-                                                            type: integer
+                                                            oneOf:
+                                                                -
+                                                                    type: string
+                                                                -
+                                                                    type: number
                                                         maximumNights:
                                                             description: 'Maximum number of nights for this range (null means no limit)'
-                                                            type: integer
+                                                            oneOf:
+                                                                -
+                                                                    type: string
+                                                                -
+                                                                    type: number
                                                             nullable: true
                                                         amount:
                                                             description: 'Amount for this range (uses same amountType as the parent tax/fee)'
-                                                            type: number
+                                                            oneOf:
+                                                                -
+                                                                    type: string
+                                                                -
+                                                                    type: number
                                                             nullable: true
                                                         amountAdult:
                                                             description: 'Amount per adult for this range (uses same amountType as the parent tax/fee)'
-                                                            type: number
+                                                            oneOf:
+                                                                -
+                                                                    type: string
+                                                                -
+                                                                    type: number
                                                             nullable: true
                                                         amountChild:
                                                             description: 'Amount per child for this range (uses same amountType as the parent tax/fee)'
-                                                            type: number
+                                                            oneOf:
+                                                                -
+                                                                    type: string
+                                                                -
+                                                                    type: number
                                                             nullable: true
                                                         amountRateBased:
                                                             description: 'Rate-based amounts for this range (uses same amountType as the parent tax/fee)'
@@ -9301,10 +9410,18 @@ components:
                                                                 properties:
                                                                     rate:
                                                                         description: 'Maximum rate for which this percentage is valid'
-                                                                        type: number
+                                                                        oneOf:
+                                                                            -
+                                                                                type: string
+                                                                            -
+                                                                                type: number
                                                                     percentage:
                                                                         description: 'Percentage applied for the rate'
-                                                                        type: number
+                                                                        oneOf:
+                                                                            -
+                                                                                type: string
+                                                                            -
+                                                                                type: number
                                                             nullable: true
                                                 nullable: true
                                     -
@@ -9327,22 +9444,42 @@ components:
                                                         properties:
                                                             minimumNights:
                                                                 description: 'Minimum number of nights required for this range'
-                                                                type: integer
+                                                                oneOf:
+                                                                    -
+                                                                        type: string
+                                                                    -
+                                                                        type: number
                                                             maximumNights:
                                                                 description: 'Maximum number of nights for this range (null means no limit)'
-                                                                type: integer
+                                                                oneOf:
+                                                                    -
+                                                                        type: string
+                                                                    -
+                                                                        type: number
                                                                 nullable: true
                                                             amount:
                                                                 description: 'Amount for this range (uses same amountType as the parent tax/fee)'
-                                                                type: number
+                                                                oneOf:
+                                                                    -
+                                                                        type: string
+                                                                    -
+                                                                        type: number
                                                                 nullable: true
                                                             amountAdult:
                                                                 description: 'Amount per adult for this range (uses same amountType as the parent tax/fee)'
-                                                                type: number
+                                                                oneOf:
+                                                                    -
+                                                                        type: string
+                                                                    -
+                                                                        type: number
                                                                 nullable: true
                                                             amountChild:
                                                                 description: 'Amount per child for this range (uses same amountType as the parent tax/fee)'
-                                                                type: number
+                                                                oneOf:
+                                                                    -
+                                                                        type: string
+                                                                    -
+                                                                        type: number
                                                                 nullable: true
                                                             amountRateBased:
                                                                 description: 'Rate-based amounts for this range (uses same amountType as the parent tax/fee)'
@@ -9352,10 +9489,18 @@ components:
                                                                     properties:
                                                                         rate:
                                                                             description: 'Maximum rate for which this percentage is valid'
-                                                                            type: number
+                                                                            oneOf:
+                                                                                -
+                                                                                    type: string
+                                                                                -
+                                                                                    type: number
                                                                         percentage:
                                                                             description: 'Percentage applied for the rate'
-                                                                            type: number
+                                                                            oneOf:
+                                                                                -
+                                                                                    type: string
+                                                                                -
+                                                                                    type: number
                                                                 nullable: true
                                                     nullable: true
                                 nullable: true
@@ -12044,7 +12189,7 @@ paths:
             tags:
                 - Item
             summary: appendCustomItem
-            description: 'Append single, or multiple, custom items and their associated payments to a existing one in a Reservation.'
+            description: 'Append single, or multiple, custom items and their associated payments to an existing one in a Reservation, House Account, or Group.'
             responses:
                 200:
                     description: '200 Response'
@@ -13553,21 +13698,19 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'date"] Start date - will filter for any room blocks that include this date (Date range must be one month or less)'
+                    description: 'Defaults to today. Start date - will filter for any room blocks that include this date (Date range must be one month or less)'
                     name: startDate
                     schema:
                         type: string
                         format: date
-                        default: Todays
                     required: false
                     in: query
                 -
-                    description: 'date"] End date - will filter for any room blocks that include this date (Date range must be one month or less)'
+                    description: 'Defaults to today. End date - will filter for any room blocks that include this date (Date range must be one month or less)'
                     name: endDate
                     schema:
                         type: string
                         format: date
-                        default: Todays
                     required: false
                     in: query
                 -
@@ -14080,6 +14223,55 @@ paths:
                     schema:
                         type: boolean
                         default: false
+                    required: false
+                    in: query
+                -
+                    description: 'Filter by entity type applicability'
+                    name: availableFor
+                    schema:
+                        type: string
+                        enum:
+                            - product
+                            - rate
+                            - fee
+                            - tax
+                            - custom_item
+                            - payment
+                    required: false
+                    in: query
+                -
+                    description: 'Filter by booking source ID. Requires isRootSource and isHotelCollectBooking.'
+                    name: sourceId
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Root source flag. Required with sourceId.'
+                    name: isRootSource
+                    schema:
+                        type: boolean
+                    required: false
+                    in: query
+                -
+                    description: 'Hotel collect flag. Required with sourceId.'
+                    name: isHotelCollectBooking
+                    schema:
+                        type: boolean
+                    required: false
+                    in: query
+                -
+                    description: 'Filter taxes/fees for a product. Mutually exclusive with addonId.'
+                    name: productId
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Filter taxes/fees for an addon (resolves to product). Mutually exclusive with productId.'
+                    name: addonId
+                    schema:
+                        type: string
                     required: false
                     in: query
     /getUsers:
