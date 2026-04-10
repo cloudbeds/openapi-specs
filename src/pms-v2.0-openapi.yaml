@@ -698,6 +698,8 @@ paths:
                 - 'read:payment'
                 - 'read:rate'
                 - 'read:reservation'
+                - 'read:resourceReservations'
+                - 'read:resourceTypes'
                 - 'read:room'
                 - 'read:roomblock'
                 - 'read:taxesAndFees'
@@ -720,6 +722,8 @@ paths:
                 - 'write:payment'
                 - 'write:rate'
                 - 'write:reservation'
+                - 'write:resourceReservations'
+                - 'write:resourceTypes'
                 - 'write:room'
                 - 'write:roomblock'
           example:
@@ -3181,6 +3185,445 @@ paths:
         -
           default:
             - 'write:room'
+  /smart-policies/v1/exceptions/eligible-rates/search:
+    post:
+      tags:
+        - 'Smart Policy Exceptions'
+      summary: 'Search eligible rate plans and base rates with conflict info.'
+      operationId: 'PolicyExceptionController::eligibleRates'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Search criteria for eligible rates with conflict detection.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EligibleRatesRequestSchema'
+      responses:
+        '200':
+          description: 'Eligible rate plans and base rates with conflict info.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EligibleRatesResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:smart-policies'
+  /smart-policies/v1/exceptions:
+    get:
+      tags:
+        - 'Smart Policy Exceptions'
+      summary: 'List all policy exceptions for a property.'
+      operationId: 'PolicyExceptionController::index'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: filters
+          in: query
+          description: 'This parameter should be formatted as a list of strings separated by ;'
+          required: false
+          schema:
+            $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+          example: 'field1:value;field2:operator:value'
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 500
+            minimum: 1
+          example: '100'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          example: '0'
+        -
+          name: sort
+          in: query
+          description: 'A string specifying fields for sorting with optional directions (e.g., asc or desc).'
+          required: false
+          schema:
+            $ref: '#/components/schemas/QueryParameterSortSchema'
+          example: 'checkin_date:desc;checkout_date'
+      responses:
+        '200':
+          description: 'List of policy exceptions.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyExceptionListResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:smart-policies'
+    post:
+      tags:
+        - 'Smart Policy Exceptions'
+      summary: 'Create a new policy exception.'
+      operationId: 'PolicyExceptionController::create'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Policy exception data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePolicyExceptionRequestSchema'
+      responses:
+        '201':
+          description: 'Created policy exception.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyExceptionResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '409':
+          description: 'Conflict response (exception overlaps with existing exception).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:smart-policies'
+  '/smart-policies/v1/exceptions/{exceptionId}':
+    get:
+      tags:
+        - 'Smart Policy Exceptions'
+      summary: 'Get a single policy exception by ID.'
+      operationId: 'PolicyExceptionController::show'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: exceptionId
+          in: path
+          description: 'Policy exception ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/GetPolicyExceptionRequestSchema/properties/exceptionId'
+      responses:
+        '200':
+          description: 'Policy exception details.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyExceptionResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:smart-policies'
+    put:
+      tags:
+        - 'Smart Policy Exceptions'
+      summary: 'Update an existing policy exception.'
+      operationId: 'PolicyExceptionController::update'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: exceptionId
+          in: path
+          description: 'Policy exception ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/UpdatePolicyExceptionRequestSchema/properties/exceptionId'
+      requestBody:
+        description: 'Policy exception data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePolicyExceptionRequestSchema'
+      responses:
+        '200':
+          description: 'Updated policy exception.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyExceptionResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '409':
+          description: 'Conflict response (exception overlaps with existing exception).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:smart-policies'
+    delete:
+      tags:
+        - 'Smart Policy Exceptions'
+      summary: 'Delete a policy exception.'
+      operationId: 'PolicyExceptionController::destroy'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: exceptionId
+          in: path
+          description: 'Policy exception ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/DeletePolicyExceptionRequestSchema/properties/exceptionId'
+      responses:
+        '204':
+          description: 'Policy exception was deleted.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'delete:smart-policies'
+    patch:
+      tags:
+        - 'Smart Policy Exceptions'
+      summary: 'Partially update a policy exception.'
+      operationId: 'PolicyExceptionController::partialUpdate'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: exceptionId
+          in: path
+          description: 'Policy exception ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/PatchPolicyExceptionRequestSchema/properties/exceptionId'
+      requestBody:
+        description: 'Policy exception fields to update.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchPolicyExceptionRequestSchema'
+      responses:
+        '200':
+          description: 'Updated policy exception.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyExceptionResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '409':
+          description: 'Conflict response (exception overlaps with existing exception).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:smart-policies'
 components:
   schemas:
     FeatureEnum:
@@ -3196,8 +3639,8 @@ components:
         - feature.distribution.age-policy-validation-enabled
         - feature.distribution.age-policy-auto-rollback-enabled
         - feature.distribution.age-policy-centralized-service-layer
-        - feature.distribution.send-rate-plan-if-promo-code-removed
         - feature.distribution.market-segmentation-debug-logs
+        - feature.distribution.accommodations_v2
         - feature.inventory.rate-plans
         - feature.inventory.derived-rate-plans-from-non-base-rate-plans
         - feature.inventory.derived-rate-plans-from-another-derived-rate-plans
@@ -3405,6 +3848,86 @@ components:
           example: Adults
           nullable: true
       type: object
+    PricingCreateRequestSchema:
+      required:
+        - id
+        - pricing
+      properties:
+        id:
+          description: 'Rate ID.'
+          type: integer
+        pricing:
+          description: 'List of pricing items to create.'
+          type: array
+          items:
+            required:
+              - ageGroupId
+              - intervalId
+              - isExtraGuestsPricing
+              - days
+            properties:
+              ageGroupId:
+                description: 'Age group ID.'
+                type: integer
+              intervalId:
+                description: 'Rate interval ID.'
+                type: integer
+              isExtraGuestsPricing:
+                description: 'Whether this is extra guests pricing.'
+                type: boolean
+              extraGuestsType:
+                description: 'Extra guests pricing type.'
+                type: string
+                enum:
+                  - per_age_group
+                  - per_each_guest
+                nullable: true
+              guestNumber:
+                description: 'Guest number for per-guest pricing.'
+                type: integer
+                nullable: true
+              days:
+                type: array
+                items:
+                  required: [dayOfWeek, priceAmount, priceCurrency]
+                  properties: { dayOfWeek: { description: 'Day of week (0=Sunday, 6=Saturday).', type: integer }, priceAmount: { description: 'Price amount.', type: string }, priceCurrency: { description: 'ISO 4217 currency code.', type: string } }
+                  type: object
+            type: object
+      type: object
+    PricingListRequestSchema:
+      required:
+        - rateIds
+      properties:
+        rateIds:
+          description: 'List of rate IDs to retrieve pricing for.'
+          type: array
+          items:
+            type: integer
+          example:
+            - 1
+            - 2
+            - 3
+        startDate:
+          description: 'Start date filter (YYYY-MM-DD).'
+          type: string
+          format: date
+          example: '2026-01-01'
+          nullable: true
+        endDate:
+          description: 'End date filter (YYYY-MM-DD).'
+          type: string
+          format: date
+          example: '2026-12-31'
+          nullable: true
+      type: object
+    PricingRateRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Rate ID.'
+          type: integer
+      type: object
     AgeGroupResponseSchema:
       required:
         - id
@@ -3457,6 +3980,67 @@ components:
           type: string
           format: 'Y-m-d\TH:i:sP'
           nullable: true
+      type: object
+    PricingCollectionResponseSchema:
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingResponseSchema'
+      type: object
+    PricingDayResponseSchema:
+      required:
+        - id
+        - dayOfWeek
+        - priceAmount
+        - priceCurrency
+      properties:
+        id:
+          description: 'Pricing day ID.'
+          type: string
+        dayOfWeek:
+          description: 'Day of week (0=Sunday, 6=Saturday).'
+          type: integer
+        priceAmount:
+          description: 'Price amount.'
+          type: string
+        priceCurrency:
+          description: 'ISO 4217 currency code.'
+          type: string
+      type: object
+    PricingResponseSchema:
+      required:
+        - id
+        - ageGroupId
+        - rateIntervalId
+        - isExtraGuestsPricing
+        - days
+      properties:
+        id:
+          description: 'Pricing ID.'
+          type: string
+        ageGroupId:
+          description: 'Age group ID.'
+          type: string
+        rateIntervalId:
+          description: 'Rate interval ID.'
+          type: string
+        isExtraGuestsPricing:
+          description: 'Whether this is extra guests pricing.'
+          type: boolean
+        extraGuestsType:
+          description: 'Extra guests pricing type.'
+          type: string
+          nullable: true
+        extraGuestsNumber:
+          description: 'Guest number for per-guest pricing.'
+          type: integer
+          nullable: true
+        days:
+          description: 'Day pricing data.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PricingDayResponseSchema'
       type: object
     AllotmentBlockAutoReleaseScheduleCreateRequestSchema:
       required:
@@ -4483,6 +5067,47 @@ components:
           example: INVALID_REQUEST
           nullable: true
       type: object
+    ConflictErrorItemSchema:
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+        code:
+          description: 'Error code identifying the specific conflict'
+          type: string
+          example: OVERBOOKING_CONFIRMATION_REQUIRED
+          nullable: true
+        details:
+          description: 'Additional details about the conflict'
+          type: object
+          nullable: true
+      type: object
+    ConflictErrorListSchema:
+      type: array
+      items:
+        $ref: '#/components/schemas/ConflictErrorItemSchema'
+    ConflictResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        errors:
+          oneOf:
+            -
+              $ref: '#/components/schemas/ConflictErrorListSchema'
+          nullable: true
+          description: 'The list of errors'
+        code:
+          description: 'Error code identifying the type of conflict'
+          type: string
+          example: CONFIRMATION_REQUIRED
+          nullable: true
+      type: object
     CreatedResponseSchema: {  }
     ForbiddenResponseSchema:
       properties:
@@ -4517,6 +5142,40 @@ components:
       properties:
         message:
           type: string
+      type: object
+    MyallocatorProxyRequestSchema:
+      required:
+        - endpoint
+        - payload
+      properties:
+        endpoint:
+          description: 'MyAllocator endpoint name to proxy the request to.'
+          type: string
+          enum:
+            - RoomStaticContentSave
+            - RoomUpdate
+          example: RoomUpdate
+        payload:
+          description: 'Request payload to forward to MyAllocator. Opaque JSON body.'
+          type: object
+      type: object
+    MyallocatorProxyResponseSchema:
+      required:
+        - success
+        - data
+        - errors
+      properties:
+        success:
+          description: 'Whether the MyAllocator request was successful.'
+          type: boolean
+        data:
+          description: 'Response data from MyAllocator.'
+          type: object
+        errors:
+          description: 'Errors returned by MyAllocator.'
+          type: array
+          items:
+            type: object
       type: object
     GetDistributionSettingsRequestSchema: {  }
     PatchDistributionSettingsRequestSchema:
@@ -5924,6 +6583,8 @@ components:
           enum:
             - failure
             - success
+            - action_required
+            - warning
           example: success
         objectId:
           description: 'ID of object related to the integration event.'
@@ -6039,6 +6700,8 @@ components:
           enum:
             - failure
             - success
+            - action_required
+            - warning
           example: success
         description:
           description: 'Short description of the integration event.'
@@ -7329,6 +7992,139 @@ components:
           format: 'Y-m-d\TH:i:sP'
           nullable: true
       type: object
+    UpdateReservationRoomRequestSchema:
+      required:
+        - reservationId
+        - reservationRoomId
+      properties:
+        reservationId:
+          description: 'Reservation ID'
+          type: string
+          example: '12345'
+        reservationRoomId:
+          description: 'Reservation Room ID'
+          type: string
+          example: '67890'
+        roomId:
+          description: 'Room ID to assign (format: ''roomTypeId-roomNumber''), or null to unassign'
+          type: string
+          example: 10-101
+          nullable: true
+        roomTypeId:
+          description: 'Room type ID to change to (without assigning specific room), or null'
+          type: integer
+          example: 15
+          nullable: true
+        adjustPrice:
+          description: 'Whether to adjust price if room assignment changes rate'
+          type: boolean
+          default: false
+      type: object
+    UpdateReservationRoomResponseSchema:
+      required:
+        - reservationRoomId
+        - roomId
+        - roomTypeId
+        - roomName
+        - total
+      properties:
+        reservationRoomId:
+          description: 'Reservation room ID that was updated'
+          type: integer
+        roomId:
+          description: 'Assigned room ID (null if unassigned)'
+          type: string
+          nullable: true
+        roomTypeId:
+          description: 'Room type ID'
+          type: integer
+          nullable: true
+        roomName:
+          description: 'Room name'
+          type: string
+          nullable: true
+        total:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Room total after assignment in the booking''s currency'
+      type: object
+    AreaItemSchema:
+      required:
+        - typeCode
+        - position
+        - arrangements
+      properties:
+        typeCode:
+          description: 'Area type code. Valid values: BEDROOM, LIVING_ROOM (for MULTI layout), SLEEPING_AREA (for SINGLE layout)'
+          type: string
+          example: BEDROOM
+        position:
+          description: 'Position/order of this area'
+          type: integer
+          minimum: 0
+          example: 0
+        arrangements:
+          description: 'List of bed arrangements in this area. BEDROOM areas must have exactly 1 arrangement. LIVING_ROOM areas can have 0 or 1 arrangement.'
+          type: array
+          items:
+            $ref: '#/components/schemas/ArrangementItemSchema'
+          maxItems: 1
+          minItems: 0
+      type: object
+    ArrangementItemSchema:
+      required:
+        - isDefault
+        - position
+        - beds
+      properties:
+        isDefault:
+          description: 'Whether this is the default arrangement'
+          type: boolean
+          example: true
+        position:
+          description: 'Position/order of this arrangement'
+          type: integer
+          minimum: 0
+          example: 0
+        beds:
+          description: 'List of beds in this arrangement'
+          type: array
+          items:
+            $ref: '#/components/schemas/BedItemSchema'
+          minItems: 1
+      type: object
+    BedItemSchema:
+      required:
+        - typeCode
+        - capacity
+        - quantity
+      properties:
+        typeCode:
+          description: 'Bed type code (e.g., KING_SIZE_BED, SINGLE_BED)'
+          type: string
+          example: KING_SIZE_BED
+        capacity:
+          description: 'Bed capacity (number of people)'
+          type: integer
+          minimum: 1
+          example: 2
+        quantity:
+          description: 'Quantity of this bed type'
+          type: integer
+          minimum: 1
+          example: 1
+      type: object
+    GetRoomTypeAreasRequestSchema:
+      required:
+        - roomTypeId
+      properties:
+        roomTypeId:
+          description: 'Room type ID'
+          type: integer
+          example: 12345
+      type: object
     OutOfServiceRequestSchema:
       required:
         - fromDate
@@ -7357,6 +8153,106 @@ components:
           items:
             $ref: '#/components/schemas/OutOfServiceRequestSchema'
       type: object
+    PutRoomTypeAreasRequestSchema:
+      required:
+        - layoutTypeCode
+        - areas
+      properties:
+        layoutTypeCode:
+          description: 'Layout type: SINGLE (1 area) or MULTI (2+ areas). Set to null to clear all areas configuration.'
+          type: string
+          enum:
+            - SINGLE
+            - MULTI
+          example: MULTI
+          nullable: true
+        areas:
+          description: 'List of areas for this room type. Must be empty when layoutTypeCode is null. Must have at least 1 area when layoutTypeCode is not null.'
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaItemSchema'
+      type: object
+    AreaItemResponseSchema:
+      description: 'Room type area in response'
+      required:
+        - id
+        - typeCode
+        - position
+        - arrangements
+      properties:
+        id:
+          description: 'Area ID'
+          type: integer
+          example: 789
+        typeCode:
+          description: 'Area type code'
+          type: string
+          example: BEDROOM
+        position:
+          description: 'Display position'
+          type: integer
+          minimum: 0
+          example: 0
+        arrangements:
+          description: 'Bed arrangements in this area'
+          type: array
+          items:
+            $ref: '#/components/schemas/ArrangementItemResponseSchema'
+      type: object
+    ArrangementItemResponseSchema:
+      description: 'Bed arrangement in response'
+      required:
+        - id
+        - isDefault
+        - position
+        - beds
+      properties:
+        id:
+          description: 'Arrangement ID'
+          type: integer
+          example: 456
+        isDefault:
+          description: 'Whether this is the default arrangement'
+          type: boolean
+          example: true
+        position:
+          description: 'Display position'
+          type: integer
+          minimum: 0
+          example: 0
+        beds:
+          description: 'Beds in this arrangement'
+          type: array
+          items:
+            $ref: '#/components/schemas/BedItemResponseSchema'
+      type: object
+    BedItemResponseSchema:
+      description: 'Bed item in response'
+      required:
+        - id
+        - typeCode
+        - capacity
+        - quantity
+      properties:
+        id:
+          description: 'Bed ID'
+          type: integer
+          example: 123
+        typeCode:
+          description: 'Bed type code'
+          type: string
+          example: KING_SIZE_BED
+        capacity:
+          description: 'Bed capacity'
+          type: integer
+          minimum: 1
+          example: 2
+        quantity:
+          description: 'Quantity of this bed type'
+          type: integer
+          minimum: 1
+          example: 1
+      type: object
     GetRoomLabelsResponseSchema:
       required:
         - labels
@@ -7366,6 +8262,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoomLabelItemSchema'
+      type: object
+    GetRoomTypeAreasResponseSchema:
+      description: 'Response for GET /rooms/v1/{roomTypeId}/areas'
+      required:
+        - layoutTypeCode
+        - areas
+      properties:
+        layoutTypeCode:
+          description: 'Layout type code (empty string if not set)'
+          type: string
+          example: MULTI
+        areas:
+          description: 'Areas in the room type (ordered by position)'
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaItemResponseSchema'
       type: object
     OutOfServiceResponseItemSchema:
       required:
@@ -7392,10 +8304,28 @@ components:
           items:
             $ref: '#/components/schemas/OutOfServiceResponseItemSchema'
       type: object
+    PutRoomTypeAreasResponseSchema:
+      description: 'Response for PUT /rooms/v1/{roomTypeId}/areas'
+      required:
+        - layoutTypeCode
+        - areas
+      properties:
+        layoutTypeCode:
+          description: 'Layout type code (null when areas are cleared)'
+          type: string
+          example: MULTI
+          nullable: true
+        areas:
+          description: 'Areas in the room type'
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaItemResponseSchema'
+      type: object
     RoomLabelItemSchema:
       required:
         - code
         - title
+        - category
         - accommodationPrivacyCode
       properties:
         code:
@@ -7406,6 +8336,10 @@ components:
           description: 'Translated label title'
           type: string
           example: 'Studio Apartment'
+        category:
+          description: 'Label category code'
+          type: string
+          example: APARTMENT
         accommodationPrivacyCode:
           description: 'Accommodation privacy code'
           type: string
@@ -7414,6 +8348,1053 @@ components:
             - SHARED
             - PRIVATE_SHARED
           example: PRIVATE
+      type: object
+    CreatePolicyExceptionRequestSchema:
+      required:
+        - name
+        - policyRootId
+        - intervals
+        - rates
+      properties:
+        policyRootId:
+          description: 'Smart policy root ID.'
+          type: integer
+          example: 1001
+        intervals:
+          description: 'List of date intervals for this exception.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyExceptionIntervalSchema'
+        rates:
+          description: 'List of rates this exception applies to.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyExceptionRateSchema'
+        name:
+          description: 'Internal name for this exception.'
+          type: string
+          example: 'Winter holiday exception'
+        enabled:
+          description: 'Whether the exception is enabled.'
+          type: boolean
+          example: true
+      type: object
+    DeletePolicyExceptionRequestSchema:
+      required:
+        - exceptionId
+      properties:
+        exceptionId:
+          description: 'Policy exception ID.'
+          type: string
+          example: '5001'
+      type: object
+    EligibleRatesRequestSchema:
+      required:
+        - startDate
+        - endDate
+        - intervals
+      type: object
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          $ref: '#/components/schemas/BodySortSchema'
+        -
+          properties:
+            startDate:
+              description: 'Start date of the date range to filter rate plans.'
+              type: string
+              format: date
+              example: '2024-01-01'
+            endDate:
+              description: 'End date of the date range to filter rate plans.'
+              type: string
+              format: date
+              example: '2024-01-31'
+            intervals:
+              description: 'List of exception intervals for conflict detection.'
+              type: array
+              items:
+                $ref: '#/components/schemas/PolicyExceptionIntervalSchema'
+            exceptionId:
+              description: 'Exception ID to exclude from conflict detection (when editing an existing exception).'
+              type: string
+              example: '123'
+              nullable: true
+          type: object
+    GetPolicyExceptionRequestSchema:
+      required:
+        - exceptionId
+      properties:
+        exceptionId:
+          description: 'Policy exception ID.'
+          type: string
+          example: '5001'
+      type: object
+    ListPolicyExceptionsRequestSchema:
+      allOf:
+        -
+          $ref: '#/components/schemas/LimitOffsetPaginationSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+        -
+          $ref: '#/components/schemas/QueryParameterSortSchema'
+    PatchPolicyExceptionRequestSchema:
+      required:
+        - exceptionId
+      properties:
+        exceptionId:
+          description: 'Policy exception ID.'
+          type: string
+          example: '5001'
+        policyRootId:
+          description: 'Smart policy root ID.'
+          type: integer
+          example: 1001
+          nullable: true
+        intervals:
+          description: 'List of date intervals for this exception.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyExceptionIntervalSchema'
+          nullable: true
+        rates:
+          description: 'List of rates this exception applies to.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyExceptionRateSchema'
+          nullable: true
+        name:
+          description: 'Internal name for this exception.'
+          type: string
+          example: 'Winter holiday exception'
+          nullable: true
+        enabled:
+          description: 'Whether the exception is enabled.'
+          type: boolean
+          example: true
+          nullable: true
+      type: object
+    PolicyExceptionIntervalSchema:
+      required:
+        - startDate
+        - endDate
+      properties:
+        startDate:
+          description: 'Start date of the interval.'
+          type: string
+          format: date
+          example: '2024-01-01'
+        endDate:
+          description: 'End date of the interval.'
+          type: string
+          format: date
+          example: '2024-01-31'
+        day0:
+          description: 'Sunday (day 0) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day1:
+          description: 'Monday (day 1) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day2:
+          description: 'Tuesday (day 2) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day3:
+          description: 'Wednesday (day 3) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day4:
+          description: 'Thursday (day 4) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day5:
+          description: 'Friday (day 5) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day6:
+          description: 'Saturday (day 6) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+      type: object
+    PolicyExceptionRateSchema:
+      required:
+        - packageId
+      properties:
+        packageId:
+          description: 'Package/rate plan ID. Use 0 for base rate.'
+          type: integer
+          example: 123
+        roomTypeId:
+          description: 'Room type ID. Required when packageId is 0 (base rate).'
+          type: integer
+          example: 456
+          nullable: true
+      type: object
+    UpdatePolicyExceptionRequestSchema:
+      required:
+        - exceptionId
+        - name
+        - policyRootId
+        - intervals
+        - rates
+      properties:
+        exceptionId:
+          description: 'Policy exception ID.'
+          type: string
+          example: '5001'
+        policyRootId:
+          description: 'Smart policy root ID.'
+          type: integer
+          example: 1001
+        intervals:
+          description: 'List of date intervals for this exception.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyExceptionIntervalSchema'
+        rates:
+          description: 'List of rates this exception applies to.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyExceptionRateSchema'
+        name:
+          description: 'Internal name for this exception.'
+          type: string
+          example: 'Winter holiday exception'
+        enabled:
+          description: 'Whether the exception is enabled. Omit to preserve current value.'
+          type: boolean
+          example: true
+          nullable: true
+      type: object
+    EligibleRateConflictSchema:
+      required:
+        - exceptionId
+        - exceptionName
+      properties:
+        exceptionId:
+          description: 'ID of the blocking exception.'
+          type: string
+          example: '123'
+        exceptionName:
+          description: 'Name of the blocking exception.'
+          type: string
+          example: 'Holiday Override'
+      type: object
+    EligibleRateItemSchema:
+      required:
+        - name
+        - type
+      properties:
+        name:
+          description: 'Name of the rate plan or room type.'
+          type: string
+          example: 'Standard Rate'
+        type:
+          description: 'Type of rate: "rate_plan" or "base_rate".'
+          type: string
+          example: rate_plan
+        packageId:
+          description: 'Package/rate plan ID. Present only when type is "rate_plan".'
+          type: string
+          example: '123'
+          nullable: true
+        roomTypeId:
+          description: 'Room type ID. Present only when type is "base_rate".'
+          type: string
+          example: '789'
+          nullable: true
+        policyId:
+          description: 'Smart policy ID associated with this rate plan, if any. Always null for base rates.'
+          type: string
+          example: '456'
+          nullable: true
+        conflict:
+          oneOf:
+            -
+              $ref: '#/components/schemas/EligibleRateConflictSchema'
+          nullable: true
+          description: 'Conflict info if this rate is blocked by another exception. Null/absent when assignable.'
+      type: object
+    EligibleRatesResponseSchema:
+      required:
+        - total
+        - limit
+        - offset
+        - data
+      properties:
+        total:
+          description: 'The total number of items available.'
+          type: integer
+        limit:
+          description: 'The limit for the number of items to return.'
+          type: integer
+        offset:
+          description: 'The offset for the current page of results.'
+          type: integer
+        data:
+          description: 'Eligible rates for exception creation (rate plans and base rates combined).'
+          type: array
+          items:
+            $ref: '#/components/schemas/EligibleRateItemSchema'
+      type: object
+    PolicyExceptionIntervalResponseSchema:
+      properties:
+        startDate:
+          type: string
+          format: date
+          example: '2024-01-01'
+        endDate:
+          type: string
+          format: date
+          example: '2024-01-31'
+        day0:
+          description: 'Sunday (day 0) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day1:
+          description: 'Monday (day 1) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day2:
+          description: 'Tuesday (day 2) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day3:
+          description: 'Wednesday (day 3) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day4:
+          description: 'Thursday (day 4) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day5:
+          description: 'Friday (day 5) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+        day6:
+          description: 'Saturday (day 6) -- apply exception on this day of the week.'
+          type: boolean
+          example: true
+      type: object
+    PolicyExceptionListResponseSchema:
+      required:
+        - total
+        - limit
+        - offset
+        - data
+      properties:
+        total:
+          description: 'The total number of items available.'
+          type: integer
+        limit:
+          description: 'The limit for the number of items to return.'
+          type: integer
+        offset:
+          description: 'The offset for the current page of results.'
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyExceptionResponseSchema'
+      type: object
+    PolicyExceptionRateResponseSchema:
+      properties:
+        packageId:
+          description: 'Package/rate plan ID. 0 = base rate.'
+          type: string
+          example: '123'
+        roomTypeId:
+          description: 'Room type ID.'
+          type: string
+          example: '456'
+          nullable: true
+      type: object
+    PolicyExceptionResponseSchema:
+      properties:
+        id:
+          type: string
+          example: '5001'
+        propertyId:
+          type: string
+          example: '1234'
+        name:
+          type: string
+          example: 'Winter holiday exception'
+        policyRootId:
+          type: string
+          example: '1001'
+        enabled:
+          type: boolean
+          example: true
+        createdBy:
+          type: string
+          example: '9876'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-01-01T10:00:00+00:00'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-01-15T12:00:00+00:00'
+        intervals:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyExceptionIntervalResponseSchema'
+        rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyExceptionRateResponseSchema'
+      type: object
+    AddonSchema:
+      required:
+        - addonId
+        - name
+        - amount
+        - quantity
+      properties:
+        addonId:
+          description: 'Add-on ID'
+          type: string
+          example: '789'
+        name:
+          description: 'Add-on display name'
+          type: string
+          example: Parking
+        amount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Add-on unit price'
+        quantity:
+          description: 'Quantity (>= 1)'
+          type: integer
+          example: 2
+        taxesAndFees:
+          description: 'Tax/fee configuration for this addon'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxFeeConfigSchema'
+        isDefault:
+          description: 'Whether this is a default (package) add-on'
+          type: boolean
+          example: false
+      type: object
+    CalculateTotalsRequestSchema:
+      required:
+        - type
+        - taxesAndFees
+      properties:
+        type:
+          description: 'Entity type. Determines the calculation strategy.'
+          type: string
+          enum:
+            - reservation
+            - product
+            - addon
+            - custom_item
+            - resource
+            - room_revenue
+            - adjustment
+            - manual_tax_fee
+          example: product
+        taxesAndFees:
+          description: 'Array of tax/fee configuration objects. Can be empty.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxFeeConfigSchema'
+        convenienceFeeConfig:
+          oneOf:
+            -
+              $ref: '#/components/schemas/ConvenienceFeeConfigSchema'
+          nullable: true
+          description: 'Convenience fee configuration'
+        date:
+          description: 'Calculation date (YYYY-MM-DD). Used for context and monitoring. Defaults to current date.'
+          type: string
+          example: '2026-04-01'
+          nullable: true
+        roundingMethod:
+          description: 'Rounding method. 0 = legacy (default), 1 = item-level rounding.'
+          type: integer
+          example: 0
+          nullable: true
+        exclusiveTaxesOnTotal:
+          description: 'Whether exclusive taxes are calculated on the net rate (after inclusive extraction). Defaults to true.'
+          type: boolean
+          example: true
+        amount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Base amount for entity types. Required for product/addon/custom_item/resource.'
+        adults:
+          description: 'Number of adults. Used by fixed_per_person. Defaults to 1.'
+          type: integer
+          example: 1
+        children:
+          description: 'Number of children. Used by fixed_per_person. Defaults to 0.'
+          type: integer
+          example: 0
+        nights:
+          description: 'Number of nights. Used by fixed_per_person, fixed_per_accommodation. Defaults to 1.'
+          type: integer
+          example: 1
+        accommodations:
+          description: 'Number of accommodations. Used by fixed_per_accommodation. Defaults to 1.'
+          type: integer
+          example: 1
+        rooms:
+          description: 'Room configurations. Required for reservation type. Must be null (not empty array) for entity types.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomSchema'
+          nullable: true
+        currencyCode:
+          description: 'ISO 4217 currency code. Required for reservation type. For entity types, derived from amount.currencyCode.'
+          type: string
+          example: USD
+          nullable: true
+        depositConfig:
+          oneOf:
+            -
+              $ref: '#/components/schemas/DepositConfigSchema'
+          nullable: true
+          description: 'Deposit calculation rules. Reservation type only.'
+        allotmentBlockCode:
+          description: 'Allotment block code. Reservation type only.'
+          type: string
+          nullable: true
+      type: object
+    ConvenienceFeeConfigSchema:
+      required:
+        - name
+        - rate
+        - rateType
+        - mode
+      properties:
+        name:
+          description: 'Display name for the surcharge'
+          type: string
+          example: 'Credit Card Surcharge'
+        rate:
+          description: 'Fee rate in minor units. For percentage: the rate in minor units (e.g., "300" = 3.00%).'
+          type: string
+          example: '300'
+        rateType:
+          description: 'How the fee is calculated'
+          type: string
+          enum:
+            - percentage
+            - fixed
+          example: percentage
+        mode:
+          description: 'Calculation mode. fee_on_top = added to total. fee_from_total = extracted from total.'
+          type: string
+          enum:
+            - fee_on_top
+            - fee_from_total
+          example: fee_on_top
+      type: object
+    DateRangeSchema:
+      required:
+        - range
+      properties:
+        range:
+          description: 'Date range in "start/end" format. Dates can be full (YYYY-MM-DD) or recurring annual (--MM-DD). End date can be omitted for open-ended ranges.'
+          type: string
+          example: 2026-03-01/2026-03-31
+        amount:
+          description: 'Override tax/fee amount when this date range matches, in minor currency units (e.g. 1500 = $15.00).'
+          type: string
+          example: '1500'
+          nullable: true
+        amountAdult:
+          description: 'Override per-adult amount in minor currency units (e.g. 500 = $5.00).'
+          type: string
+          example: '500'
+          nullable: true
+        amountChild:
+          description: 'Override per-child amount in minor currency units (e.g. 250 = $2.50).'
+          type: string
+          example: '250'
+          nullable: true
+        amountRateBased:
+          description: 'Override rate-based tiers.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RateBasedTierSchema'
+          nullable: true
+        maxLength:
+          description: 'Override max nights to charge.'
+          type: integer
+          example: 10
+          nullable: true
+        lengthOfStay:
+          oneOf:
+            -
+              $ref: '#/components/schemas/LengthOfStaySchema'
+          nullable: true
+          description: 'Nested length-of-stay rules that apply within this date range.'
+      type: object
+    DepositConfigSchema:
+      required:
+        - type
+      properties:
+        type:
+          description: 'How deposit is calculated'
+          type: string
+          enum:
+            - percentage
+            - fixed
+            - first_night
+            - first_night_with_taxes
+            - full_stay
+            - none
+          example: percentage
+        value:
+          description: 'Deposit value in minor currency units. Required for percentage and fixed types. For percentage: "5000" = 50.00%. For fixed: "5000" = $50.00.'
+          type: string
+          example: '5000'
+          nullable: true
+      type: object
+    DetailedRateSchema:
+      required:
+        - date
+        - rate
+      properties:
+        date:
+          description: 'Night date (YYYY-MM-DD)'
+          type: string
+          example: '2026-04-01'
+        rate:
+          description: 'Base room rate for this night in minor currency units (e.g. 15000 = $150.00)'
+          type: string
+          example: '15000'
+        adults:
+          description: 'Adult surcharge for this night in minor currency units (e.g. 2500 = $25.00)'
+          type: string
+          example: '2500'
+        children:
+          description: 'Child surcharge for this night in minor currency units (e.g. 1000 = $10.00)'
+          type: string
+          example: '1000'
+      type: object
+    LengthOfStayRangeSchema:
+      required:
+        - minimumNights
+      properties:
+        minimumNights:
+          description: 'Minimum nights for this range to apply (inclusive).'
+          type: integer
+          example: 1
+        maximumNights:
+          description: 'Maximum nights for this range (inclusive). Null means no upper limit.'
+          type: integer
+          example: 28
+          nullable: true
+        amount:
+          description: 'Override tax/fee amount for this range, in minor currency units (e.g. 1000 = $10.00).'
+          type: string
+          example: '1000'
+          nullable: true
+        amountAdult:
+          description: 'Override per-adult amount for this range, in minor currency units (e.g. 500 = $5.00).'
+          type: string
+          example: '500'
+          nullable: true
+        amountChild:
+          description: 'Override per-child amount for this range, in minor currency units (e.g. 250 = $2.50).'
+          type: string
+          example: '250'
+          nullable: true
+        amountRateBased:
+          description: 'Override rate-based tiers for this range.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RateBasedTierSchema'
+          nullable: true
+        maxLength:
+          description: 'Override max nights to charge for per-person taxes.'
+          type: integer
+          example: 10
+          nullable: true
+      type: object
+    LengthOfStaySchema:
+      required:
+        - applicationType
+        - ranges
+      properties:
+        applicationType:
+          description: 'How length-of-stay rules are applied. "progressive_application" applies per-night based on which night it is. "retroactive_adjustment" applies uniformly based on total stay length.'
+          type: string
+          enum:
+            - progressive_application
+            - retroactive_adjustment
+          example: progressive_application
+        ranges:
+          description: 'Length-of-stay ranges. Each range defines amount overrides for a night count bracket.'
+          type: array
+          items:
+            $ref: '#/components/schemas/LengthOfStayRangeSchema'
+      type: object
+    MoneyInputSchema:
+      required:
+        - amount
+        - currencyCode
+      properties:
+        amount:
+          description: 'Amount in the smallest representable units of the currency (e.g., cents for USD)'
+          type: string
+          example: '10000'
+        currencyCode:
+          description: 'ISO 4217 currency code'
+          type: string
+          example: USD
+      type: object
+    RateBasedTierSchema:
+      required:
+        - rate
+        - percentage
+      properties:
+        rate:
+          description: 'Rate threshold in minor currency units. Tax tier applies when the base rate is >= this value (e.g. 15000 = $150.00).'
+          type: string
+          example: '0'
+        percentage:
+          description: 'Tax percentage to apply when the rate threshold is met, in minor units (e.g. 1000 = 10.00%).'
+          type: string
+          example: '1000'
+      type: object
+    RoomSchema:
+      required:
+        - startDate
+        - endDate
+        - adults
+        - children
+        - detailedRates
+      properties:
+        roomTypeId:
+          description: 'Room type ID for per-room-type tax filtering'
+          type: string
+          example: '101'
+          nullable: true
+        startDate:
+          description: 'Check-in date (YYYY-MM-DD)'
+          type: string
+          example: '2026-04-01'
+        endDate:
+          description: 'Check-out date (YYYY-MM-DD)'
+          type: string
+          example: '2026-04-03'
+        adults:
+          description: 'Number of adults (>= 1)'
+          type: integer
+          example: 2
+        children:
+          description: 'Number of children (>= 0)'
+          type: integer
+          example: 1
+        rateId:
+          description: 'Rate plan ID (context only)'
+          type: string
+          example: '456'
+          nullable: true
+        detailedRates:
+          description: 'Per-night rate breakdown. One entry per night of the stay.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DetailedRateSchema'
+        addons:
+          description: 'Add-ons to include in calculation'
+          type: array
+          items:
+            $ref: '#/components/schemas/AddonSchema'
+          nullable: true
+      type: object
+    TaxFeeConfigSchema:
+      required:
+        - id
+        - name
+        - category
+        - calculationType
+        - value
+        - taxTreatment
+      properties:
+        id:
+          description: 'Unique identifier within the request'
+          type: string
+          example: '101'
+        name:
+          description: 'Display name'
+          type: string
+          example: 'VAT 10%'
+        category:
+          description: 'Whether this is a tax or a fee'
+          type: string
+          enum:
+            - tax
+            - fee
+          example: tax
+        calculationType:
+          description: 'How the amount is calculated'
+          type: string
+          enum:
+            - percentage
+            - percentage_rate_based
+            - fixed
+            - fixed_per_person
+            - fixed_per_accomodation
+            - fixed_per_reservation
+          example: percentage
+        value:
+          description: 'Rate or amount value in minor units. For percentage types: the percentage in minor units (e.g., "1000" = 10.00%). For fixed types: the amount in minor currency units (e.g., "1500" = $15.00).'
+          type: string
+          example: '1000'
+        taxTreatment:
+          description: 'How this tax/fee relates to the base amount'
+          type: string
+          enum:
+            - inclusive
+            - exclusive
+          example: exclusive
+        parentId:
+          description: 'References another item ID for tax-on-fee or tax-on-tax'
+          type: string
+          nullable: true
+        parentKind:
+          description: 'Type of parent'
+          type: string
+          enum:
+            - tax
+            - fee
+          nullable: true
+        roomTypeIds:
+          description: 'Room type IDs this tax/fee applies to. Empty means all room types.'
+          type: array
+          items:
+            type: string
+          nullable: true
+        typeSettings:
+          oneOf:
+            -
+              $ref: '#/components/schemas/TypeSettingsSchema'
+          nullable: true
+          description: 'Additional type settings (length-of-stay rules, date ranges, per-person amounts, rate-based tiers).'
+      type: object
+    TypeSettingsSchema:
+      description: "Additional type settings for tax/fee calculation.\nAll properties are optional — only provide what applies to the specific tax/fee."
+      properties:
+        amountAdult:
+          description: 'Per-adult fixed amount in minor currency units (e.g. 1000 = $10.00). Used with fixed_per_person calculation type when adults and children have different rates.'
+          type: string
+          example: '1000'
+          nullable: true
+        amountChild:
+          description: 'Per-child fixed amount in minor currency units (e.g. 500 = $5.00). Used with fixed_per_person calculation type when adults and children have different rates.'
+          type: string
+          example: '500'
+          nullable: true
+        amountRateBased:
+          description: 'Rate-based percentage tiers. Required for percentage_rate_based calculation type. Each tier defines a rate threshold and the tax percentage to apply when the base rate meets it.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RateBasedTierSchema'
+          nullable: true
+        maxLength:
+          description: 'Maximum number of nights to charge for per-person taxes. When set, per-person taxes stop accruing after this many nights per guest.'
+          type: integer
+          example: 28
+          nullable: true
+        dateRanges:
+          description: 'Date ranges with amount overrides. When present, the tax/fee only applies on nights that fall within a matching range, using the range''s overridden amounts. If no range matches a given night, the tax/fee is excluded for that night.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DateRangeSchema'
+          nullable: true
+        lengthOfStay:
+          oneOf:
+            -
+              $ref: '#/components/schemas/LengthOfStaySchema'
+          nullable: true
+          description: 'Length-of-stay rules that override amounts based on the number of nights.'
+      type: object
+    CalculateTotalsResponseSchema:
+      required:
+        - type
+        - netAmount
+        - subtotal
+        - inclusiveTaxesAndFees
+        - exclusiveTaxesAndFees
+        - taxes
+        - fees
+        - total
+        - paymentTotal
+        - currencyCode
+      properties:
+        type:
+          description: 'Echoed from request'
+          type: string
+          example: reservation
+        netAmount:
+          $ref: '#/components/schemas/MoneySchema'
+        subtotal:
+          $ref: '#/components/schemas/MoneySchema'
+        inclusiveTaxesAndFees:
+          $ref: '#/components/schemas/MoneySchema'
+        exclusiveTaxesAndFees:
+          $ref: '#/components/schemas/MoneySchema'
+        taxes:
+          $ref: '#/components/schemas/TaxFeeBreakdownResponseSchema'
+        fees:
+          $ref: '#/components/schemas/TaxFeeBreakdownResponseSchema'
+        total:
+          $ref: '#/components/schemas/MoneySchema'
+        convenienceFee:
+          oneOf:
+            -
+              $ref: '#/components/schemas/ConvenienceFeeResponseSchema'
+          nullable: true
+          description: 'Convenience fee details'
+        paymentTotal:
+          $ref: '#/components/schemas/MoneySchema'
+        currencyCode:
+          description: 'ISO 4217 currency code'
+          type: string
+          example: USD
+        deposit:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Calculated deposit amount. Reservation only.'
+        balanceDue:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'total - deposit. Reservation only.'
+        defaultAddonsTotal:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Total of default (package) add-ons. Reservation only.'
+        requestedAddonsTotal:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Total of explicitly requested add-ons. Reservation only.'
+        rooms:
+          description: 'Per-room totals breakdown. Reservation only.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomTotalsResponseSchema'
+          nullable: true
+      type: object
+    ConvenienceFeeResponseSchema:
+      required:
+        - name
+        - amount
+        - rate
+        - rateType
+        - mode
+      properties:
+        name:
+          description: 'Display name (echoed)'
+          type: string
+          example: 'Credit Card Surcharge'
+        amount:
+          $ref: '#/components/schemas/MoneySchema'
+        rate:
+          description: 'Fee rate (echoed)'
+          type: string
+          example: '3.00'
+        rateType:
+          description: 'How calculated (echoed)'
+          type: string
+          enum:
+            - percentage
+            - fixed
+          example: percentage
+        mode:
+          description: 'Mode used (echoed)'
+          type: string
+          enum:
+            - fee_on_top
+            - fee_from_total
+          example: fee_on_top
+      type: object
+    RoomTotalsResponseSchema:
+      required:
+        - totalWithoutTaxes
+        - totalFirstNightWithoutTaxes
+        - taxesAndFees
+        - taxesAndFeesFirstNight
+      properties:
+        totalWithoutTaxes:
+          $ref: '#/components/schemas/MoneySchema'
+        totalFirstNightWithoutTaxes:
+          $ref: '#/components/schemas/MoneySchema'
+        taxesAndFees:
+          $ref: '#/components/schemas/MoneySchema'
+        taxesAndFeesFirstNight:
+          $ref: '#/components/schemas/MoneySchema'
+      type: object
+    TaxFeeBreakdownResponseSchema:
+      required:
+        - total
+        - items
+      properties:
+        total:
+          $ref: '#/components/schemas/MoneySchema'
+        items:
+          description: 'Individual line items'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxFeeItemResponseSchema'
+      type: object
+    TaxFeeItemResponseSchema:
+      required:
+        - id
+        - name
+        - amount
+        - taxTreatment
+      properties:
+        id:
+          description: 'Tax/fee ID (echoed)'
+          type: string
+          example: '101'
+        name:
+          description: 'Display name (echoed)'
+          type: string
+          example: 'VAT 10%'
+        amount:
+          $ref: '#/components/schemas/MoneySchema'
+        taxTreatment:
+          description: 'Tax treatment (echoed)'
+          type: string
+          enum:
+            - inclusive
+            - exclusive
+          example: exclusive
+        parentId:
+          description: 'Parent ID (echoed, if present)'
+          type: string
+          nullable: true
+        parentKind:
+          description: 'Parent type (echoed)'
+          type: string
+          enum:
+            - tax
+            - fee
+          nullable: true
       type: object
   parameters:
     roomId:
@@ -7488,5 +9469,5 @@ tags:
     name: Property
     description: Property
   -
-    name: Reservations
-    description: Reservations
+    name: 'Smart Policy Exceptions'
+    description: 'Smart Policy Exceptions'
