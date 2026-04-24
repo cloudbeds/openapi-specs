@@ -1,0 +1,457 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Laravel",
+        "description": "API specification for Laravel.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://api.cloudbeds.com/payments/sdk-api",
+            "description": "Production"
+        }
+    ],
+    "paths": {
+        "/v1/keys": {
+            "post": {
+                "tags": [
+                    "Payment SDK API Key Management"
+                ],
+                "summary": "Issue API Key",
+                "description": "Issue a new API key for the Payment Element, scoped to one or more properties.\n\nThe response includes both the **identity** (public) and the **secret** (private).\nThe secret is **only returned once** at creation time and cannot be retrieved later.\n\n> **Important:** Treat the `secret` as a password. Store it in a secure vault or secrets manager.\n> Do not log it, commit it to source control, or expose it in client-side code.",
+                "operationId": "store",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IssueKeyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IssueApiKeyResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed request body or validation failure",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid JWT token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions for the requested property IDs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Payment SDK API Key Management"
+                ],
+                "summary": "List API Keys",
+                "description": "Retrieve a paginated list of API keys, optionally filtered by property or revocation status.\n\nUse `next_page_token` from the response as `page_token` in the next request to paginate.\nThe `secret` field is never included in list responses.",
+                "operationId": "index",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "property_ids",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "example": [
+                                12345
+                            ]
+                        },
+                        "description": "Filter by property IDs scoped to your JWT"
+                    },
+                    {
+                        "name": "include_revoked",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        },
+                        "description": "Include revoked keys in the response. Defaults to false."
+                    },
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "nullable": true,
+                            "example": 25
+                        },
+                        "description": "Number of keys per page (1-100). Defaults to 50."
+                    },
+                    {
+                        "name": "page_token",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "nullable": true
+                        },
+                        "description": "Cursor token from a previous response's next_page_token for fetching the next page."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListApiKeysResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid JWT token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/keys/{identity}": {
+            "delete": {
+                "tags": [
+                    "Payment SDK API Key Management"
+                ],
+                "summary": "Revoke API Key",
+                "description": "Permanently revoke an API key. Once revoked, the key can no longer be used for authentication.\nThis action is **irreversible**. Revoked keys remain visible via List API Keys when `include_revoked=true`.",
+                "operationId": "destroy",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "identity",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "pek_a1b2c3d4e5f6g7h8i9j0k1l2"
+                        },
+                        "description": "The public key identifier (e.g. pek_a1b2c3d4e5f6g7h8i9j0k1l2)."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RevokeApiKeyResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid JWT token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions to revoke this key",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "API key not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "API key is already revoked",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "IssueKeyRequest": {
+                "type": "object",
+                "description": "Issue Api Key",
+                "properties": {
+                    "property_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Array of property IDs to scope the key to. At least one is required and must be scoped to your JWT key",
+                        "example": [
+                            12345,
+                            67890
+                        ]
+                    }
+                },
+                "required": [
+                    "property_ids"
+                ]
+            },
+            "IssueApiKeyResponse": {
+                "type": "object",
+                "description": "Issue Api Key Response",
+                "properties": {
+                    "identity": {
+                        "type": "string",
+                        "description": "Public key identifier (e.g. pek_a1b2c3d4e5f6g7h8i9j0k1l2).",
+                        "example": "pek_a1b2c3d4e5f6g7h8i9j0k1l2"
+                    },
+                    "secret": {
+                        "type": "string",
+                        "description": "Private key secret. Only returned once at creation. Store securely and never expose publicly.",
+                        "example": "sk_live_YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU"
+                    },
+                    "property_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Property IDs the key is scoped to.",
+                        "example": [
+                            12345,
+                            67890
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Key status.",
+                        "example": "active"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "description": "ISO 8601 creation timestamp.",
+                        "example": "2026-03-10T14:30:00.000000Z",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "identity",
+                    "secret",
+                    "property_ids",
+                    "status",
+                    "created_at"
+                ]
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "description": "Error response",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Human-readable error message."
+                    }
+                },
+                "required": [
+                    "message"
+                ]
+            },
+            "ApiKeyResponse": {
+                "type": "object",
+                "description": "Api Key Response",
+                "properties": {
+                    "identity": {
+                        "type": "string",
+                        "description": "Public key identifier.",
+                        "example": "pek_a1b2c3d4e5f6g7h8i9j0k1l2"
+                    },
+                    "property_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Property IDs the key is scoped to.",
+                        "example": [
+                            12345
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Key status.",
+                        "example": "active"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "description": "ISO 8601 creation timestamp.",
+                        "example": "2026-03-10T14:30:00.000000Z",
+                        "format": "date-time"
+                    },
+                    "revoked_at": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "ISO 8601 revocation timestamp, or null if active.",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "ListApiKeysResponse": {
+                "type": "object",
+                "description": "List Api Keys Response",
+                "properties": {
+                    "api_keys": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ApiKeyResponse"
+                        },
+                        "description": "Array of API key objects. Each contains identity, property_ids, status, created_at, and revoked_at fields."
+                    },
+                    "next_page_token": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Token for the next page, or null if no more results."
+                    }
+                },
+                "required": [
+                    "api_keys"
+                ]
+            },
+            "RevokeApiKeyResponse": {
+                "type": "object",
+                "description": "Revoke Api Key Response",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Always true on successful revocation."
+                    }
+                },
+                "required": [
+                    "success"
+                ]
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "JWT Bearer token authentication."
+            }
+        }
+    }
+}
