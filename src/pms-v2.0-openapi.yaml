@@ -3149,42 +3149,6 @@ paths:
         -
           default:
             - 'read:hotel'
-  /rooms/v1/out-of-service:
-    post:
-      tags:
-        - Rooms
-      summary: 'Room out of service'
-      operationId: 'OutOfServiceController::make'
-      requestBody:
-        description: 'Out of service request body.'
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PlaceRoomsOutOfServiceRequest'
-      responses:
-        '201':
-          description: 'Rooms were placed out of service successfully'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OutOfServiceResponseSchema'
-        '400':
-          description: 'At least one of the rooms could not be placed out of service'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BadRequestResponseSchema'
-        '500':
-          description: 'Internal server error'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
-      security:
-        -
-          default:
-            - 'write:room'
   /smart-policies/v1/exceptions/eligible-rates/search:
     post:
       tags:
@@ -8125,34 +8089,6 @@ components:
           type: integer
           example: 12345
       type: object
-    OutOfServiceRequestSchema:
-      required:
-        - fromDate
-        - toDate
-        - reason
-        - roomId
-      properties:
-        fromDate:
-          description: 'RFC3339 Date to start the out of service period'
-          type: string
-          example: '2025-04-25T00:00:00-06:00'
-        toDate:
-          description: 'RFC3339 Date to end the out of service period'
-          type: string
-          example: '2025-04-26T00:00:00-06:00'
-        reason:
-          description: 'Wny is the room out of service?'
-          type: string
-          example: 'Flooding in the room.'
-      type: object
-    PlaceRoomsOutOfServiceRequest:
-      properties:
-        items:
-          description: 'List of rooms to be placed out of service.'
-          type: array
-          items:
-            $ref: '#/components/schemas/OutOfServiceRequestSchema'
-      type: object
     PutRoomTypeAreasRequestSchema:
       required:
         - layoutTypeCode
@@ -8278,31 +8214,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AreaItemResponseSchema'
-      type: object
-    OutOfServiceResponseItemSchema:
-      required:
-        - event_id
-        - code
-      properties:
-        event_id:
-          description: 'The event id of the request'
-          type: string
-        message:
-          description: 'Response message'
-          type: string
-        code:
-          description: 'The HTTP status code of the response'
-          type: integer
-          example: 201
-      type: object
-    OutOfServiceResponseSchema:
-      required:
-        - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/OutOfServiceResponseItemSchema'
       type: object
     PutRoomTypeAreasResponseSchema:
       description: 'Response for PUT /rooms/v1/{roomTypeId}/areas'
