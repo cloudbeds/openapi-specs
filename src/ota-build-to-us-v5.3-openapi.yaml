@@ -1,16 +1,13 @@
 openapi: 3.1.2
 info:
   title: Cloudbeds OTA Build-To-Us API
-  version: '5.3'
+  version: '5.5'
   contact:
     url: https://www.cloudbeds.com/partner-with-cloudbeds/
   license:
     name: Cloudbeds API Terms
     url: https://www.cloudbeds.com/terms/api/
-  description: >-
-    API for Online Travel Agencies (OTAs) to integrate with the Cloudbeds
-    channel manager. Enables pushing availability, rates, and restrictions
-    (ARI), managing property setup, and retrieving bookings.
+  description: API for Online Travel Agencies (OTAs) to integrate with the Cloudbeds channel manager. Enables pushing availability, rates, and restrictions (ARI), managing property setup, and retrieving bookings.
 servers:
   - url: https://api.your-ota.com/cloudbeds
     description: OTA endpoint
@@ -823,8 +820,7 @@ paths:
   /GetBookingId:
     post:
       operationId: get_booking_id
-      description: |-
-        Returns detailed bookings made on the OTA. See the Booking Format section of the documentation for the full booking format specification.
+      description: Returns detailed bookings made on the OTA. See the Booking Format section of the documentation for the full booking format specification.
       requestBody:
         content:
           application/json:
@@ -1141,6 +1137,7 @@ paths:
                         calculation_basis: rate
                         category: vat
                         code: IVA
+                        description: Impuesto
                         id: 4761
                         is_fee: false
                         is_inclusive: true
@@ -2635,8 +2632,6 @@ paths:
                   ota_cid: ota
                   rateplan:
                     mya_rate_id: 115629
-                    mya_room_id: 45829
-                    ota_room_id: '11111'
                     label_private: NR
                     label_public: Non-refundable
                     max_occupancy: 3
@@ -2866,6 +2861,7 @@ paths:
                         calculation_basis: rate
                         category: vat
                         code: IVA
+                        description: Impuesto
                         id: 4761
                         is_fee: false
                         is_inclusive: true
@@ -2878,6 +2874,7 @@ paths:
                       - amount: 5
                         applies_per: pet
                         category: other_fee
+                        description: Pet fee applies for each pet when total number of pets is more than one.
                         id: 4762
                         is_fee: true
                         is_inclusive: false
@@ -2893,6 +2890,7 @@ paths:
                         applies_per: adult
                         calculation_basis: rate
                         category: tourism_tax
+                        description: Per person per night when number of nights are greater than 2
                         id: 4763
                         is_fee: false
                         is_inclusive: false
@@ -2938,6 +2936,7 @@ paths:
                         applies_per: booking
                         calculation_basis: rate
                         category: other_fee
+                        description: Weekend service fee
                         id: 4765
                         is_fee: true
                         is_inclusive: false
@@ -3118,8 +3117,8 @@ paths:
         content:
           application/x-www-form-urlencoded:
             examples:
-              CheckAvailbility:
-                summary: CheckAvailbility
+              CheckAvailability:
+                summary: CheckAvailability
                 value:
                   shared_secret: s3cr3ts4uc3
                   ota_property_id: '998201'
@@ -3749,7 +3748,7 @@ paths:
     post:
       operationId: delete_group
       description: |-
-        This call is used to update delete group profile on your OTA previously created by CreateGroup call.
+        This call is used to delete a group profile on your OTA previously created by CreateGroup call.
         This call needs to be activated explicitly from our side
         before you can use it. Please talk to your Cloudbeds contact before
         implementing this call!
@@ -4801,6 +4800,8 @@ components:
               - date-in-range
               - day-of-week
               - length-of-stay
+              - length-of-stay-progressive
+              - length-of-stay-retroactive
               - night-number
               - nightly-rate
               - nights-booked-in-advance
@@ -4864,6 +4865,7 @@ components:
           description: |
             Tax category.
           enum:
+            - municipal_tax
             - occupancy_tax
             - other_fee
             - other_tax
