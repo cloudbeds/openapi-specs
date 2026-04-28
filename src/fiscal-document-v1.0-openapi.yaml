@@ -5,6 +5,36 @@ info:
 servers:
   - url: https://api.cloudbeds.com
 paths:
+  "/fiscal-document/v1/fiscal-documents/discrepancies/summary":
+    get:
+      summary: Get count of fiscal documents with discrepancies
+      description: Returns the count of fiscal documents that have discrepancies, filtered by sourceId and sourceKind.
+      operationId: getCountFiscalDocumentsWithDiscrepancies
+      tags:
+        - Fiscal Documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+        - name: sourceId
+          in: query
+          description: Source ID to filter documents by.
+          required: true
+          schema:
+            type: string
+        - name: sourceKind
+          in: query
+          description: Source kind to filter documents by.
+          required: true
+          schema:
+            $ref: "#/components/schemas/SourceKind"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DiscrepanciesCount"
   "/fiscal-document/v1/fiscal-documents":
     get:
       summary: Get list of fiscal documents
@@ -113,7 +143,7 @@ paths:
         - For INVOICE: Returns posted (paid) transactions, and pending transactions when feature.fiscal-document.pending-transactions is enabled
         - For CREDIT_NOTE: Returns posted (paid) transactions, and pending transactions when feature.fiscal-document.pending-transactions is enabled
         - For PRO_FORMA_INVOICE: Returns both pending transactions and posted (paid) payments
-        - Transactions already included in fiscal documents are excluded
+        - Transactions already included in fiscal documents are excluded unless show_invoiced=true
         - Each transaction includes a status field (PENDING or POSTED)
       operationId: getFiscalDocumentTransactions
       tags:
@@ -184,6 +214,13 @@ paths:
         - name: nestTaxes
           in: query
           description: When true, tax transactions are nested inside their parent transaction's taxes field and removed from the top-level list.
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: show_invoiced
+          in: query
+          description: When true, transactions already included in fiscal documents are not filtered out.
           required: false
           schema:
             type: boolean
@@ -1505,6 +1542,34 @@ paths:
                   type: boolean
                 example:
                   INTEGRATION_INVOICING: true
+  "/fiscal-document/v1/fiscal-documents/rules":
+    get:
+      summary: Get document creation rules for a given document kind
+      description: |
+        Returns field definitions that the UI must collect when creating a document of the given kind.
+        Uses the same FieldDefinition schema as action.fields on document actions.
+      operationId: getDocumentRules
+      security:
+        - bearerAuth: []
+      tags:
+        - Fiscal Documents
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+        - $ref: "#/components/parameters/acceptLanguageHeader"
+        - name: documentKind
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/FiscalDocumentKind"
+      responses:
+        '200':
+          description: List of field definitions for document creation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FieldDefinition'
   "/fiscal-document/v1/folios/export":
     post:
       summary: Export folio transactions as PDF
@@ -1571,8 +1636,9 @@ paths:
     get:
       tags:
         - Fiscalization
-      summary: Get fiscalization registration rules for a country
-      description: Returns country-specific fiscalization rules for building forms
+      summary: Get fiscalization rules for a country
+      description: >-
+        Returns country-specific fiscalization rules for building forms. The response always includes the full section list; `fields` is filtered by the optional `sectionKey` query param (default `registration`).
       operationId: getFiscalizationRegistrationRules
       parameters:
         - name: country
@@ -1581,6 +1647,14 @@ paths:
           schema:
             type: string
           description: ISO 3166-1 alpha-2 country code (e.g., BR, PL, MX)
+        - name: sectionKey
+          in: query
+          required: false
+          schema:
+            type: string
+            default: registration
+          description: >-
+            Filter `fields` to the given section. Default `registration`. Pass the key of any section declared in the rules (e.g. `customization.invoicing`) to fetch its fields only.
       responses:
         '200':
           description: Successfully retrieved fiscalization rules
@@ -1754,6 +1828,62 @@ paths:
           description: No consent found
       security:
         - bearerAuth: []
+  /fiscal-document/v1/fiscalization/reports/{reportId}:
+    get:
+      tags:
+        - Fiscalization
+      summary: Generate and download a fiscalization report
+      description: Generates a country-specific report (e.g., SAF-T for Portugal) and returns it for download.
+      operationId: getFiscalizationReport
+      parameters:
+        - name: X-Property-Id
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Property ID
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Report identifier (e.g., "saft")
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 2020
+          description: Report year
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 12
+            default: 0
+          description: Report period (1-12 for monthly, 0 for full year)
+      responses:
+        '200':
+          description: Report generated successfully
+          content:
+            application/xml:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="saft-2024-03.xml"'
+        '400':
+          description: Invalid parameters
+        '404':
+          description: Property not registered or report not available
+      security:
+        - bearerAuth: []
   /fiscal-document/v1/fiscalization/tax/rules:
     get:
       tags:
@@ -1832,15 +1962,402 @@ paths:
                 $ref: '#/components/schemas/FiscalizationTaxResponse'
       security:
         - bearerAuth: []
-  /fiscal-document/v1/fiscalization/credentials:
+  /fiscal-document/v1/fiscalization/payment-methods/rules:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization payment method rules for a country
+      description: Returns country-specific GOBL payment means keys for configuring payment method mappings
+      operationId: getFiscalizationPaymentMethodRules
+      parameters:
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ISO 3166-1 alpha-2 country code (e.g., PT, IT, MX)
+      responses:
+        '200':
+          description: Successfully retrieved payment method rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodRulesResponse'
+        '400':
+          description: Invalid country code
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/payment-methods:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization payment methods for a property
+      description: Returns the payment method mapping configuration for the given property
+      operationId: getFiscalizationPaymentMethods
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodMappingResponse'
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
     put:
       tags:
         - Fiscalization
-      summary: Set AT credentials for a property
+      summary: Update fiscalization payment methods for a property
+      description: Creates or updates the payment method mapping configuration for the given property
+      operationId: updateFiscalizationPaymentMethods
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodMappingRequest'
+        required: true
+      responses:
+        '200':
+          description: Payment method mappings saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodMappingResponse'
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/customization:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization customization for a property
+      description: Returns the customization configuration (logo, locale, layout) for the given property
+      operationId: getFiscalizationCustomization
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationCustomizationResponse'
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - Fiscalization
+      summary: Update fiscalization customization for a property
+      description: Creates or updates the customization configuration for the given property
+      operationId: updateFiscalizationCustomization
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalizationCustomizationRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationCustomizationResponse'
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/customization/logo:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization customization logo
+      description: Returns a presigned URL for the fiscalization customization logo
+      operationId: getFiscalizationCustomizationLogo
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Logo URL retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetLogoResponse'
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+        - Fiscalization
+      summary: Upload fiscalization customization logo
+      description: Upload a logo image for the fiscalization customization
+      operationId: uploadFiscalizationCustomizationLogo
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Logo image file
+      responses:
+        '200':
+          description: Logo uploaded successfully
+        '400':
+          $ref: "#/components/responses/400"
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - Fiscalization
+      summary: Delete fiscalization customization logo
+      description: Delete the fiscalization customization logo
+      operationId: deleteFiscalizationCustomizationLogo
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Logo deleted successfully
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/sections/{sectionKey}:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization section values for a property
+      description: >-
+        Returns the current values for a declared section of the country's fiscalization rules (e.g. `customization.invoicing`). Values are projected from the stored GOBL Party extensions by filtering to keys tagged with the requested section in the country rules.
+      operationId: getFiscalizationSection
+      parameters:
+        - name: sectionKey
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Section key as declared in the country rules (e.g. "customization.invoicing")
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationSectionResponse'
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - Fiscalization
+      summary: Update fiscalization section values for a property
+      description: >-
+        Partial merge update for the given section. Only keys tagged with this section in the country rules are accepted; others are rejected. Sections marked `immutableAfterRegistration` cannot be edited once the property is REGISTERED — use the registration endpoint for those. This call does NOT re-sync the party with the fiscalization provider; sections carrying supplier-ext fields must flow through registration.
+      operationId: updateFiscalizationSection
+      parameters:
+        - name: sectionKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalizationSectionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationSectionResponse'
+        '400':
+          description: Validation error or out-of-scope key
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/items/rules:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get item extension mapping rules for a country
+      description: Returns country-specific item categories and GOBL extension fields for per-item mapping
+      operationId: getFiscalizationItemExtensionRules
+      parameters:
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ISO 3166-1 alpha-2 country code (e.g., BR, MX)
+      responses:
+        '200':
+          description: Successfully retrieved item extension rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemExtensionRulesResponse'
+        '400':
+          description: Invalid country code
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/items:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get item extension mappings for a property
+      description: Returns the per-item GOBL extension mapping configuration for the given property
+      operationId: getFiscalizationItemExtensions
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemMappingResponse'
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - Fiscalization
+      summary: Update item extension mappings for a property
+      description: Creates or updates the per-item GOBL extension mapping configuration for the given property
+      operationId: updateFiscalizationItemExtensions
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemMappingRequest'
+        required: true
+      responses:
+        '200':
+          description: Item extension mappings saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemMappingResponse'
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/credentials:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization credentials status for a property
       description: |
-        Sets or updates the AT web services credentials for the property's supplier.
-        Credentials are validated against the Portuguese Tax Authority before being stored.
-        Required before series registration.
+        Returns metadata about the stored fiscalization provider credentials.
+        The password is never returned. Returns 404 if credentials have never been set
+        or if the country does not require credentials.
+      operationId: getFiscalizationCredentials
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Credentials metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationCredentialsStatus'
+        '404':
+          description: Credentials have never been set for this property
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - Fiscalization
+      summary: Set fiscalization credentials for a property
+      description: |
+        Sets or updates text-based credentials (username/password) for the property's supplier.
+        Used for countries that require portal login credentials (e.g., PT AT portal).
       operationId: setFiscalizationCredentials
       parameters:
         - name: X-Property-ID
@@ -1859,7 +2376,60 @@ paths:
         '204':
           description: Credentials validated and saved successfully
         '422':
-          description: Invalid credentials (rejected by AT)
+          description: Invalid credentials (rejected by provider)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/credentials/certificate:
+    post:
+      tags:
+        - Fiscalization
+      summary: Upload a certificate for fiscalization credentials
+      description: |
+        Uploads a certificate file (e.g., tax authority certificate, ownership document)
+        for the property's supplier. Used for countries that require certificate-based
+        authentication (e.g., HR tax certificate, BE Peppol ownership document).
+      operationId: uploadFiscalizationCertificate
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Certificate or ownership document file
+                privateKey:
+                  type: string
+                  format: binary
+                  description: Private key file (required for PL KSeF and MX e.firma)
+                password:
+                  type: string
+                  description: Certificate or private key password (if required)
+      responses:
+        '204':
+          description: Certificate uploaded and submitted for verification
+        '400':
+          $ref: "#/components/responses/400"
+        '422':
+          description: Invalid certificate (rejected by provider)
           content:
             application/json:
               schema:
@@ -1927,7 +2497,7 @@ paths:
       summary: Update series configuration for a property
       description: |
         Creates or updates the series configuration for the given property.
-        Each entry maps a document kind to a registered AT series name.
+        Each entry maps a document kind to a registered series name.
       operationId: updateFiscalizationSeries
       parameters:
         - name: X-Property-ID
@@ -1949,6 +2519,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FiscalizationSeriesResponse'
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/series/activate:
+    put:
+      tags:
+        - Fiscalization
+      summary: Activate a series for a property
+      description: Activates the given series and deactivates other series of the same document kind
+      operationId: activateFiscalizationSeries
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivateSeriesRequest'
+        required: true
+      responses:
+        '200':
+          description: Series activated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationSeriesResponse'
+        '404':
+          description: Series or config not found
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/series/deactivate:
+    put:
+      tags:
+        - Fiscalization
+      summary: Deactivate a series for a property
+      description: Deactivates the given series
+      operationId: deactivateFiscalizationSeries
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivateSeriesRequest'
+        required: true
+      responses:
+        '200':
+          description: Series deactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationSeriesResponse'
+        '404':
+          description: Series or config not found
       security:
         - bearerAuth: []
 components:
@@ -2032,6 +2664,10 @@ components:
         reason:
           type: string
           nullable: true
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
         userId:
           type: integer
           format: int64
@@ -2119,6 +2755,10 @@ components:
         dueDatePropertyTimezone:
           type: string
           format: date
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
     GetCreditNotePreviewRequest:
       type: object
       required: [invoiceId, method]
@@ -2356,6 +2996,18 @@ components:
         dueDatePropertyTimezone:
           type: string
           format: date
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
+        emails:
+          description: Optional list of email addresses to send the document to once it is ready
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: email
+          maxItems: 10
     GetInvoicePreviewRequest:
       type: object
       required: [transactionIds, sourceId, sourceKind, guestId]
@@ -2558,6 +3210,14 @@ components:
             type: integer
             format: int64
             minimum: 1
+        emails:
+          description: Optional list of email addresses to send the document to once it is ready
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: email
+          maxItems: 10
     ProFormaStatusUpdateRequest:
       type: object
       required: [status]
@@ -2915,6 +3575,18 @@ components:
             $ref: '#/components/schemas/FiscalDocumentDetailedResponse'
         nextPageToken:
           $ref: '#/components/schemas/NextPageToken'
+    DiscrepanciesCount:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+    InvoicedStatus:
+      type: string
+      enum:
+        - NOT_INVOICED
+        - PARTIALLY_INVOICED
+        - FULLY_INVOICED
     FiscalDocumentTransactionResponse:
       type: object
       properties:
@@ -2960,6 +3632,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FiscalDocumentTransactionResponse'
+        invoicedStatus:
+          $ref: "#/components/schemas/InvoicedStatus"
     FiscalDocumentTransactionsForAllocationPaginated:
       type: object
       properties:
@@ -3594,6 +4268,13 @@ components:
       properties:
         type:
           $ref: "#/components/schemas/DocumentAction"
+        fields:
+          type: array
+          description: >
+            Action-specific input fields the UI must collect before submitting. Uses the same FieldDefinition schema as /fiscalization/rules.
+
+          items:
+            $ref: '#/components/schemas/FieldDefinition'
     NextPageToken:
       type: string
       description: Token for fetching the next page of results
@@ -4042,6 +4723,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FieldDefinition'
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/RulesSection'
+          description: >-
+            Ordered list of UI sections that host the country's fields. The frontend uses this list to render sub-navigation; each field references a section via its sectionKey. When absent, all fields belong to an implicit "registration" section.
         examples:
           type: object
           additionalProperties:
@@ -4050,21 +4737,145 @@ components:
         requires:
           $ref: '#/components/schemas/CountryRequirements'
           description: Country-specific requirements for the onboarding UI
+    RulesSection:
+      type: object
+      required:
+        - key
+        - label
+        - immutableAfterRegistration
+      properties:
+        key:
+          type: string
+          description: >-
+            Stable identifier for the section (e.g., "registration", "customization.branding", "customization.invoicing").
+          example: "customization.invoicing"
+        label:
+          type: string
+          description: Display label for the section (translated)
+          example: "Invoice generation"
+        description:
+          type: string
+          description: Help text for the section
+        immutableAfterRegistration:
+          type: boolean
+          description: >-
+            Whether the fields in this section become read-only once the property reaches REGISTERED status. The registration section is true; post-registration customization sections are false.
+          default: false
+        order:
+          type: integer
+          description: Display order (lower first)
+          default: 0
     CountryRequirements:
       type: object
       properties:
-        series:
-          type: boolean
-          description: Whether this country requires series registration (e.g., PT)
-          default: false
-        taxMapping:
-          type: boolean
-          description: Whether this country requires tax ID mapping
-          default: true
         credentials:
+          $ref: '#/components/schemas/Requirement'
+        certificate:
+          $ref: '#/components/schemas/Requirement'
+        series:
+          $ref: '#/components/schemas/Requirement'
+        taxMapping:
+          $ref: '#/components/schemas/Requirement'
+        paymentMethodMapping:
+          $ref: '#/components/schemas/Requirement'
+        itemMapping:
+          $ref: '#/components/schemas/Requirement'
+        reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportDefinition'
+          description: Available reports for this country (e.g., SAF-T for PT)
+    ReportDefinition:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: string
+          description: Unique report identifier (e.g., "saft")
+          example: "saft"
+        label:
+          type: string
+          description: Display label for the report
+          example: "SAF-T Report"
+        description:
+          type: string
+          description: Detailed description of the report
+          example: "Export SAF-T file for submission to Autoridade Tributária"
+        params:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportParam'
+          description: Parameters the user must provide to generate the report
+    ReportParam:
+      type: object
+      required:
+        - name
+        - type
+        - required
+        - label
+      properties:
+        name:
+          type: string
+          description: Parameter name (used as query param)
+          example: "year"
+        type:
+          type: string
+          enum: [integer, text, select]
+          description: Parameter input type
+        required:
           type: boolean
-          description: Whether registration includes government credentials (shown within registration tab)
+        label:
+          type: string
+          description: Display label
+          example: "Year"
+        description:
+          type: string
+          description: Help text
+          example: "Fiscal year (e.g., 2024)"
+    Requirement:
+      type: object
+      required:
+        - required
+      properties:
+        required:
+          type: boolean
+          description: Whether this step is required for this country
+        description:
+          type: string
+          description: Human-readable description of what this step involves
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/RequirementField'
+          description: Field definitions for the UI form (only present when the step has configurable fields)
+    RequirementField:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          description: Field name used in the API request
+        type:
+          type: string
+          enum: [text, password, file]
+          description: Field input type
+        required:
+          type: boolean
+          description: Whether this field is required
           default: false
+        label:
+          type: string
+          description: Display label for the field
+        description:
+          type: string
+          description: Help text or description for the field
+        accept:
+          type: string
+          description: Accepted file types (for file fields, e.g., ".p12,.pfx,.pem")
     FiscalizationCredentialsRequest:
       type: object
       required:
@@ -4073,12 +4884,33 @@ components:
       properties:
         username:
           type: string
-          description: AT web services username (e.g., NIF/sequence like 515097365/4)
-          example: "515097365/4"
+          description: Provider credentials username
+          example: "599999993/01"
         password:
           type: string
           format: password
-          description: AT web services password
+          description: Provider credentials password
+    FiscalizationCredentialsStatus:
+      type: object
+      required:
+        - createdAt
+        - updatedAt
+      properties:
+        username:
+          type: string
+          description: Provider credentials username (null for file-based credentials)
+          example: "599999993/01"
+        verified:
+          type: boolean
+          description: Whether the credentials have been verified by the provider
+        createdAt:
+          type: string
+          format: date-time
+          description: When credentials were first set
+        updatedAt:
+          type: string
+          format: date-time
+          description: When credentials were last updated
     CountryInfo:
       type: object
       required:
@@ -4111,12 +4943,17 @@ components:
           example: "Legal Name"
         type:
           type: string
-          enum: [text, email, select, boolean, array, object]
+          enum: [text, email, password, file, select, boolean, array, object]
           description: Field input type
         category:
           type: string
           enum: [company, tax, address, contact, supplementary, custom]
           description: Field grouping category
+        sectionKey:
+          type: string
+          description: >-
+            Key of the RulesSection that hosts this field. Defaults to "registration" when absent. Nested fields inside arrays/objects inherit the parent's section and should omit this attribute.
+          example: "customization.invoicing"
         required:
           type: boolean
           description: Whether field is required
@@ -4175,6 +5012,12 @@ components:
         format:
           type: string
           description: Display format mask (e.g., XX.XXX.XXX/XXXX-XX)
+        message:
+          type: string
+          description: Human-readable description of the rule, suitable for FE error messages (e.g. "NFS-e series must be 1-5 alphanumeric characters").
+        example:
+          type: string
+          description: A valid example value that can be shown as a placeholder hint (e.g. "ABC12" for NFS-e, "1" for NFC-e).
     FieldData:
       type: object
       properties:
@@ -4390,6 +5233,253 @@ components:
         rate:
           type: string
           description: Rate within the category and key (e.g., general, reduced)
+        description:
+          type: string
+          description: Exemption reason text (e.g. VAT Act article reference). Required when key=exempt.
+          nullable: true
+    PaymentMethodRulesResponse:
+      type: object
+      required:
+        - country
+        - paymentMethods
+      properties:
+        country:
+          $ref: '#/components/schemas/CountryInfo'
+        paymentMethods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentMethodRule'
+          description: Available GOBL payment means keys for this country
+    PaymentMethodRule:
+      type: object
+      required:
+        - key
+        - name
+      properties:
+        key:
+          type: string
+          description: GOBL payment means key (e.g., cash, card, credit-transfer)
+        name:
+          type: string
+          description: Display name (e.g., "Cash (NU)")
+        ext:
+          type: string
+          description: >-
+            Country-specific extension code override. Required when key is "other" and the country has unmapped payment codes (e.g., "MB" for Multibanco in PT).
+    PaymentMethodMappingResponse:
+      type: object
+      properties:
+        paymentMethods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentMethodMapping'
+    PaymentMethodMappingRequest:
+      type: object
+      properties:
+        paymentMethods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentMethodMapping'
+    PaymentMethodMapping:
+      type: object
+      required:
+        - paymentMethodId
+        - key
+      properties:
+        paymentMethodId:
+          type: string
+          description: Cloudbeds payment method origin ID (e.g., CASH, cards_visa)
+        key:
+          type: string
+          description: GOBL payment means key (e.g., cash, card, credit-transfer)
+        ext:
+          type: string
+          description: >-
+            Country-specific extension code override. Used when key is "other" to specify the exact country payment code (e.g., "MB" for Multibanco in PT).
+    FiscalizationCustomizationResponse:
+      type: object
+      properties:
+        logoUrl:
+          type: string
+          description: URL of the property logo for PDF generation
+        logoHeight:
+          type: integer
+          description: Logo height in pixels
+          minimum: 64
+          maximum: 2048
+        locale:
+          type: string
+          description: Locale for PDF generation (e.g., "pt", "en", "es")
+        dateFormat:
+          type: string
+          description: Date format for PDFs (e.g., "%Y-%m-%d", "%d/%m/%Y")
+        layout:
+          type: string
+          description: PDF page layout
+          enum:
+            - A4
+            - Letter
+            - DIN5008
+    FiscalizationCustomizationRequest:
+      type: object
+      properties:
+        logoHeight:
+          type: integer
+          description: Logo height in pixels
+          minimum: 64
+          maximum: 2048
+        locale:
+          type: string
+          description: Locale for PDF generation (e.g., "pt", "en", "es")
+        dateFormat:
+          type: string
+          description: Date format for PDFs (e.g., "%Y-%m-%d", "%d/%m/%Y")
+        layout:
+          type: string
+          description: PDF page layout
+          enum:
+            - A4
+            - Letter
+            - DIN5008
+    FiscalizationSectionRequest:
+      type: object
+      required:
+        - values
+      properties:
+        values:
+          type: object
+          additionalProperties:
+            type: string
+          description: >-
+            Sparse map of extension key (e.g. "br-nfe-presence") to value. Only keys tagged with the section in the country rules are accepted. Missing keys keep their previous value (partial merge); empty-string values clear the key.
+    FiscalizationSectionResponse:
+      type: object
+      required:
+        - values
+      properties:
+        values:
+          type: object
+          additionalProperties:
+            type: string
+          description: Current persisted values for the section.
+    ActivateSeriesRequest:
+      type: object
+      required:
+        - seriesCode
+      properties:
+        seriesCode:
+          type: string
+          description: The series code to activate or deactivate (e.g., "FT CB-2026")
+    ItemExtensionRulesResponse:
+      type: object
+      required:
+        - country
+        - categories
+      properties:
+        country:
+          $ref: '#/components/schemas/CountryInfo'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemCategoryRequirement'
+          description: Item categories that need GOBL extension mappings
+    ItemCategoryRequirement:
+      type: object
+      required:
+        - category
+        - label
+        - singleDefault
+        - extensions
+      properties:
+        category:
+          type: string
+          description: Category identifier (e.g., room_booking, item_service)
+        label:
+          type: string
+          description: Human-readable label for the category
+        singleDefault:
+          type: boolean
+          description: >-
+            If true, one mapping applies to all items in this category (e.g., all room bookings share the same service code)
+        extensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemExtensionField'
+          description: Extension fields required for items in this category
+    ItemExtensionField:
+      type: object
+      required:
+        - key
+        - label
+        - required
+      properties:
+        key:
+          type: string
+          description: GOBL extension key (e.g., br-nfse-service, mx-cfdi-prod-serv)
+        label:
+          type: string
+          description: Human-readable label for the extension field
+        description:
+          type: string
+          description: Help text for the UI
+        required:
+          type: boolean
+          description: Whether this extension is mandatory on every line item
+        validationPattern:
+          type: string
+          description: Regex pattern for input validation (null for no validation)
+        options:
+          type: object
+          additionalProperties:
+            type: string
+          description: >-
+            Fixed value options as label-to-value map for select fields. Null for free-text input fields.
+    ItemMappingResponse:
+      type: object
+      properties:
+        categoryDefaults:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+          description: >-
+            Default extensions per single-default category. Key is the category identifier (e.g. room_booking), value is a map of GOBL extension key-value pairs.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemMappingEntry'
+          description: Per-item extension mappings for non-single-default categories
+    ItemMappingRequest:
+      type: object
+      properties:
+        categoryDefaults:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+          description: >-
+            Default extensions per single-default category. Key is the category identifier, value is a map of extension key-value pairs.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemMappingEntry'
+          description: Per-item extension mappings
+    ItemMappingEntry:
+      type: object
+      required:
+        - itemId
+        - extensions
+      properties:
+        itemId:
+          type: string
+          description: PMS item/product origin ID
+        extensions:
+          type: object
+          additionalProperties:
+            type: string
+          description: GOBL extension key-value pairs for this item
     FiscalizationSeriesRulesResponse:
       type: object
       required:
@@ -4403,12 +5493,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SeriesDocumentType'
-          description: Available document types that require series registration
+          description: Available series slots that require registration
         seriesTypes:
           type: array
           items:
             $ref: '#/components/schemas/SeriesType'
           description: Available series types for this environment
+        seriesOptions:
+          $ref: '#/components/schemas/SeriesOptions'
+        dimensionGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeriesDimensionGroup'
+          description: Grouped series dimensions (gov doc → business types). When present, use 2-step selection.
     SeriesDocumentType:
       type: object
       required:
@@ -4418,10 +5515,10 @@ components:
       properties:
         documentKind:
           type: string
-          description: Document kind enum value (e.g., INVOICE, CREDIT_NOTE)
+          description: Unique series slot identifier (e.g. INVOICE, INVOICE:NFSE)
         prefix:
           type: string
-          description: SAF-T series prefix (e.g., FT, NC, FR, ND, RG)
+          description: Series prefix hint (e.g. FT for Portugal, NFSE for Brazil)
         name:
           type: string
           description: Display name (e.g., "Fatura (Standard Invoice)")
@@ -4441,6 +5538,46 @@ components:
         description:
           type: string
           description: Description of the series type
+    GovernmentDocumentType:
+      type: object
+      required:
+        - key
+        - name
+      properties:
+        key:
+          type: string
+          description: Government document identifier (e.g. NFSE, NFCE)
+        name:
+          type: string
+          description: Display name (e.g. NFS-e, NFC-e)
+    SeriesDimensionGroup:
+      type: object
+      required:
+        - governmentDocument
+        - businessDocumentTypes
+      properties:
+        governmentDocument:
+          $ref: '#/components/schemas/GovernmentDocumentType'
+        businessDocumentTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeriesDocumentType'
+          description: Business document types available under this government document
+        nameValidation:
+          $ref: '#/components/schemas/FieldValidation'
+          description: Series name constraints imposed by the government system (e.g. Brazilian NFS-e serie is alphanumeric, 1-5 characters).
+    SeriesOptions:
+      type: object
+      properties:
+        prefixWithDocumentType:
+          type: boolean
+          description: Whether the document type prefix is prepended to the series name
+        requiresSeriesType:
+          type: boolean
+          description: Whether this country requires series type selection (N/F/R)
+        showValidationCode:
+          type: boolean
+          description: Whether to display the validation code (e.g. AT ATCUD)
     FiscalizationSeriesResponse:
       type: object
       properties:
@@ -4453,22 +5590,22 @@ components:
       required:
         - baseName
         - documentTypes
-        - seriesType
       properties:
         baseName:
           type: string
-          description: Base name for the series (without prefix). E.g., "CB-2026"
+          description: Series name/code to register for the given keys
           example: CB-2026
         documentTypes:
           type: array
           items:
             type: string
-          description: SAF-T document type prefixes to register (e.g., ["FT", "NC", "FR"])
-          example: ["FT", "NC", "FR", "ND", "RG"]
+          minItems: 1
+          description: Series slot keys to register (values from rules endpoint's documentKind)
+          example: ["FT", "NC", "FR"]
         seriesType:
           type: string
           enum: ["N", "F", "R"]
-          description: "Series type: N (Normal/Production), F (Training), R (Recovery)"
+          description: "Series type. Required for provider-based registration (e.g. Portugal)."
           example: "F"
     SeriesMapping:
       type: object
@@ -4488,3 +5625,6 @@ components:
         validationCode:
           type: string
           description: AT validation code for ATCUD generation
+        active:
+          type: boolean
+          description: Whether this series is currently active for new documents
