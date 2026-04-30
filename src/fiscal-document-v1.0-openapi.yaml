@@ -218,7 +218,7 @@ paths:
           schema:
             type: boolean
             default: false
-        - name: show_invoiced
+        - name: showInvoiced
           in: query
           description: When true, transactions already included in fiscal documents are not filtered out.
           required: false
