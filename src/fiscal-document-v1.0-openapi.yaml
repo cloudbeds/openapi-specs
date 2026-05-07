@@ -1391,6 +1391,33 @@ paths:
           $ref: "#/components/responses/400"
         '403':
           $ref: "#/components/responses/403"
+    patch:
+      summary: Crop logo image for fiscal documents
+      operationId: cropLogo
+      description: >
+        Crop the previously uploaded logo. The original is preserved so subsequent crops always start from the full original image. Output is stored as PNG and resized to at most 1000 px on the longest dimension.
+
+      security:
+        - bearerAuth: []
+      tags:
+        - Configs
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CropLogoRequest'
+      responses:
+        '200':
+          description: Logo cropped successfully
+        '400':
+          $ref: "#/components/responses/400"
+        '403':
+          $ref: "#/components/responses/403"
+        '404':
+          $ref: "#/components/responses/404"
     delete:
       summary: Delete logo image for fiscal documents
       operationId: deleteLogo
@@ -4245,7 +4272,42 @@ components:
         logoUrl:
           type: string
           format: uri
-          description: Presigned URL to access the logo file
+          description: Presigned URL to access the (cropped) logo file
+        originalLogoUrl:
+          type: string
+          format: uri
+          description: Presigned URL to access the original uncropped logo; only present when a crop has been applied
+    CropLogoRequest:
+      type: object
+      required:
+        - crop_param
+      properties:
+        crop_param:
+          $ref: '#/components/schemas/CropParam'
+    CropParam:
+      type: object
+      required:
+        - x
+        - y
+        - width
+        - height
+      properties:
+        x:
+          type: integer
+          minimum: 0
+          description: Left offset of the crop region in pixels
+        y:
+          type: integer
+          minimum: 0
+          description: Top offset of the crop region in pixels
+        width:
+          type: integer
+          minimum: 1
+          description: Width of the crop region in pixels
+        height:
+          type: integer
+          minimum: 1
+          description: Height of the crop region in pixels
     ApiError:
       type: object
       properties:
@@ -4530,6 +4592,9 @@ components:
         balanceTo:
           type: number
           description: Maximum document balance
+        hasDiscrepancies:
+          type: boolean
+          description: Filter by whether the document has pending-transaction discrepancies. Reads the persisted `hasDiscrepancies` flag, the same one returned in the response payload.
     TransactionForAllocationResponse:
       type: object
       properties:
