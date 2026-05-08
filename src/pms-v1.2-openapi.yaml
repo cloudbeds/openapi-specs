@@ -290,7 +290,7 @@ components:
                                 - by_day
                                 - by_interval
                             nullable: true
-                        days:
+                        releaseDays:
                             description: 'The number of days prior to the end of the allotment block to begin releasing dates from the allotment block'
                             type: integer
                             nullable: true
@@ -320,7 +320,7 @@ components:
                                             type: string
                                             format: date
                                         blockAllotted:
-                                            description: 'Total number of units available for the'
+                                            description: 'Total number of units available for the room type for this day. Note: this value is ignored for based_on_availability allotment types, which always use full property availability.'
                                             type: integer
                                         rate:
                                             description: 'the price if applicable'
@@ -461,7 +461,7 @@ components:
                                             - all_dates
                                             - by_day
                                             - by_interval
-                                    days:
+                                    releaseDays:
                                         description: 'The number of days prior to the end of the allotment block to begin releasing dates from the allotment block'
                                         type: integer
                                     releaseTime:
@@ -499,7 +499,7 @@ components:
                                                     description: 'Number of units remaining for the room type for this day'
                                                     type: integer
                                                 blockAllotted:
-                                                    description: 'Total number of units available for the room type for this day'
+                                                    description: 'Total number of units available for the room type for this day. Note: this value is ignored for based_on_availability allotment types, which always use full property availability.'
                                                     type: integer
                                                 blockConfirmed:
                                                     description: 'Number of units booked for the room type for this day'
@@ -644,7 +644,7 @@ components:
                                                 - all_dates
                                                 - by_day
                                                 - by_interval
-                                        days:
+                                        releaseDays:
                                             description: 'The number of days prior to the end of the allotment block to begin releasing dates from the allotment block'
                                             type: integer
                                         releaseTime:
@@ -708,7 +708,7 @@ components:
                                                         description: 'Number of units remaining for the room type for this day'
                                                         type: integer
                                                     blockAllotted:
-                                                        description: 'Total number of units available for the room type for this day'
+                                                        description: 'Total number of units available for the room type for this day. Note: this value is ignored for based_on_availability allotment types, which always use full property availability.'
                                                         type: integer
                                                     blockConfirmed:
                                                         description: 'Number of units booked for the room type for this day'
@@ -808,7 +808,7 @@ components:
                                 - by_day
                                 - by_interval
                             nullable: true
-                        days:
+                        releaseDays:
                             description: 'The number of days prior to the end of the allotment block to begin releasing dates from the allotment block'
                             type: integer
                             nullable: true
@@ -838,7 +838,7 @@ components:
                                     type: object
                                     properties:
                                         blockAllotted:
-                                            description: 'Total number of units available for the room type for this day'
+                                            description: 'Total number of units available for the room type for this day. Note: this value is ignored for based_on_availability allotment types, which always use full property availability.'
                                             type: integer
                                             nullable: true
                                         date:
@@ -978,7 +978,7 @@ components:
                                             - all_dates
                                             - by_day
                                             - by_interval
-                                    days:
+                                    releaseDays:
                                         description: 'The number of days prior to the end of the allotment block to begin releasing dates from the allotment block'
                                         type: integer
                                     releaseTime:
@@ -1008,7 +1008,7 @@ components:
                                                     description: 'Number of units remaining for the room type for this day'
                                                     type: integer
                                                 blockAllotted:
-                                                    description: 'Total number of units available for the room type for this day'
+                                                    description: 'Total number of units available for the room type for this day. Note: this value is ignored for based_on_availability allotment types, which always use full property availability.'
                                                     type: integer
                                                 blockConfirmed:
                                                     description: 'Number of units booked for the room type for this day'
@@ -3387,6 +3387,10 @@ components:
                     description: 'If set true, will remove all guests assigned to roomID before assigning guests sent in guestIDs parameter. Main Guest is never removed.'
                     type: boolean
                     nullable: true
+                mainGuestId:
+                    description: "Guest ID to promote as main guest of the booking room. MUST be present in guestIDs. When omitted, the room's main guest is left unchanged."
+                    type: string
+                    nullable: true
         PostGuestsToRoomResponse:
             type: object
             properties:
@@ -5577,6 +5581,9 @@ components:
                                     closedToDeparture:
                                         description: ''
                                         type: boolean
+                                    blocked:
+                                        description: 'Whether the accommodation is blocked. Mirrors /patchRate `blocked` parameter and reflects the operator-set restriction only.'
+                                        type: boolean
                                     minLos:
                                         description: 'Minimum Length Of Stay'
                                         type: integer
@@ -5791,6 +5798,9 @@ components:
                                             type: boolean
                                         closedToDeparture:
                                             description: 'true if day closed to departure'
+                                            type: boolean
+                                        blocked:
+                                            description: 'Whether the accommodation is blocked. Mirrors /patchRate `blocked` parameter and reflects the operator-set restriction only.'
                                             type: boolean
                                         minLos:
                                             description: 'Minimum Length Of Stay'
@@ -6121,6 +6131,15 @@ components:
                                         items:
                                             type: object
                                             properties:
+                                                customFieldID:
+                                                    description: 'Unique identifier of the custom field definition (matches /getCustomFields.customFieldID).'
+                                                    type: string
+                                                shortcode:
+                                                    description: 'Stable internal code of the custom field (matches /getCustomFields.shortcode).'
+                                                    type: string
+                                                isActive:
+                                                    description: 'Whether the custom field definition is active (true) or archived (false).'
+                                                    type: boolean
                                                 customFieldName:
                                                     description: 'Custom Field Name'
                                                     type: string
@@ -6300,6 +6319,9 @@ components:
                                     subReservationID:
                                         description: 'Sub Reservation ID of the specific assigned room'
                                         type: string
+                                    isRoomLocked:
+                                        description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                                        type: boolean
                                     roomName:
                                         description: 'Name of the specific assigned room'
                                         type: string
@@ -6363,6 +6385,9 @@ components:
                                     subReservationID:
                                         description: 'Sub Reservation ID of the specific assigned room'
                                         type: string
+                                    isRoomLocked:
+                                        description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                                        type: boolean
                                     startDate:
                                         description: 'Check-In date of the room'
                                         type: string
@@ -6419,6 +6444,15 @@ components:
                             items:
                                 type: object
                                 properties:
+                                    customFieldID:
+                                        description: 'Unique identifier of the custom field definition (matches /getCustomFields.customFieldID).'
+                                        type: string
+                                    shortcode:
+                                        description: 'Stable internal code of the custom field (matches /getCustomFields.shortcode).'
+                                        type: string
+                                    isActive:
+                                        description: 'Whether the custom field definition is active (true) or archived (false).'
+                                        type: boolean
                                     customFieldName:
                                         description: 'Custom Field Name'
                                         type: string
@@ -6483,7 +6517,7 @@ components:
                     type: string
                     nullable: true
                 sourceID:
-                    description: 'The third-party source ID for this reservation.'
+                    description: 'The source ID for this reservation. Accepted formats:<br /> "s-{id}" for primary sources (no suffix), or<br /> "ss-{id}-0" / "ss-{id}-1" for third-party sources (suffix required: 0 = channel-collect, 1 = hotel-collect). The format must match the source type.'
                     type: string
                     nullable: true
                 thirdPartyIdentifier:
@@ -6844,6 +6878,18 @@ components:
                                 items:
                                     type: object
                                     properties:
+                                        customFieldID:
+                                            description: 'Unique identifier of the custom field definition (matches /getCustomFields.customFieldID).'
+                                            type: string
+                                            nullable: true
+                                        shortcode:
+                                            description: 'Stable internal code of the custom field (matches /getCustomFields.shortcode).'
+                                            type: string
+                                            nullable: true
+                                        isActive:
+                                            description: 'Whether the custom field definition is active (true) or archived (false).'
+                                            type: boolean
+                                            nullable: true
                                         customFieldName:
                                             description: 'Custom Field Name'
                                             type: string
@@ -6871,6 +6917,9 @@ components:
                                         subReservationID:
                                             description: 'sub Reservation ID (specific to each room)'
                                             type: string
+                                        isRoomLocked:
+                                            description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                                            type: boolean
                                         guestID:
                                             description: 'ID of the main guest assigned to the room'
                                             type: string
@@ -7104,6 +7153,9 @@ components:
                                                         description: ''
                                                         type: string
                                                         nullable: true
+                                                    isRoomLocked:
+                                                        description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                                                        type: boolean
                                             nullable: true
                                         unassignedRooms:
                                             description: 'List of all unassigned rooms'
@@ -7143,6 +7195,9 @@ components:
                                                         description: 'Sub Reservation ID of the specific assigned room'
                                                         type: string
                                                         nullable: true
+                                                    isRoomLocked:
+                                                        description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                                                        type: boolean
                                             nullable: true
                                         guestRequirements:
                                             description: 'Guest requirements data. Only included if `includeGuestsDetails=true` and `includeGuestRequirements=true`.'
@@ -7154,6 +7209,18 @@ components:
                                             items:
                                                 type: object
                                                 properties:
+                                                    customFieldID:
+                                                        description: 'Unique identifier of the custom field definition (matches /getCustomFields.customFieldID).'
+                                                        type: string
+                                                        nullable: true
+                                                    shortcode:
+                                                        description: 'Stable internal code of the custom field (matches /getCustomFields.shortcode).'
+                                                        type: string
+                                                        nullable: true
+                                                    isActive:
+                                                        description: 'Whether the custom field definition is active (true) or archived (false).'
+                                                        type: boolean
+                                                        nullable: true
                                                     customFieldName:
                                                         description: 'Custom Field Name'
                                                         type: string
@@ -7334,6 +7401,9 @@ components:
                                         subReservationID:
                                             description: 'sub Reservation ID (specific to each room)'
                                             type: string
+                                        isRoomLocked:
+                                            description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                                            type: boolean
                                         guestID:
                                             description: 'ID of the main guest assigned to the room'
                                             type: string
@@ -7583,6 +7653,9 @@ components:
                                                         description: ''
                                                         type: string
                                                         nullable: true
+                                                    isRoomLocked:
+                                                        description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                                                        type: boolean
                                             nullable: true
                                         unassignedRooms:
                                             description: 'List of all unassigned rooms'
@@ -7622,6 +7695,9 @@ components:
                                                         description: 'Sub Reservation ID of the specific assigned room'
                                                         type: string
                                                         nullable: true
+                                                    isRoomLocked:
+                                                        description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                                                        type: boolean
                                             nullable: true
                                         guestRequirements:
                                             description: 'Guest requirements data. Only included if `includeGuestsDetails=true` and `includeGuestRequirements=true`.'
@@ -7633,6 +7709,18 @@ components:
                                             items:
                                                 type: object
                                                 properties:
+                                                    customFieldID:
+                                                        description: 'Unique identifier of the custom field definition (matches /getCustomFields.customFieldID).'
+                                                        type: string
+                                                        nullable: true
+                                                    shortcode:
+                                                        description: 'Stable internal code of the custom field (matches /getCustomFields.shortcode).'
+                                                        type: string
+                                                        nullable: true
+                                                    isActive:
+                                                        description: 'Whether the custom field definition is active (true) or archived (false).'
+                                                        type: boolean
+                                                        nullable: true
                                                     customFieldName:
                                                         description: 'Custom Field Name'
                                                         type: string
@@ -7659,6 +7747,18 @@ components:
                                 items:
                                     type: object
                                     properties:
+                                        customFieldID:
+                                            description: 'Unique identifier of the custom field definition (matches /getCustomFields.customFieldID).'
+                                            type: string
+                                            nullable: true
+                                        shortcode:
+                                            description: 'Stable internal code of the custom field (matches /getCustomFields.shortcode).'
+                                            type: string
+                                            nullable: true
+                                        isActive:
+                                            description: 'Whether the custom field definition is active (true) or archived (false).'
+                                            type: boolean
+                                            nullable: true
                                         customFieldName:
                                             description: 'Custom Field Name'
                                             type: string
@@ -7743,6 +7843,9 @@ components:
                                             description: 'Associated subReservation ID (specific to room)'
                                             type: string
                                             nullable: true
+                                        isRoomLocked:
+                                            description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                                            type: boolean
                                 nullable: true
                 message:
                     description: 'To be used in case any error occurs (if success = false). If success = true, it does not exist.'
@@ -8272,6 +8375,9 @@ components:
                         subReservationID:
                             description: 'Subreservation Unique Identifier'
                             type: string
+                        isRoomLocked:
+                            description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
+                            type: boolean
                         roomID:
                             description: 'ID of room assigned'
                             type: string
@@ -13512,6 +13618,20 @@ paths:
                     schema:
                         type: integer
                     required: true
+                    in: query
+                -
+                    description: 'Adult occupants per room (applied uniformly across `roomsCount`). Required for `fixed_per_person` taxes/fees to compute non-zero values; otherwise per-person amounts return 0.'
+                    name: adultsPerRoom
+                    schema:
+                        type: integer
+                    required: false
+                    in: query
+                -
+                    description: 'Child occupants per room. Same semantics as `adultsPerRoom`.'
+                    name: childrenPerRoom
+                    schema:
+                        type: integer
+                    required: false
                     in: query
     /postRoomAssign:
         post:
