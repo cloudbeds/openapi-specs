@@ -2673,11 +2673,13 @@ paths:
                         max_occupancy:
                           type: integer
                           minimum: 0
-                          description: Maximum occupancy, `0` means no restrictions.
+                          description: |
+                            Maximum occupancy, `0` means no restrictions. **Note:** Cloudbeds does not currently populate this field; it is always sent as `0`. Partners should ignore it and treat occupancy as unrestricted at the rate-plan level.
                         min_occupancy:
                           type: integer
                           minimum: 0
-                          description: Minimum occupancy, `0` means no restrictions.
+                          description: |
+                            Minimum occupancy, `0` means no restrictions. **Note:** Cloudbeds does not currently populate this field; it is always sent as `0`. Partners should ignore it and treat occupancy as unrestricted at the rate-plan level.
                         meal_codes:
                           type: array
                           description: |
@@ -4576,12 +4578,12 @@ components:
           type: string
           format: date
           description: |
-            Date of booking modification, in UTC. Do not pass if booking has not been modified.
+            Date of booking modification, in UTC. Required if `IsModification` is `1`; do not pass if booking has not been modified.
         OrderModifTime:
           type: string
           pattern: ^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$
           description: |
-            Time of booking modification, in UTC. Do not pass if booking has not been modified. If seconds are not provided, set value to ":00".
+            Time of booking modification, in UTC. Required if `IsModification` is `1`; do not pass if booking has not been modified. If seconds are not provided, set value to ":00".
         IsCancellation:
           type: integer
           enum:
@@ -4756,6 +4758,17 @@ components:
         - Rooms
         - TotalCurrency
         - TotalPrice
+      allOf:
+        - if:
+            properties:
+              IsModification:
+                const: 1
+            required:
+              - IsModification
+          then:
+            required:
+              - OrderModifDate
+              - OrderModifTime
     tax_conditions:
       type: array
       description: |
