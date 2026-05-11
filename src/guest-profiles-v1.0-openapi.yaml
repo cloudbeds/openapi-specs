@@ -493,7 +493,7 @@ paths:
   /merges/suggested:
     get:
       tags:
-        - ProfileMerges
+        - Merges
       summary: Get a list of suggested merges.
       parameters:
         - $ref: '#/components/parameters/OrganizationId'
@@ -567,7 +567,7 @@ paths:
   /profiles/{profileId}/reservations:
     get:
       tags:
-        - ProfileReservations
+        - Reservations
       summary: Returns a list of reservations for a given profile
       security:
         - superAdmin: [ ]
@@ -642,7 +642,7 @@ paths:
   /merges:
     get:
       tags:
-        - ProfileMerges
+        - Merges
       summary: Returns a list of guest profile merges
       responses:
         200:
@@ -779,7 +779,7 @@ paths:
         - $ref: '#/components/parameters/IncludeTotal'
     post:
       tags:
-        - ProfileMerges
+        - Merges
       summary: Merge profiles
       responses:
         200:
@@ -899,7 +899,7 @@ paths:
   /merges/{mergeId}/unmerge:
     post:
       tags:
-        - ProfileMerges
+        - Merges
       summary: Unmerge profiles
       parameters:
         - $ref: '#/components/parameters/OrganizationId'
