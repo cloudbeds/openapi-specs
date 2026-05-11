@@ -1,0 +1,2223 @@
+openapi: 3.1.0
+info:
+  title: 'Guest Profile API'
+  description: |
+    #### The Cloudbeds Guest Profiles API provides programmatic methods to access guest profile data. With the Cloudbeds Guest Profile API, you can:
+    - Get a list of guest profiles
+    - Get a list of merge/unmerge operations for profiles
+
+    [Terms of service](https://www.cloudbeds.com/terms/api/)\
+    [Contact the developer](mailto:support@cloudbeds.com)\
+    [Cloudbeds](https://www.cloudbeds.com)\
+    *Note: The API returns application/json*
+  version: "v1"
+servers:
+  -
+    url: '/guest-profiles/v1'
+paths:
+  /profiles:
+    get:
+      tags:
+        - Profiles
+      summary: Returns a list of guest profiles
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IncludeTotal'
+        - $ref: '#/components/parameters/Filters'
+          x-extend-description: |
+            **Allowed fields**: `dateModified` (`greater_than_or_equal`, `greater_than`, `less_than_or_equal`, `less_than`),
+            `parentId` (`equals`, `not_equals`, `is_null`, `is_not_null`),
+            `checkinAt` (`greater_than_or_equal`, `greater_than`, `less_than_or_equal`, `less_than`),
+            `checkoutAt` (`greater_than_or_equal`, `greater_than`, `less_than_or_equal`, `less_than`),
+            `country` (`equals`, `not_equals`, `in`, `not_in`),
+            `status` (`equals`, `not_equals`, `in`, `not_in`),
+            `isRepeatGuest` (`equals`, `not_equals`, `in`, `not_in`).
+          x-example: 'dateModified:greater_than_or_equal:2024-07-17T14:00:00-08:00'
+        - $ref: '#/components/parameters/Sort'
+          x-extend-description: |
+            **Allowed fields**: `firstName`, `lastName`, `email`, `phone`, `country`, `isRepeatGuest`, `dateModified`.
+          x-example: 'email:asc'
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilesResponse'
+              example:
+                - offset: 40
+                  limit: 20
+                  total: 80
+                  data:
+                    - id: "123456788"
+                      organizationId: "12345"
+                      photoId: 12345
+                      taxId: "*****"
+                      companyTaxId: "*****"
+                      statusId: 12345
+                      statusName: "StatusName"
+                      firstName: "First Name 1"
+                      lastName: "Last Name 1"
+                      email: "test1@example.com"
+                      phone: "123456789"
+                      cellPhone: "123456789"
+                      birthday: "1970-01-01"
+                      gender: "M/F"
+                      companyName: "*****"
+                      address1: "Address line 1"
+                      address2: "Address line 2"
+                      city: "City"
+                      country: "AZ"
+                      countryName: "Azerbaijan"
+                      state: "State"
+                      zip: "12345"
+                      documentType: "driver_licence"
+                      documentNumber: "*****"
+                      documentIssueDate: "1970-01-01"
+                      documentIssuingCountry: "US"
+                      documentExpirationDate: "1970-01-01"
+                      isOptIn: false
+                      isMerged: false
+                      isRepeatGuest: false
+                    - id: "123456789"
+                      organizationId: "12345"
+                      photoId: 12345
+                      taxId: "*****"
+                      companyTaxId: "*****"
+                      statusId: 12345
+                      statusName: "StatusName"
+                      firstName: "First Name 2"
+                      lastName: "Last Name 2"
+                      email: "test2@example.com"
+                      phone: "123456789"
+                      cellPhone: "123456789"
+                      birthday: "1970-01-01"
+                      gender: "M/F"
+                      companyName: "*****"
+                      address1: "Address line 1"
+                      address2: "Address line 2"
+                      city: "City"
+                      country: "FR"
+                      countryName: "France"
+                      state: "State"
+                      zip: "12345"
+                      documentType: "driver_licence"
+                      documentNumber: "*****"
+                      documentIssueDate: "1970-01-01"
+                      documentIssuingCountry: "PT"
+                      documentExpirationDate: "1970-01-01"
+                      isOptIn: false
+                      isMerged: false
+                      isRepeatGuest: false
+    post:
+      tags:
+        - Profiles
+      summary: Create a new profile
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'write:guest'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Profile'
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+  /profiles/{profileId}:
+    get:
+      tags:
+        - Profiles
+      summary: Returns a single profile by ID
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/ProfileId'
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+              example:
+                id: "123456788"
+                organizationId: "12345"
+                photoId: 12345
+                taxId: "*****"
+                companyTaxId: "*****"
+                statusId: 12345
+                statusName: "StatusName"
+                firstName: "First Name 1"
+                lastName: "Last Name 1"
+                email: "test1@example.com"
+                phone: "123456789"
+                cellPhone: "123456789"
+                birthday: "1970-01-01"
+                gender: "M/F"
+                companyName: "*****"
+                address1: "Address line 1"
+                address2: "Address line 2"
+                city: "City"
+                country: "UA"
+                countryName: "Ukraine"
+                state: "State"
+                zip: "12345"
+                documentType: "driver_licence"
+                documentNumber: "*****"
+                documentIssueDate: "1970-01-01"
+                documentIssuingCountry: "CA"
+                documentExpirationDate: "1970-01-01"
+                isOptIn: false
+                isMerged: false
+                isRepeatGuest: false
+                dateCreated: "2024-08-06T13:38:35+00:00"
+                dateModified: "2024-08-06T16:58:59+00:00"
+                photo:
+                  fileId: 12345
+                  path: "https://amazonaws.com/photo-jumbo~~67816f854de79.jpg"
+                  croppedImage: "https://amazonaws.com/photo-jumbo_thumb~~67816f857ccab.jpg"
+                  height: 797
+                  width: 1000
+                  cropParam:
+                    width: 75.140625
+                    height: 75.140625
+                    x: 212.12890625
+                    y: 210.203125
+        404:
+          $ref: "#/components/responses/ProfileNotFound"
+    patch:
+      tags:
+        - Profiles
+      summary: Update a profile
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'write:guest'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/ProfileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Profile'
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+  /profiles/{profileId}/pii-field:
+    get:
+      tags:
+        - Profiles
+      summary: Returns a value of PII field for a given profile
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/ProfileId'
+        - name: fieldName
+          description: 'PII field name'
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 'companyTaxId'
+        - name: isCustomField
+          description: 'Is custom field'
+          in: query
+          required: false
+          schema:
+            type: boolean
+            example: true
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProfilePiiFieldResponse'
+              example:
+                - value: "12345"
+        404:
+          $ref: "#/components/responses/ProfileNotFound"
+  /profiles/{profileId}/stats:
+    get:
+      tags:
+        - Profiles
+      summary: Returns the stats of a given profile.
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileStatistics'
+              example:
+                - profileId: "profile-id-1"
+                  propertyId: "a-property-id"
+                  reservations: 1
+                  nights: 2
+                  revenue: 398.00
+                  sources: "2;1;dashboard;2024-08-27"
+                  lastVisit: "2024-08-27"
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/Filters'
+          x-extend-description: |
+            **Allowed fields**: `propertyId` (`equals`, `in`).
+          x-example: 'propertyId:124 or propertyId:in:123,124'
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+  /profiles/filters:
+    get:
+      tags:
+        - Profiles
+      summary: Returns available filter values for guest profiles
+      description: |
+        Returns the list of countries and guest statuses that can be used as filter values
+        when querying guest profiles. Both countries and statuses are sourced from the
+        guest-profile service.
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileFiltersResponse'
+              example:
+                countries:
+                  - code: "US"
+                    name: "United States"
+                  - code: "CA"
+                    name: "Canada"
+                guestStatuses:
+                  - id: 1
+                    name: "VIP"
+                  - id: 2
+                    name: "Returning"
+        404:
+          description: API not enabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+              example:
+                code: "404"
+                message: "API is not enabled for this organization."
+        5XX:
+          description: An error occurred interacting with the API.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+  /profiles/{profileId}/sources:
+    get:
+      tags:
+        - Profiles
+      summary: Returns the sources of a given profile.
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileSourcesResponse'
+              example:
+                data:
+                  - name: "Email"
+                    date: "2024-10-24"
+                  - name: "Walk-In"
+                    date: "2025-06-25"
+        5XX:
+          description: An error occurred interacting with the API.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/ProfileId'
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+  /profiles/{profileId}/anonymize:
+    post:
+      tags:
+        - Profiles
+      summary: Anonymize a given profile.
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+              example:
+                id: "74003650641856"
+                organizationId: "3"
+                photoId: "0"
+                taxId: "*****"
+                companyTaxId: "*****"
+                statusId: "0"
+                statusName: "N/A"
+                firstName: "Anonymized"
+                lastName: "Anonymized"
+                email: "anonymized-4cc7529392@example.com"
+                phone: ""
+                cellPhone: ""
+                birthday: null
+                gender: "N/A"
+                companyName: "*****"
+                address1: ""
+                address2: ""
+                city: "Riyadh"
+                country: "SA"
+                countryName: "Saudi Arabia"
+                state: "Jizan"
+                zip: "69663"
+                documentType: "student_id"
+                documentNumber: "*****"
+                documentIssueDate: null
+                documentExpirationDate: null
+                documentIssuingCountry: null
+                isOptIn: false
+                isMerged: false
+                isRepeatGuest: false
+                dateCreated: "2025-02-25T20:30:07+00:00"
+                dateModified: "2025-02-25T19:17:51+00:00"
+                dateAnonymized: "2025-02-25T19:17:51+00:00"
+                parentId: null
+        400:
+          description: Anonymization failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+                example:
+                  code: "400"
+                  message: "Anonymization failed"
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+                example:
+                  code: "403"
+                  message: "You do not have permission to anonymize guests"
+        404:
+          $ref: "#/components/responses/ProfileNotFound"
+        405:
+          description: Method Not Allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+                example:
+                  code: "405"
+                  message: "Anonymization is not enabled for this organization"
+        409:
+          description: Anonymization is not available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+                example:
+                  code: "409"
+                  message: "Anonymization is not available"
+        422:
+          description: Profile is already anonymized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+                example:
+                  code: "422"
+                  message: "Profile is already anonymized"
+        428:
+          description: GDPR is disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+                example:
+                  code: "428"
+                  message: "GDPR is not enabled for all properties of organization"
+        5XX:
+          description: An error occurred interacting with the API.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIError"
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/ProfileId'
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'write:guest'
+  /merges/suggested:
+    get:
+      tags:
+        - ProfileMerges
+      summary: Get a list of suggested merges.
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/Filters'
+          x-extend-description: |
+            **Allowed fields**: `profileId`.
+          x-example: 'profileId:112 or profileId:in:12,123,1234'
+      responses:
+        200:
+          description: List of suggested merges.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMergeSuggestionsResponse'
+              example:
+                - data:
+                    - suggestions:
+                        - id: 1234
+                          createdAt: "2024-07-22 07:40:46"
+                        - suggestionProfile:
+                            - id: 567
+                              suggestionId: 1234
+                              profileId: 9843
+                - nextPageToken: "f029=3f-23f09"
+      security:
+        - superAdmin: []
+        - partner:
+            - 'read:guest'
+  /profiles/{profileId}/custom-fields:
+    get:
+      summary: 'Get custom fields for a profile'
+      operationId: getCustomFields
+      tags:
+        - Profiles
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/ProfileId'
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProfileCustomFieldsResponse'
+              example:
+                - data:
+                    - id: 1
+                      customFieldId: 2
+                      name: "test-name"
+                      value: "test-value"
+                      label: "test-label"
+                      type: "test-type"
+                      isPersonal: 1
+                      order: 0
+                      maxLen: 25
+                      required: 1
+                    - id: 2
+                      customFieldId: 3
+                      name: "test-name 2"
+                      value: "test-value 2"
+                      label: "test-label 2"
+                      type: "test-type 2"
+                      isPersonal: 0
+                      order: 1
+                      maxLen: 50
+                      required: 0
+  /profiles/{profileId}/reservations:
+    get:
+      tags:
+        - ProfileReservations
+      summary: Returns a list of reservations for a given profile
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+            - 'read:reservation'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/Filters'
+          x-extend-description: |
+            **Allowed fields**: `checkinAt`, `checkoutAt`, `propertyId`, `roomId`, `roomTotal`, `roomTypeId`, `sourceCode`, `sourceId`, `status`.
+          x-example: "name:equals:JohnDoe;age:greater_than:30;status:is_null"
+        - $ref: '#/components/parameters/Sort'
+          x-extend-description: |
+            **Allowed fields**: `checkinAt`, `checkoutAt`, `propertyId`, `roomId`, `roomTotal`, `roomTypeId`, `sourceCode`, `sourceId`, `status`.
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IncludeTotal'
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProfileReservationsResponse'
+  /profiles/{profileId}/merged-profiles:
+    get:
+      tags:
+        - Profiles
+      summary: Returns a list of profiles currently merged into a given profile
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IncludeTotal'
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergedProfileListResponse'
+              example:
+                offset: 0
+                limit: 100
+                total: 2
+                data:
+                  - profileId: "123456788"
+                    mergeId: "8723618905976902"
+                    firstName: "John"
+                    lastName: "Doe"
+                    email: "john.doe@example.com"
+                    phone: "123456789"
+                    isUnmergeEligible: true
+                    mergedAt: "2024-07-22T07:40:46+00:00"
+                  - profileId: "123456789"
+                    mergeId: "8723618905976903"
+                    firstName: "Jane"
+                    lastName: "Doe"
+                    email: "jane.doe@example.com"
+                    phone: null
+                    isUnmergeEligible: false
+                    mergedAt: "2024-08-15T10:30:00+00:00"
+        404:
+          $ref: '#/components/responses/ProfileNotFound'
+  /merges:
+    get:
+      tags:
+        - ProfileMerges
+      summary: Returns a list of guest profile merges
+      responses:
+        200:
+          description: 'Response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMergesResponse'
+              example:
+                - offset: 40
+                  limit: 20
+                  total: 80
+                  data:
+                    - id: "8723618905976902"
+                      mergedAt: "2024-07-22 07:40:46"
+                      eventType: "merge"
+                      beforeMergeProfiles:
+                        - id: "123456788"
+                          organizationId: "12345"
+                          photoId: 12345
+                          taxId: "*****"
+                          companyTaxId: "*****"
+                          statusId: 12345
+                          statusName: "StatusName"
+                          firstName: "First Name 1"
+                          lastName: "Last Name 1"
+                          email: "test1@example.com"
+                          phone: "123456789"
+                          cellPhone: "123456789"
+                          birthday: "1970-01-01"
+                          gender: "M/F"
+                          companyName: "*****"
+                          address1: "Address line 1"
+                          address2: "Address line 2"
+                          city: "City"
+                          country: "IT"
+                          countryName: "Italy"
+                          state: "State"
+                          zip: "12345"
+                          documentType: "driver_licence"
+                          documentNumber: "*****"
+                          documentIssueDate: "1970-01-01"
+                          documentIssuingCountry: "XK"
+                          documentExpirationDate: "1970-01-01"
+                          isOptIn: false
+                          isMerged: false
+                          isRepeatGuest: false
+                        - id: "123456789"
+                          organizationId: "12345"
+                          photoId: 12345
+                          taxId: "*****"
+                          companyTaxId: "*****"
+                          statusId: 12345
+                          statusName: "StatusName"
+                          firstName: "First Name 2"
+                          lastName: "Last Name 2"
+                          email: "test2@example.com"
+                          phone: "123456789"
+                          cellPhone: "123456789"
+                          birthday: "1970-01-01"
+                          gender: "M/F"
+                          companyName: "*****"
+                          address1: "Address line 1"
+                          address2: "Address line 2"
+                          city: "City"
+                          country: "MX"
+                          countryName: "Mexico"
+                          state: "State"
+                          zip: "12345"
+                          documentType: "driver_licence"
+                          documentNumber: "*****"
+                          documentIssueDate: "1970-01-01"
+                          documentIssuingCountry: "BR"
+                          documentExpirationDate: "1970-01-01"
+                          isOptIn: false
+                          isMerged: true
+                          isRepeatGuest: false
+                      afterMergeProfiles:
+                        - id: "123456788"
+                          organizationId: "12345"
+                          photoId: 12345
+                          taxId: "*****"
+                          companyTaxId: "*****"
+                          statusId: 12345
+                          statusName: "StatusName"
+                          firstName: "First Name 1"
+                          lastName: "Last Name 1"
+                          email: "test1@example.com"
+                          phone: "123456789"
+                          cellPhone: "123456789"
+                          birthday: "1970-01-01"
+                          gender: "M/F"
+                          companyName: "*****"
+                          address1: "Address line 1"
+                          address2: "Address line 2"
+                          city: "City"
+                          country: "TR"
+                          countryName: "Turkey"
+                          state: "State"
+                          zip: "12345"
+                          documentType: "driver_licence"
+                          documentNumber: "*****"
+                          documentIssueDate: "1970-01-01"
+                          documentIssuingCountry: "PL"
+                          documentExpirationDate: "1970-01-01"
+                          isOptIn: false
+                          isMerged: false
+                          isRepeatGuest: false
+
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'read:guest'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/Filters'
+          x-extend-description: |
+            **Allowed fields**: `mergedAt`.
+          x-example: 'mergedAt:greater_than_or_equal:2024-07-17T14:00:00-08:00'
+        - description: 'Page number'
+          name: page
+          schema:
+            type: number
+          required: false
+          in: query
+          example: 1
+        - description: 'Results page size'
+          name: perPage
+          schema:
+            type: number
+          required: false
+          in: query
+          example: 20
+        - $ref: '#/components/parameters/IncludeTotal'
+    post:
+      tags:
+        - ProfileMerges
+      summary: Merge profiles
+      responses:
+        200:
+          description: Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileMerge'
+              example:
+                id: "8723618905976902"
+                mergedAt: "2024-07-22 07:40:46"
+                eventType: "merge"
+                beforeMergeProfiles:
+                  - id: "123456788"
+                    organizationId: "12345"
+                    photoId: 12345
+                    taxId: "*****"
+                    companyTaxId: "*****"
+                    statusId: 12345
+                    statusName: "StatusName"
+                    firstName: "First Name 1"
+                    lastName: "Last Name 1"
+                    email: "test1@example.com"
+                    phone: "123456789"
+                    cellPhone: "123456789"
+                    birthday: "1970-01-01"
+                    gender: "M/F"
+                    companyName: "*****"
+                    address1: "Address line 1"
+                    address2: "Address line 2"
+                    city: "City"
+                    country: "JP"
+                    countryName: "Japan"
+                    state: "State"
+                    zip: "12345"
+                    documentType: "driver_licence"
+                    documentNumber: "*****"
+                    documentIssueDate: "1970-01-01"
+                    documentIssuingCountry: "CN"
+                    documentExpirationDate: "1970-01-01"
+                    isOptIn: false
+                    isMerged: false
+                    isRepeatGuest: false
+                  - id: "123456789"
+                    organizationId: "12345"
+                    photoId: 12345
+                    taxId: "*****"
+                    companyTaxId: "*****"
+                    statusId: 12345
+                    statusName: "StatusName"
+                    firstName: "First Name 2"
+                    lastName: "Last Name 2"
+                    email: "test2@example.com"
+                    phone: "123456789"
+                    cellPhone: "123456789"
+                    birthday: "1970-01-01"
+                    gender: "M/F"
+                    companyName: "*****"
+                    address1: "Address line 1"
+                    address2: "Address line 2"
+                    city: "City"
+                    country: "AU"
+                    countryName: "Australia"
+                    state: "State"
+                    zip: "12345"
+                    documentType: "driver_licence"
+                    documentNumber: "*****"
+                    documentIssueDate: "1970-01-01"
+                    documentIssuingCountry: "NZ"
+                    documentExpirationDate: "1970-01-01"
+                    isOptIn: false
+                    isMerged: true
+                    isRepeatGuest: false
+                afterMergeProfiles:
+                  - id: "123456788"
+                    organizationId: "12345"
+                    photoId: 12345
+                    taxId: "*****"
+                    companyTaxId: "*****"
+                    statusId: 12345
+                    statusName: "StatusName"
+                    firstName: "First Name 1"
+                    lastName: "Last Name 1"
+                    email: "test1@example.com"
+                    phone: "123456789"
+                    cellPhone: "123456789"
+                    birthday: "1970-01-01"
+                    gender: "M/F"
+                    companyName: "*****"
+                    address1: "Address line 1"
+                    address2: "Address line 2"
+                    city: "City"
+                    country: "SK"
+                    countryName: "Slovakia"
+                    state: "State"
+                    zip: "12345"
+                    documentType: "driver_licence"
+                    documentNumber: "*****"
+                    documentIssueDate: "1970-01-01"
+                    documentIssuingCountry: "MN"
+                    documentExpirationDate: "1970-01-01"
+                    isOptIn: false
+                    isMerged: false
+                    isRepeatGuest: false
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'write:guest'
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostMergeProfilesRequest'
+  /merges/{mergeId}/unmerge:
+    post:
+      tags:
+        - ProfileMerges
+      summary: Unmerge profiles
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/MergeId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnmergeProfilesRequest'
+      responses:
+        200:
+          description: Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileMerge'
+              example:
+                id: "8723618905976902"
+                mergedAt: "2024-07-22 07:40:46"
+                eventType: "unmerge"
+                beforeMergeProfiles:
+                  - id: "123456788"
+                    organizationId: "12345"
+                    photoId: 12345
+                    taxId: "*****"
+                    companyTaxId: "*****"
+                    statusId: 12345
+                    statusName: "StatusName"
+                    firstName: "First Name 1"
+                    lastName: "Last Name 1"
+                    email: "test1@example.com"
+                    phone: "123456789"
+                    cellPhone: "123456789"
+                    birthday: "1970-01-01"
+                    gender: "M/F"
+                    companyName: "*****"
+                    address1: "Address line 1"
+                    address2: "Address line 2"
+                    city: "City"
+                    country: "AO"
+                    countryName: "Angola"
+                    state: "State"
+                    zip: "12345"
+                    documentType: "driver_licence"
+                    documentNumber: "*****"
+                    documentIssueDate: "1970-01-01"
+                    documentIssuingCountry: "HU"
+                    documentExpirationDate: "1970-01-01"
+                    isOptIn: false
+                    isMerged: false
+                    isRepeatGuest: false
+                afterMergeProfiles:
+                  - id: "123456788"
+                    organizationId: "12345"
+                    photoId: 12345
+                    taxId: "*****"
+                    companyTaxId: "*****"
+                    statusId: 12345
+                    statusName: "StatusName"
+                    firstName: "First Name 1"
+                    lastName: "Last Name 1"
+                    email: "test1@example.com"
+                    phone: "123456789"
+                    cellPhone: "123456789"
+                    birthday: "1970-01-01"
+                    gender: "M/F"
+                    companyName: "*****"
+                    address1: "Address line 1"
+                    address2: "Address line 2"
+                    city: "City"
+                    country: "ID"
+                    countryName: "Indonesia"
+                    state: "State"
+                    zip: "12345"
+                    documentType: "driver_licence"
+                    documentNumber: "*****"
+                    documentIssueDate: "1970-01-01"
+                    documentIssuingCountry: "IQ"
+                    documentExpirationDate: "1970-01-01"
+                    isOptIn: false
+                    isMerged: false
+                    isRepeatGuest: false
+                  - id: "123456789"
+                    organizationId: "12345"
+                    photoId: 12345
+                    taxId: "*****"
+                    companyTaxId: "*****"
+                    statusId: 12345
+                    statusName: "StatusName"
+                    firstName: "First Name 2"
+                    lastName: "Last Name 2"
+                    email: "test2@example.com"
+                    phone: "123456789"
+                    cellPhone: "123456789"
+                    birthday: "1970-01-01"
+                    gender: "M/F"
+                    companyName: "*****"
+                    address1: "Address line 1"
+                    address2: "Address line 2"
+                    city: "City"
+                    country: "MY"
+                    countryName: "Malaysia"
+                    state: "State"
+                    zip: "12345"
+                    documentType: "driver_licence"
+                    documentNumber: "*****"
+                    documentIssueDate: "1970-01-01"
+                    documentIssuingCountry: "YT"
+                    documentExpirationDate: "1970-01-01"
+                    isOptIn: false
+                    isMerged: false
+                    isRepeatGuest: false
+      security:
+        - superAdmin: [ ]
+        - partner:
+            - 'write:guest'
+components:
+  securitySchemes:
+    superAdmin:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    partner:
+      type: oauth2
+      description: This API also supports partner based requests via OAuth2 tokens
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth/authorize
+          tokenUrl: /oauth/token
+          scopes:
+            "read:guest": read guests
+            "write:guest": write guests
+
+  parameters:
+    OrganizationId:
+      name: X-Organization-Id
+      description: 'Organization ID'
+      in: header
+      required: true
+      schema:
+        type: string
+        example: 10984769494708236
+    ProfileId:
+      name: profileId
+      description: 'Profile ID'
+      in: path
+      required: true
+      schema:
+        type: number
+        example: 226973
+    Offset:
+      name: offset
+      description: 'The number of items to skip before starting to collect the result set.'
+      in: query
+      required: false
+      schema:
+        type: number
+        minimum: 0
+        multipleOf: 1
+        default: 0
+        example: 0
+    Limit:
+      name: limit
+      description: 'The maximum number of items to return in the response.'
+      in: query
+      required: false
+      schema:
+        type: number
+        minimum: 1
+        maximum: 250
+        multipleOf: 1
+        default: 100
+        example: 100
+    IncludeTotal:
+      name: includeTotal
+      description: 'Use `true` to get `total` in the response'
+      in: query
+      required: false
+      schema:
+        type: boolean
+        example: true
+    Filters:
+      name: filter
+      description: |
+        Filter criteria in the format `field:operation:value;field:operation:value`.
+        - `field`: The field name to filter on.
+        - `operation`: The operation to apply (e.g., equals, not_equals, greater_than, less_than).
+        - `value`: The value to filter by. Value is not required for some operations, like is_null.
+        Multiple filters can be separated by semicolons (`;`).
+      in: query
+      required: false
+      schema:
+        type: string
+    Sort:
+      name: sort
+      description: |
+        Sorting criteria in one of the following formats:
+        1. `field1:asc,field2:desc` - Sorts by `field1` in ascending order and `field2` in descending order.
+        2. `field1,field2` - Sorts by `field1` and `field2` in ascending order.
+        3. Combination of both formats is allowed.
+        Each field can be specified with `asc` (ascending) or `desc` (descending) if ordering is needed.
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "name:asc,age"
+    MergeId:
+      name: mergeId
+      description: 'Numeric ID of the merge'
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 123456
+
+  schemas:
+    APIError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '500'
+        message:
+          type: string
+          example: "Bad Request"
+        errors:
+          type: array
+          items:
+            type: string
+          example: []
+    ProfileResponse:
+      allOf:
+        - $ref: '#/components/schemas/Profile'
+        - type: object
+          properties:
+            id:
+              description: "Profile's unique identifier"
+              type: string
+              example: "123456788"
+            organizationId:
+              description: "Organization ID"
+              type: string
+              example: "12345"
+            statusName:
+              description: "Profile Status Name. Deprecated: Use statuses instead."
+              type: string
+              example: "VIP"
+              deprecated: true
+            statuses:
+              description: "All statuses for this profile across all properties"
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: "Status ID"
+                    example: 1
+                  name:
+                    type: string
+                    description: "Status name"
+                    example: "VIP"
+              example: [{"id": 1, "name": "VIP"}, {"id": 2, "name": "Regular"}]
+            isMerged:
+              description: "Merged status. Merged profiles are no longer active in the Cloudbeds system"
+              type: boolean
+              example: false
+            isRepeatGuest:
+              description: "Repeat-guest status"
+              type: boolean
+              example: false
+            dateCreated:
+              description: "Creation date. Date/Time string based on RFC 3339 (Y-m-dTH:i:sP)"
+              type: string
+              format: date-time
+              example: "2024-08-06T13:38:35+00:00"
+            dateModified:
+              description: "Modification date. Date/Time string based on RFC 3339 (Y-m-dTH:i:sP)"
+              type: string
+              format: date-time
+              example: "2024-08-06T16:58:59+00:00"
+            dateAnonymized:
+              description: "Anonymization date. Date/Time string based on RFC 3339 (Y-m-dTH:i:sP)"
+              type: string
+              format: date-time
+              example: "2024-08-06T16:58:59+00:00"
+            parentId:
+              description: "Profile's parent unique identifier"
+              type: string
+              example: "123456789"
+            photo:
+              $ref: '#/components/schemas/ProfilePhoto'
+            isAnonymizationAvailable:
+              description: "Anonymization availability status"
+              type: boolean
+              example: true
+    Profile:
+      type: object
+      properties:
+        photoId:
+          description: "Photo ID"
+          type: number
+          example: 12345
+        taxId:
+          description: "Tax ID"
+          type: string
+          example: "12345"
+        companyTaxId:
+          description: "Company tax ID"
+          type: string
+          example: "12345"
+        statusId:
+          description: "Profile Status ID. Deprecated: Use statuses instead."
+          type: number
+          example: 12
+          deprecated: true
+        firstName:
+          description: "First name"
+          type: string
+          example: "John"
+        lastName:
+          description: "Last name"
+          type: string
+          example: "Doe"
+        email:
+          description: "Email address"
+          type: string
+          example: "john.doe@example.com"
+        phone:
+          description: "Phone number"
+          type: string
+          example: "123456789"
+        cellPhone:
+          description: "Cellphone number"
+          type: string
+          example: "123456789"
+        birthday:
+          description: "Birthday"
+          type: string
+          format: date
+          example: "1970-01-01"
+        gender:
+          description: "Gender"
+          type: string
+          example: "M"
+        companyName:
+          description: "Company name"
+          type: string
+          example: "Company"
+        address1:
+          description: "Address line 1"
+          type: string
+          example: "Address line 1"
+        address2:
+          description: "Address line 2"
+          type: string
+          example: "Address line 2"
+        city:
+          description: "City"
+          type: string
+          example: "City"
+        country:
+          description: "Two digit Country Code. ISO 3166-1 alpha-2"
+          type: string
+          example: "US"
+        countryName:
+          description: "Country name"
+          type: string
+          example: "United States"
+        state:
+          description: "State"
+          type: string
+          example: "State"
+        zip:
+          description: "ZIP code"
+          type: string
+          example: "12345"
+        documentType:
+          description: "Document type"
+          type: string
+          example: "driver_licence"
+        documentNumber:
+          description: "Document number"
+          type: string
+          example: "123456789"
+        documentIssueDate:
+          description: "Document issue date"
+          type: string
+          format: date
+          example: "1970-01-01"
+        documentIssuingCountry:
+          description: 'Document issue country. ISO 3166-1 alpha-2'
+          type: string
+          example: "US"
+        documentExpirationDate:
+          description: "Document expiration date"
+          type: string
+          format: date
+          example: "1970-01-01"
+        isOptIn:
+          description: "Opt-in status"
+          type: boolean
+          example: false
+    ProfilePhoto:
+      type: object
+      properties:
+        fileId:
+          description: "Photo unique identifier"
+          type: string
+          example: "12345"
+        path:
+          description: "Photo URL"
+          type: string
+          example: "https://amazonaws.com/photo-jumbo~~67816f854de79.jpg"
+        croppedImage:
+          description: "Cropped photo URL"
+          type: string
+          example: "https://amazonaws.com/photo-jumbo_thumb~~67816f857ccab.jpg"
+        height:
+          description: "Photo height"
+          type: integer
+          example: 797
+        width:
+          description: "Photo width"
+          type: integer
+          example: 1000
+        cropParam:
+          description: "Crop parameters"
+          type: object
+          properties:
+            width:
+              description: "Cropped photo width"
+              type: number
+              example: 75.140625
+            height:
+              description: "Cropped photo height"
+              type: number
+              example: 75.140625
+            x:
+              description: "X coordinate of the top-left corner of the cropped photo"
+              type: number
+              example: 212.12890625
+            y:
+              description: "Y coordinate of the top-left corner of the cropped photo"
+              type: number
+              example: 210.203125
+    ListMergeSuggestionsResponse:
+      type: object
+      properties:
+        suggestions:
+          description: 'List of suggestions found.'
+          type: array
+          items:
+            $ref: '#/components/schemas/Suggestion'
+        nextPageToken:
+          type: string
+          description: "If there are more responses, the token to fetch the next in the list."
+    ProfileMerge:
+      type: object
+      properties:
+        id:
+          description: "Merge unique identifier"
+          type: string
+        mergeAt:
+          description: "Merge date"
+          type: string
+          format: date
+        eventType:
+          description: "Event type"
+          type: string
+          enum: [ "merge", "unmerge" ]
+        beforeMergeProfiles:
+          type: array
+          description: >
+            For merges, the `before` property will contain the full list of profiles involved in the merge.
+            For unmerges, the `before` property will contain the profile to unlink from a prior merge.
+          items:
+            $ref: '#/components/schemas/ProfileResponse'
+        afterMergeProfiles:
+          type: array
+          description: >
+            The `after` property will contain the single new profile after merge.
+            The `after` property will contain the list of profiles after the unmerge operation is complete.
+          items:
+            $ref: '#/components/schemas/ProfileResponse'
+    ProfileStatistics:
+      type: object
+      properties:
+        profileId:
+          description: The guests ID.
+          type: string
+        propertyId:
+          description: The property ID that this statistic pertains to.
+          type: string
+        reservations:
+          description: Number of reservations at this property.
+          type: integer
+        nights:
+          description: The number of nights at this property.
+          type: integer
+        revenue:
+          description: Revenue this profile has generated.
+          type: number
+          format: float
+        lastVisit:
+          description: RFC3399 date of the last time the profile visited the property (check-in date)
+          type: string
+          format: date
+    ProfileSourcesResponse:
+      type: object
+      properties:
+        data:
+          description: List of profile sources
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileSource'
+    ProfileSource:
+      type: object
+      properties:
+        name:
+          description: Source name
+          type: string
+        date:
+          description: Date
+          type: string
+    GuestCustomField:
+      type: object
+      properties:
+        id:
+          description: "Guest custom field unique identifier"
+          type: string
+        customFieldId:
+          description: "Custom field unique identifier"
+          type: string
+        name:
+          description: "Custom field name"
+          type: string
+        value:
+          description: "Custom field value"
+          type: string
+        label:
+          description: "Custom field label"
+          type: string
+        type:
+          description: "Custom field type"
+          type: string
+        isPersonal:
+          description: "Is custom field personal or not"
+          type: number
+        order:
+          description: "Custom field order"
+          type: number
+        maxLen:
+          description: "Custom field value max length"
+          type: number
+        required:
+          description: "Is custom field required or not"
+          type: number
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+          example: '91009944'
+        externalId:
+          type: string
+          example: '8236866345079'
+        thirdPartyId:
+          type: [ string, 'null' ]
+          nullable: true
+          example: null
+        hasBalance:
+          type: boolean
+          example: true
+        checkInAt:
+          type: string
+          format: date
+          example: '2024-01-13'
+        checkOutAt:
+          type: string
+          format: date
+          example: '2024-01-15'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-03-03T14:21:26+00:00'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-08-29T15:19:16+00:00'
+        estimatedArrivalAt:
+          type: [ string, 'null' ]
+          format: date-time
+          nullable: true
+          example: null
+        totals:
+          $ref: '#/components/schemas/ReservationTotals'
+        amounts:
+          $ref: '#/components/schemas/ReservationAmounts'
+        property:
+          $ref: '#/components/schemas/ReservationProperty'
+        source:
+          $ref: '#/components/schemas/ReservationSource'
+        reservationStatus:
+          type: string
+          example: 'confirmed'
+        guests:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationGuest'
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationRoom'
+      required:
+        - id
+        - externalId
+        - hasBalance
+        - checkInAt
+        - checkOutAt
+        - createdAt
+        - updatedAt
+        - totals
+        - amounts
+        - property
+        - source
+        - guests
+        - rooms
+    ReservationTotals:
+      type: object
+      properties:
+        nights:
+          type: integer
+          example: 2
+        rooms:
+          type: integer
+          example: 1
+        guests:
+          type: integer
+          example: 1
+        adults:
+          type: integer
+          example: 1
+        children:
+          type: integer
+          example: 0
+      required:
+        - nights
+        - rooms
+        - guests
+        - adults
+        - children
+    ReservationAmounts:
+      type: object
+      properties:
+        totalRevenue:
+          type: number
+          format: float
+          example: 0
+        totalPaidRevenue:
+          type: number
+          format: float
+          example: 0
+        totalDue:
+          type: number
+          format: float
+          example: 160
+        grandTotal:
+          type: number
+          format: float
+          example: 160
+      required:
+        - totalRevenue
+        - totalPaidRevenue
+        - totalDue
+        - grandTotal
+    ReservationProperty:
+      type: object
+      properties:
+        id:
+          type: string
+          example: '226768'
+        name:
+          type: string
+          example: 'Handcrafted data-warehouse'
+      required:
+        - id
+        - name
+    ReservationSource:
+      type: object
+      properties:
+        id:
+          type: string
+          example: '1147922'
+        parentId:
+          type: string
+          example: '1'
+        otaId:
+          type: string
+          example: '0'
+        code:
+          type: string
+          example: 's-1'
+        name:
+          type: string
+          example: 'Website/Booking Engine'
+        isThirdParty:
+          type: boolean
+          example: false
+        isSubSource:
+          type: boolean
+          example: false
+        isOta:
+          type: boolean
+          example: false
+        isDefault:
+          type: boolean
+          example: false
+        isHotelCollectBooking:
+          type: boolean
+          example: true
+        isDeleted:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-03-03T14:21:05+00:00'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-03-03T14:21:05+00:00'
+      required:
+        - id
+        - parentId
+        - otaId
+        - code
+        - name
+        - isThirdParty
+        - isSubSource
+        - isOta
+        - isDefault
+        - isHotelCollectBooking
+        - isDeleted
+        - createdAt
+        - updatedAt
+    ReservationGuest:
+      type: object
+      properties:
+        id:
+          type: string
+          example: '88204789'
+        firstName:
+          type: string
+          example: 'Cathari'
+        lastName:
+          type: string
+          example: 'Marks'
+        email:
+          type: string
+          format: email
+          example: 'cathari.marks@cloudbeds.com'
+        birthday:
+          type: string
+          format: date
+          example: '1900-09-16'
+        phone:
+          type: string
+          example: '+1 (366) 836-9964'
+        cellPhone:
+          type: string
+          example: '+1 (212) 457-7093'
+        taxId:
+          type: string
+          example: '276'
+        isMainGuest:
+          type: boolean
+          example: true
+        isAnonymized:
+          type: boolean
+          example: false
+        address:
+          $ref: '#/components/schemas/ReservationAddress'
+        document:
+          $ref: '#/components/schemas/ReservationDocument'
+        company:
+          $ref: '#/components/schemas/ReservationCompany'
+        statuses:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - firstName
+        - lastName
+        - email
+        - isMainGuest
+        - isAnonymized
+        - address
+        - document
+        - company
+        - statuses
+    ReservationAddress:
+      type: object
+      properties:
+        country:
+          type: string
+          example: 'HM'
+        state:
+          type: string
+          example: 'Heard Island and McDonald Islands'
+        city:
+          type: string
+          example: 'Sint fuga Nostrum i'
+        address1:
+          type: string
+          example: '853 Fabien Court'
+        address2:
+          type: string
+          example: 'Est sapiente tempor'
+        zip:
+          type: string
+          example: '42212'
+      required:
+        - country
+        - state
+        - city
+        - address1
+        - zip
+    ReservationDocument:
+      type: object
+      properties:
+        type:
+          type: string
+          example: 'dni'
+        number:
+          type: string
+          example: ''
+        issueDate:
+          type: [ string, 'null' ]
+          format: date
+          nullable: true
+          example: null
+        issuingCountry:
+          type: [ string, 'null' ]
+          nullable: true
+          example: null
+        expirationDate:
+          type: [ string, 'null' ]
+          format: date
+          nullable: true
+          example: null
+      required:
+        - type
+        - number
+    ReservationCompany:
+      type: object
+      properties:
+        taxId:
+          type: string
+          example: 'Whitehead Kennedy Traders'
+        name:
+          type: string
+          example: 'Jackson and Stewart Inc'
+      required:
+        - taxId
+        - name
+    ReservationRoom:
+      type: object
+      properties:
+        id:
+          type: string
+          example: '122898135'
+        roomId:
+          type: [ string, 'null' ]
+          nullable: true
+          example: null
+        roomName:
+          type: [ string, 'null' ]
+          nullable: true
+          example: null
+        typeId:
+          type: string
+          example: '524846'
+        typeName:
+          type: string
+          example: 'kingType'
+        guestId:
+          type: string
+          example: '88204789'
+        additionalGuestIds:
+          type: array
+          items:
+            type: string
+        rateId:
+          type: string
+          example: '1850620'
+        rateName:
+          type: [ string, 'null' ]
+          nullable: true
+          example: null
+        subReservationId:
+          type: string
+          example: '8236866345079'
+        totalNights:
+          type: integer
+          example: 2
+        totalAdults:
+          type: integer
+          example: 1
+        totalChildren:
+          type: integer
+          example: 0
+        totalGuests:
+          type: integer
+          example: 1
+        checkInAt:
+          type: string
+          format: date
+          example: '2024-01-13'
+        checkOutAt:
+          type: string
+          format: date
+          example: '2024-01-15'
+        isInHouse:
+          type: boolean
+          example: false
+        status:
+          type: string
+          example: 'not_checked_in'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-03-03T14:21:26+00:00'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-03-03T14:21:26+00:00'
+      required:
+        - id
+        - typeId
+        - typeName
+        - guestId
+        - additionalGuestIds
+        - rateId
+        - subReservationId
+        - totalNights
+        - totalAdults
+        - totalChildren
+        - totalGuests
+        - checkInAt
+        - checkOutAt
+        - isInHouse
+        - status
+        - createdAt
+        - updatedAt
+    ProfilesResponse:
+      type: object
+      properties:
+        offset:
+          description: 'Offset of the total number of results'
+          type: number
+        limit:
+          description: 'Results page size'
+          type: number
+        total:
+          description: 'Total number of results'
+          type: number
+        data:
+          description: 'List of profiles returned'
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileResponse'
+    Suggestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        organizationId:
+          type: integer
+        suggestionProfile:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuggestionProfile'
+    SuggestionProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        suggestionId:
+          type: integer
+        profileId:
+          type: integer
+    GetProfileCustomFieldsResponse:
+      type: object
+      properties:
+        data:
+          description: 'List of custom fields returned'
+          items:
+            $ref: '#/components/schemas/GuestCustomField'
+    ListMergesResponse:
+      type: object
+      properties:
+        offset:
+          description: 'Offset of the total number of results'
+          type: number
+        limit:
+          description: 'Results page size'
+          type: number
+        total:
+          description: 'Total number of results'
+          type: number
+        data:
+          description: 'List of profiles returned'
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileMerge'
+    UnmergeProfilesRequest:
+      type: object
+      properties:
+        profileIds:
+          description: >-
+            Optional list of profile IDs to selectively unmerge from the merge.
+            When omitted or empty, all profiles are unmerged (existing behavior).
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [ 8723618905976902 ]
+    PostMergeProfilesRequest:
+      type: object
+      properties:
+        profileIds:
+          type: array
+          items:
+            type: string
+          example: [ "8723618905976902", "8723618905976903" ]
+        firstName:
+          description: 'First name'
+          type: string
+          required: true
+          example: "John"
+        lastName:
+          description: 'Last name'
+          type: string
+          required: true
+          example: "Smith"
+        email:
+          description: 'Email address'
+          type: string
+          format: email
+          required: true
+          example: "John"
+        phone:
+          description: 'Phone number'
+          type: string
+          required: true
+          example: "+1 123 456 7890"
+        cellPhone:
+          description: 'Cellphone number'
+          type: string
+          required: true
+          nullable: true
+          example: ""
+        birthday:
+          description: 'Birthday'
+          type: string
+          format: date
+          required: true
+          nullable: true
+          example: "1953-03-05"
+        gender:
+          description: 'Gender'
+          type: string
+          enum: [ "M", "W", "N/A" ]
+          required: true
+          nullable: true
+          example: null
+        photoId:
+          description: 'Photo ID'
+          type: string
+          required: true
+          nullable: true
+          example: null
+        statusId:
+          description: 'Profile Status ID'
+          type: string
+          nullable: true
+          required: true
+          example: null
+        country:
+          description: 'Two digit Country Code. ISO 3166-1 alpha-2'
+          type: string
+          required: true
+          example: "CA"
+        state:
+          description: 'State'
+          type: string
+          required: true
+          nullable: true
+          example: "ON"
+        city:
+          description: 'City'
+          type: string
+          required: true
+          nullable: true
+          example: "Toronto"
+        address1:
+          description: 'Address line 1'
+          type: string
+          required: true
+          nullable: true
+          example: "100 Yonge Street"
+        address2:
+          description: 'Address Line 2'
+          type: string
+          required: true
+          nullable: true
+          example: ""
+        zip:
+          description: 'ZIP code'
+          type: string
+          required: true
+          nullable: true
+          example: "M5C 2W1"
+        documentType:
+          description: 'Document type'
+          type: string
+          enum: [ "na", "driver_licence", "student_id", "passport", "dni", "nie", "social_security_card" ]
+          required: true
+          example: "na"
+        documentNumber:
+          description: 'Document number'
+          type: string
+          required: true
+          example: ""
+        documentIssueDate:
+          description: 'Document issue date'
+          type: string
+          format: date
+          required: true
+          nullable: true
+          example: null
+        documentIssuingCountry:
+          description: 'Document issuing country code. ISO 3166-1 alpha-2'
+          type: string
+          required: true
+          nullable: true
+          example: null
+        documentExpirationDate:
+          description: 'Document expiration date'
+          type: string
+          format: date
+          required: true
+          nullable: true
+          example: null
+        taxId:
+          description: 'Tax ID'
+          type: string
+          required: true
+          nullable: true
+          example: ""
+        companyName:
+          description: 'Company name'
+          type: string
+          required: true
+          nullable: true
+          example: ""
+        companyTaxId:
+          description: 'Company tax ID'
+          type: string
+          required: true
+          nullable: true
+          example: ""
+        isOptIn:
+          description: 'Opt-in status'
+          type: boolean
+          required: true
+          example: true
+    ProfileFiltersResponse:
+      type: object
+      properties:
+        countries:
+          type: array
+          description: 'List of countries found in guest profiles'
+          items:
+            $ref: '#/components/schemas/FilterCountry'
+        guestStatuses:
+          type: array
+          description: 'List of guest statuses available as filter values'
+          items:
+            $ref: '#/components/schemas/FilterGuestStatus'
+      required:
+        - countries
+        - guestStatuses
+    FilterCountry:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 'ISO 3166-1 alpha-2 country code'
+          example: 'US'
+        name:
+          type: string
+          description: 'Country name'
+          example: 'United States'
+      required:
+        - code
+        - name
+    FilterGuestStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 'Status ID'
+          example: 1
+        name:
+          type: string
+          description: 'Status name'
+          example: 'VIP'
+      required:
+        - id
+        - name
+    GetProfilePiiFieldResponse:
+      type: object
+      properties:
+        value:
+          type: string
+          items:
+            type: string
+    GetProfileReservationsResponse:
+      type: object
+      properties:
+        offset:
+          type: integer
+          example: 0
+        limit:
+          type: integer
+          example: 100
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reservation'
+    MergedProfileListResponse:
+      type: object
+      properties:
+        offset:
+          description: 'Offset of the total number of results'
+          type: number
+          example: 0
+        limit:
+          description: 'Results page size'
+          type: number
+          example: 100
+        total:
+          description: 'Total number of results'
+          type: number
+          example: 2
+        data:
+          description: 'List of merged profiles'
+          type: array
+          items:
+            $ref: '#/components/schemas/MergedProfile'
+    MergedProfile:
+      type: object
+      properties:
+        profileId:
+          description: 'Unique identifier of the merged profile'
+          type: string
+          example: "123456788"
+        mergeId:
+          description: 'Unique identifier of the merge operation'
+          type: string
+          example: "8723618905976902"
+        firstName:
+          description: 'First name'
+          type: string
+          example: "John"
+        lastName:
+          description: 'Last name'
+          type: string
+          example: "Doe"
+        email:
+          description: 'Email address'
+          type: string
+          nullable: true
+          example: "john.doe@example.com"
+        phone:
+          description: 'Phone number'
+          type: string
+          nullable: true
+          example: "123456789"
+        isUnmergeEligible:
+          description: 'Whether this merged profile can be unmerged'
+          type: boolean
+          example: true
+        mergedAt:
+          description: 'Date and time when the profile was merged. Date/Time string based on RFC 3339 (Y-m-dTH:i:sP)'
+          type: string
+          nullable: true
+          format: date-time
+          example: "2024-07-22T07:40:46+00:00"
+      required:
+        - profileId
+        - mergeId
+        - firstName
+        - lastName
+        - isUnmergeEligible
+
+  responses:
+    ProfileNotFound:
+      description: Profile not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/APIError"
+          example:
+            code: "404"
+            message: "Profile not found"
