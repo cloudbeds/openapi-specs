@@ -1925,6 +1925,12 @@ paths:
           schema:
             type: string
           description: ISO 3166-1 alpha-2 country code (e.g., BR, PL, MX)
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         '200':
           description: Successfully retrieved tax rules
@@ -5385,6 +5391,19 @@ components:
             - A4
             - Letter
             - DIN5008
+        brandColor:
+          type: string
+          description: Hex color (without leading #) used as the invoice accent color
+          pattern: "^[0-9a-fA-F]{6}$"
+        font:
+          type: string
+          description: Invoice font name (provider-supported set)
+        logoPlacement:
+          type: string
+          description: Logo placement on the invoice
+          enum:
+            - left
+            - right
     FiscalizationCustomizationRequest:
       type: object
       properties:
@@ -5406,6 +5425,19 @@ components:
             - A4
             - Letter
             - DIN5008
+        brandColor:
+          type: string
+          description: Hex color (without leading #) used as the invoice accent color
+          pattern: "^[0-9a-fA-F]{6}$"
+        font:
+          type: string
+          description: Invoice font name (provider-supported set)
+        logoPlacement:
+          type: string
+          description: Logo placement on the invoice
+          enum:
+            - left
+            - right
     FiscalizationSectionRequest:
       type: object
       required:
