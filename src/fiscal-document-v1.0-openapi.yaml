@@ -2073,6 +2073,100 @@ paths:
                 $ref: '#/components/schemas/PaymentMethodMappingResponse'
       security:
         - bearerAuth: []
+  /fiscal-document/v1/fiscalization/operators/rules:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscal operator rules for a country
+      description: |
+        Returns country-specific rules for the fiscal operator mapping (e.g. tax-ID format,
+        checksum, label). Countries that don't require operator-level fiscalization respond
+        with `operatorRequired: false`.
+      operationId: getFiscalizationOperatorRules
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+          description: ISO 3166-1 alpha-2 country code (e.g., HR)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationOperatorRulesResponse'
+        '400':
+          description: Invalid country code
+      security:
+        - bearerAuth: []
+  /fiscal-document/v1/fiscalization/operators:
+    get:
+      tags:
+        - Fiscalization
+      summary: List property users with their fiscal operator mapping
+      description: |
+        Returns all users assigned to the property, joined with their stored OIB mapping
+        (if any). Users without a mapping appear in the response with `oib: null` so the
+        UI can prompt the Property Admin to complete the configuration.
+      operationId: getFiscalizationOperators
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationOperatorResponse'
+        '404':
+          description: Fiscalization config not found for property
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - Fiscalization
+      summary: Update fiscal operator mappings for a property
+      description: |
+        Replaces the property's full list of operator mappings. Each entry must reference
+        a user assigned to the property and carry a syntactically valid OIB.
+      operationId: updateFiscalizationOperators
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalizationOperatorRequest'
+        required: true
+      responses:
+        '200':
+          description: Operator mappings saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationOperatorResponse'
+        '400':
+          description: Validation failed (invalid OIB, duplicate, unknown user)
+      security:
+        - bearerAuth: []
   /fiscal-document/v1/fiscalization/customization:
     get:
       tags:
@@ -3041,6 +3135,21 @@ components:
             type: string
             format: email
           maxItems: 10
+        summary:
+          description: When true, marks this as a CFDI global/summary invoice (MX only)
+          type: boolean
+          default: false
+          nullable: true
+        summaryFrequency:
+          description: Reporting frequency for summary invoices (MX only)
+          type: string
+          nullable: true
+          enum:
+            - DAILY
+            - WEEKLY
+            - BIWEEKLY
+            - MONTHLY
+            - BIMONTHLY
     GetInvoicePreviewRequest:
       type: object
       required: [transactionIds, sourceId, sourceKind, guestId]
@@ -4164,6 +4273,13 @@ components:
           description: Array of semantic signatures/response data from the government integration.
           items:
             $ref: '#/components/schemas/IntegrationSignature'
+        folioFiscal:
+          type: string
+          description: MX SAT UUID (Folio Fiscal) — populated after CFDI acceptance by Fonoa.
+          example: "9B3E26F4-1234-4A5B-8C9D-ABCDEF012345"
+        satQrCode:
+          type: string
+          description: MX SAT validation URL used to verify a CFDI at verificacfdi.facturaelectronica.sat.gob.mx.
     IntegrationSignature:
       type: object
       description: A semantic signature/response item from a government integration.
@@ -4473,6 +4589,7 @@ components:
         - INVOICE_RECEIPT
         - ADVANCE_INVOICE
         - SETTLEMENT_INVOICE
+        - TAX_WITHHOLDING
     DateDisplay:
       type: string
       description: Controls which date columns to show on the document
@@ -4675,12 +4792,15 @@ components:
             "it-fiscal-code": "98765432103"
         extensions:
           type: object
-          description: Country-specific tax configuration
+          description: >
+            Country-specific tax configuration. Known MX keys: `mx_border_zone` ("true"/"false") — set to "true" for properties in Mexico's northern border zone where IVA is 8% instead of 16%.
+
           additionalProperties:
             type: string
           example:
             "it-regime-fiscale": "RF07"
             "it-sdi-format": "FPR12"
+            "mx_border_zone": "true"
     FiscalizationAddress:
       type: object
       required:
@@ -4850,6 +4970,8 @@ components:
         paymentMethodMapping:
           $ref: '#/components/schemas/Requirement'
         itemMapping:
+          $ref: '#/components/schemas/Requirement'
+        operatorMapping:
           $ref: '#/components/schemas/Requirement'
         reports:
           type: array
@@ -5367,6 +5489,100 @@ components:
           type: string
           description: >-
             Country-specific extension code override. Used when key is "other" to specify the exact country payment code (e.g., "MB" for Multibanco in PT).
+    FiscalizationOperatorRulesResponse:
+      type: object
+      required:
+        - country
+        - operatorRequired
+      properties:
+        country:
+          $ref: '#/components/schemas/CountryInfo'
+        operatorRequired:
+          type: boolean
+          description: Whether this country requires per-invoice operator tax-ID mapping
+        taxIdLabel:
+          type: string
+          description: Country-specific label for the operator tax ID (e.g., "OIB" for HR)
+        taxIdPattern:
+          type: string
+          description: Regex pattern the tax ID must match (e.g., "^\\d{11}$" for HR OIB)
+        taxIdChecksum:
+          type: string
+          description: Checksum algorithm enforced server-side (e.g., "MOD_11_10"); informational
+        taxIdHelpText:
+          type: string
+          description: Helper text shown beside the tax ID input to guide the admin
+        legalNameMaxLength:
+          type: integer
+          description: Maximum length allowed for the legal name (enforced both client and server)
+        legalNameHelpText:
+          type: string
+          description: Helper text shown beside the legal name input
+    FiscalizationOperatorResponse:
+      type: object
+      properties:
+        operators:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalizationOperator'
+        fallbackOperator:
+          $ref: '#/components/schemas/FiscalizationFallbackOperator'
+    FiscalizationOperatorRequest:
+      type: object
+      properties:
+        operators:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalizationOperatorMappingInput'
+        fallbackOperator:
+          $ref: '#/components/schemas/FiscalizationFallbackOperator'
+    FiscalizationFallbackOperator:
+      type: object
+      description: |
+        Property-level fallback operator used when an invoice-issuing user has no per-user
+        mapping. Optional — when absent, unmapped users get a hard error at submission time.
+      required:
+        - taxId
+        - legalName
+      properties:
+        taxId:
+          type: string
+        legalName:
+          type: string
+    FiscalizationOperator:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          description: Cloudbeds user ID
+        email:
+          type: string
+          description: User email (from user service, read-only)
+        firstName:
+          type: string
+        lastName:
+          type: string
+        taxId:
+          type: string
+          description: Operator tax identifier (e.g., HR OIB, IT codice fiscale). Null when not mapped.
+        legalName:
+          type: string
+          description: Legal name sent as operator.legal_name to the fiscalization provider
+    FiscalizationOperatorMappingInput:
+      type: object
+      required:
+        - userId
+        - taxId
+        - legalName
+      properties:
+        userId:
+          type: string
+        taxId:
+          type: string
+        legalName:
+          type: string
     FiscalizationCustomizationResponse:
       type: object
       properties:
