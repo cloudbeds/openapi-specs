@@ -5499,19 +5499,16 @@ components:
           $ref: '#/components/schemas/CountryInfo'
         operatorRequired:
           type: boolean
-          description: Whether this country requires per-invoice operator tax-ID mapping
-        taxIdLabel:
+          description: Whether this country requires per-invoice operator legal-ID mapping
+        legalIdLabel:
           type: string
-          description: Country-specific label for the operator tax ID (e.g., "OIB" for HR)
-        taxIdPattern:
+          description: Country-specific label for the operator legal ID (e.g., "OIB" for HR)
+        legalIdPattern:
           type: string
-          description: Regex pattern the tax ID must match (e.g., "^\\d{11}$" for HR OIB)
-        taxIdChecksum:
+          description: Regex pattern the legal ID must match (e.g., "^\\d{11}$" for HR OIB)
+        legalIdHelpText:
           type: string
-          description: Checksum algorithm enforced server-side (e.g., "MOD_11_10"); informational
-        taxIdHelpText:
-          type: string
-          description: Helper text shown beside the tax ID input to guide the admin
+          description: Helper text shown beside the legal ID input to guide the admin
         legalNameMaxLength:
           type: integer
           description: Maximum length allowed for the legal name (enforced both client and server)
@@ -5542,44 +5539,53 @@ components:
         Property-level fallback operator used when an invoice-issuing user has no per-user
         mapping. Optional — when absent, unmapped users get a hard error at submission time.
       required:
-        - taxId
+        - legalId
         - legalName
       properties:
-        taxId:
+        legalId:
           type: string
         legalName:
           type: string
     FiscalizationOperator:
       type: object
       required:
-        - userId
+        - user
       properties:
-        userId:
+        user:
+          $ref: '#/components/schemas/FiscalizationOperatorUser'
+        legalId:
+          type: string
+          description: Operator legal identifier (e.g., HR OIB, IT codice fiscale). Null when not mapped.
+        legalName:
+          type: string
+          description: Legal name sent as operator.legal_name to the fiscalization provider
+    FiscalizationOperatorUser:
+      type: object
+      required:
+        - id
+      properties:
+        id:
           type: string
           description: Cloudbeds user ID
         email:
           type: string
-          description: User email (from user service, read-only)
         firstName:
           type: string
         lastName:
           type: string
-        taxId:
-          type: string
-          description: Operator tax identifier (e.g., HR OIB, IT codice fiscale). Null when not mapped.
-        legalName:
-          type: string
-          description: Legal name sent as operator.legal_name to the fiscalization provider
+        active:
+          type: boolean
+          description: Cloudbeds user active state (from user service). Inactive users may still have a stored mapping but should be visually flagged in the UI.
     FiscalizationOperatorMappingInput:
       type: object
       required:
         - userId
-        - taxId
+        - legalId
         - legalName
       properties:
         userId:
           type: string
-        taxId:
+        legalId:
           type: string
         legalName:
           type: string
