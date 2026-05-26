@@ -795,7 +795,7 @@
     "/accounting/v1.0/transactions": {
       "post": {
         "summary": "Search posted transactions",
-        "description": "Search and retrieve posted transactions for a property. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. You can combine multiple filters with AND/OR logic, paginate results, and sort by various fields.\n\nSupported fields for filtering:\n  - account_category\n  - chart_of_account_type\n  - created_at - Same as `transaction_datetime`\n  - customer_id\n  - custom_code\n  - external_relation_id\n  - external_relation_kind\n  - folio_id\n  - id\n  - internal_code\n  - origin_id\n  - parent_id\n  - routed_from\n  - source_id\n  - source_identifier\n  - source_kind\n  - transaction_datetime\n  - trial_balance_id\n  - service_date\n\nSupported fields for sorting:\n  - created_at - Same as `transaction_datetime`\n  - id\n  - internal_code\n  - source_id\n  - transaction_datetime\n  - service_date\n\nExample request:\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11t08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n\nThe API has certain constraints for filters so that the system is able to efficiently query the data. Filters must include on of the following:\n  - filter by 'id' with condition 'equals' or 'in'\n  - filter by both 'source_id' and 'source_kind'\n  - filter by both 'external_relation_id' and 'external_relation_kind'\n  - filter by transaction_datetime\n```\n",
+        "description": "Search and retrieve posted transactions for a property. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. You can combine multiple filters with AND/OR logic, paginate results, and sort by various fields.\n\n**Supported filter fields:**\n  - `account_category`\n  - `chart_of_account_type`\n  - `created_at` (alias for `transaction_datetime`)\n  - `customer_id`\n  - `custom_code`\n  - `external_relation_id`\n  - `external_relation_kind`\n  - `folio_id`\n  - `id`\n  - `internal_code`\n  - `origin_id`\n  - `parent_id`\n  - `routed_from`\n  - `source_id`\n  - `source_identifier`\n  - `source_kind`\n  - `transaction_datetime`\n  - `trial_balance_id`\n  - `service_date`\n\n\n**Supported sort fields:**\n  - `created_at` (alias for `transaction_datetime`)\n  - `id`\n  - `internal_code`\n  - `source_id`\n  - `transaction_datetime`\n  - `service_date`\n\n\n**Required filter constraints:** The API has certain constraints for filters so that the system is able to efficiently query the data. Every request must include at least one of the following base filters:\n  - `id` with operator `equals` or `in`\n  - `source_id` together with `source_kind`\n  - `source_identifier` together with `source_kind`\n  - `external_relation_id` together with `external_relation_kind`\n  - `transaction_datetime`\n  - `service_date`\n  - `trial_balance_id`\n\n\n**Additional filter rules:**\n  - Filters cannot be empty.\n  - `source_id` requires `source_kind` to be present in the same request.\n  - `source_identifier` requires `source_kind` to be present in the same request.\n  - `external_relation_id` and `external_relation_kind` must always be used together.\n  - `trial_balance_id` only supports the `equals` operator and cannot appear more than once.\n  - When using a single filter condition (without `and`/`or`), only `id`, `transaction_datetime`,\n    or `service_date` are allowed, and the operator must be `equals` or `in`.\n\n\n**Example — single filter condition (no AND/OR needed):**\n```\n  {\n    \"filters\": {\n      \"field\": \"id\",\n      \"operator\": \"in\",\n      \"value\": [101, 102, 103]\n    }\n  }\n```\n\n```\n  {\n    \"filters\": {\n      \"field\": \"service_date\",\n      \"operator\": \"equals\",\n      \"value\": \"2024-01-01\"\n    }\n  }\n```\n\n**Example — composite filter condition:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2024-01-01T00:00:00Z\"\n        },\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"less_than\",\n          \"value\": \"2024-02-01T00:00:00Z\"\n        }\n      ]\n    }\n  }\n```\n\n**Example — composite filter condition with sorting and pagination:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11T08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n```\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -861,7 +861,7 @@
         ],
         "operationId": "getFolios",
         "summary": "List folios for a source",
-        "description": "Retrieve all folios for a given source (reservation, group profile, or house account). Folios organize transactions into logical groups, such as separating room charges from incidentals. The filter requires both a sourceId and sourceKind to identify the source.\n",
+        "description": "Retrieve all folios for a given source (reservation, group profile, or configuration). Folios organize transactions into logical groups, such as separating room charges from incidentals. The filter requires both a sourceId and sourceKind to identify the source.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -883,10 +883,20 @@
       },
       "post": {
         "summary": "Create a folio",
-        "description": "Create a new folio for a source (reservation, group profile, or house account). You must provide a name, the folio configuration ID, and the source details. You can optionally specify a parent folio ID to create a sub-folio within an existing folio hierarchy.\n",
+        "description": "Create a new folio for a source (reservation, group profile, or configuration). You must provide a name, the source details, and the transaction types assigned to it.\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "name": "propagateDownstream",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "When true and source kind is CONFIG, create matching child folios for active reservations and groups using this configuration.\n"
           }
         ],
         "requestBody": {
@@ -933,7 +943,7 @@
     "/accounting/v1.0/folios/{id}": {
       "put": {
         "summary": "Update a folio",
-        "description": "Update an existing folio. You can change the folio name and the transaction types assigned to it. Transaction types control which kinds of transactions are automatically routed to this folio. Other folio properties (source, configuration, parent) cannot be changed after creation.\n",
+        "description": "Update an existing folio. You can change the folio name and the transaction types assigned to it. Transaction types control which kinds of transactions are automatically routed to this folio. Other folio properties (source, configuration) cannot be changed after creation.\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -947,6 +957,16 @@
               "format": "int64"
             },
             "description": "Folio ID"
+          },
+          {
+            "name": "propagateDownstream",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "When true and the folio source kind is CONFIG, propagate name and transaction type changes to child folios of active reservations and groups using this configuration.\n"
           }
         ],
         "requestBody": {
@@ -1162,7 +1182,7 @@
     "/accounting/v1.0/pending-transactions": {
       "post": {
         "summary": "Search pending transactions",
-        "description": "Search and retrieve pending (not yet posted) transactions for a property. Pending transactions represent charges, payments, or adjustments that have been created but not yet finalized. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. The filter and sort options are the same as for posted transactions.\n\nSupported fields for filtering:\n  - account_category\n  - chart_of_account_type\n  - created_at - Same as `transaction_datetime`\n  - customer_id\n  - custom_code\n  - external_relation_id\n  - external_relation_kind\n  - folio_id\n  - id\n  - internal_code\n  - origin_id\n  - parent_id\n  - routed_from\n  - source_id\n  - source_identifier\n  - source_kind\n  - transaction_datetime\n  - trial_balance_id\n  - service_date\n\nSupported fields for sorting:\n  - created_at - Same as `transaction_datetime`\n  - id\n  - internal_code\n  - source_id\n  - transaction_datetime\n  - service_date\n\nExample request:\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11t08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n\nThe API has certain constraints for filters so that the system is able to efficiently query the data. Filters must include on of the following:\n  - filter by 'id' with condition 'equals' or 'in'\n  - filter by both 'source_id' and 'source_kind'\n  - filter by both 'external_relation_id' and 'external_relation_kind'\n  - filter by transaction_datetime\n```\n",
+        "description": "Search and retrieve pending (not yet posted) transactions for a property. Pending transactions represent charges, payments, or adjustments that have been created but not yet finalized. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. The filter and sort options are the same as for posted transactions.\n\n**Supported filter fields:**\n  - `account_category`\n  - `chart_of_account_type`\n  - `created_at` (alias for `transaction_datetime`)\n  - `customer_id`\n  - `custom_code`\n  - `external_relation_id`\n  - `external_relation_kind`\n  - `folio_id`\n  - `id`\n  - `internal_code`\n  - `origin_id`\n  - `parent_id`\n  - `routed_from`\n  - `source_id`\n  - `source_identifier`\n  - `source_kind`\n  - `transaction_datetime`\n  - `trial_balance_id`\n  - `service_date`\n\n\n**Supported sort fields:**\n  - `created_at` (alias for `transaction_datetime`)\n  - `id`\n  - `internal_code`\n  - `source_id`\n  - `transaction_datetime`\n  - `service_date`\n\n\n**Required filter constraints:** The API has certain constraints for filters so that the system is able to efficiently query the data. Every request must include at least one of the following base filters:\n  - `id` with operator `equals` or `in`\n  - `source_id` together with `source_kind`\n  - `source_identifier` together with `source_kind`\n  - `external_relation_id` together with `external_relation_kind`\n  - `transaction_datetime`\n  - `service_date`\n  - `trial_balance_id`\n\n\n**Additional filter rules:**\n  - Filters cannot be empty.\n  - `source_id` requires `source_kind` to be present in the same request.\n  - `source_identifier` requires `source_kind` to be present in the same request.\n  - `external_relation_id` and `external_relation_kind` must always be used together.\n  - `trial_balance_id` only supports the `equals` operator and cannot appear more than once.\n  - When using a single filter condition (without `and`/`or`), only `id`, `transaction_datetime`,\n    or `service_date` are allowed, and the operator must be `equals` or `in`.\n\n\n**Example — single filter condition (no AND/OR needed):**\n```\n  {\n    \"filters\": {\n      \"field\": \"id\",\n      \"operator\": \"in\",\n      \"value\": [101, 102, 103]\n    }\n  }\n```\n\n```\n  {\n    \"filters\": {\n      \"field\": \"service_date\",\n      \"operator\": \"equals\",\n      \"value\": \"2024-01-01\"\n    }\n  }\n```\n\n**Example — composite filter condition:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2024-01-01T00:00:00Z\"\n        },\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"less_than\",\n          \"value\": \"2024-02-01T00:00:00Z\"\n        }\n      ]\n    }\n  }\n```\n\n**Example — composite filter condition with sorting and pagination:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11T08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n```\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -1243,6 +1263,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ListFolioTransactionsPaginated"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/summary": {
+      "get": {
+        "summary": "Get folio balance summary",
+        "description": "Retrieve a summary of each folio for a given source (reservation or group profile). Returns a map keyed by folio ID, where each value contains the folio's balance due. The balance is computed from both posted and pending transactions assigned to each folio.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "$ref": "#/components/parameters/foliosFilter"
+          }
+        ],
+        "operationId": "getFoliosSummary",
+        "security": [
+          {
+            "bearerAuth": [
+              "read:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FolioSummary"
+                  }
                 }
               }
             }
@@ -1711,7 +1774,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/FolioConfigurationData"
+                    "$ref": "#/components/schemas/FolioConfiguration"
                   }
                 }
               }
@@ -1778,8 +1841,8 @@
         }
       }
     },
-    "/accounting/v1.0/folios/configurations/{id}/set-default": {
-      "post": {
+    "/accounting/v1.0/folios/configurations/{id}": {
+      "patch": {
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -1805,27 +1868,38 @@
         "tags": [
           "Folio Configuration"
         ],
-        "operationId": "setFolioConfigurationDefault",
-        "summary": "Set the default folio configuration",
-        "description": "Set a folio configuration as the default for the property. The default configuration is automatically applied when new reservations or other sources are created. Only one configuration can be the default at a time; setting a new default removes the previous one.\n",
+        "operationId": "patchFolioConfiguration",
+        "summary": "Partially update a folio configuration",
+        "description": "Partially update a folio configuration. Accepts optional isDefault, name, and description fields. Only provided fields are updated.\n",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FolioConfigurationPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FolioConfigurationSaveResponse"
+                  "$ref": "#/components/schemas/FolioConfiguration"
                 }
               }
             }
           },
           "400": {
             "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
           }
         }
-      }
-    },
-    "/accounting/v1.0/folios/configurations/{id}": {
+      },
       "get": {
         "parameters": [
           {
@@ -1868,7 +1942,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FolioConfigurationData"
+                  "$ref": "#/components/schemas/FolioConfiguration"
                 }
               }
             }
@@ -1909,7 +1983,7 @@
         ],
         "operationId": "deleteFolioConfiguration",
         "summary": "Delete a folio configuration",
-        "description": "Delete a folio configuration by its ID. This removes the configuration template from the property. Existing folios that were created from this configuration are not affected.\n",
+        "description": "Delete a folio configuration by its ID. The default configuration cannot be deleted; set another configuration as default first. Existing folios that were created from this configuration are not affected.\n",
         "responses": {
           "204": {
             "description": "No Content"
@@ -2031,15 +2105,37 @@
               "type": "integer",
               "format": "int64"
             },
-            "description": "Source ID (e.g., Group Profile ID)"
+            "description": "Group Profile ID"
           },
           {
             "name": "sourceKind",
             "in": "query",
-            "required": true,
+            "required": false,
+            "deprecated": true,
             "schema": {
-              "$ref": "#/components/schemas/FolioSourceKind"
-            }
+              "$ref": "#/components/schemas/RoutingRuleSourceKind"
+            },
+            "description": "Deprecated. Defaults to GROUP_PROFILE if not provided.\n"
+          },
+          {
+            "name": "subSourceId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Allotment Block ID. When provided, filters rules to only that block. When omitted, returns only group-level rules unless includeSubSourceRules is true.\n"
+          },
+          {
+            "name": "includeSubSourceRules",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "When true and subSourceId is omitted, also includes block-level (sub-source) rules in the response. Ignored when subSourceId is provided.\n"
           }
         ],
         "security": [
@@ -2054,7 +2150,7 @@
         ],
         "operationId": "getRoutingRules",
         "summary": "Get autorouting rules",
-        "description": "Retrieve the autorouting rules configured for a specific source, such as a group profile. Autorouting rules define which transaction types are automatically routed from reservations to a group profile folio. Both sourceId and sourceKind are required.\n",
+        "description": "Retrieve the autorouting rules configured for a group profile. Autorouting rules define which transaction types are automatically routed from reservations to a group profile folio.\n",
         "responses": {
           "200": {
             "description": "OK",
@@ -2093,7 +2189,7 @@
         ],
         "operationId": "createRoutingRule",
         "summary": "Create an autorouting rule",
-        "description": "Create a new autorouting rule for a specific source, such as a group profile. The rule defines which transaction types are automatically routed from reservations to a group profile folio.\n",
+        "description": "Create a new autorouting rule for a group profile. The rule defines which transaction types are automatically routed from reservations to a group profile folio.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -2136,7 +2232,7 @@
         ],
         "operationId": "updateRoutingRule",
         "summary": "Update an autorouting rule",
-        "description": "Update an existing autorouting rule. Only the provided fields will be updated.\n",
+        "description": "Update or create autorouting rules for a group profile. Entries with an id are updated; entries without an id are created as new rules.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -2386,9 +2482,18 @@
               "default": true,
               "description": "Include inactive transactions (voided, consumed, cancelled, deleted)"
             },
-            "reservationId": {
+            "sourceId": {
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "description": "Filter by source ID. Must be used with sourceKind."
+            },
+            "sourceKind": {
+              "type": "string",
+              "enum": [
+                "RESERVATION",
+                "GROUP_PROFILE"
+              ],
+              "description": "Filter by source kind. Must be used with sourceId."
             },
             "transactionDateFrom": {
               "type": "string",
@@ -2414,8 +2519,12 @@
               "type": "string",
               "format": "date"
             },
-            "reservationStatus": {
-              "$ref": "#/components/schemas/ReservationStatus"
+            "reservationStatuses": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ReservationStatus"
+              },
+              "description": "Filter by one or more reservation statuses (OR logic). When provided, the deprecated reservationStatus field is ignored.\n"
             },
             "userId": {
               "type": "array",
@@ -2462,6 +2571,10 @@
               "$ref": "#/components/schemas/FolioSourceKind"
             }
           }
+        },
+        "example": {
+          "sourceId": 0,
+          "sourceKind": "RESERVATION"
         }
       },
       "propertyId": {
@@ -2611,7 +2724,8 @@
           "custom_item",
           "spaces",
           "accounts_receivable_transfers",
-          "deposit_transfers"
+          "deposit_transfers",
+          "channel_commission"
         ]
       },
       "DepositConsumptionEnum": {
@@ -2696,7 +2810,7 @@
       },
       "ApiErrorCode": {
         "type": "string",
-        "description": "Error code indicating the type of failure. Use this value for programmatic error handling.\n- `UNKNOWN_ERROR` — An unclassified error occurred. Contact support if this persists.\n- `UNEXPECTED_ERROR` — An unexpected internal error occurred. Retry the request or contact support.\n- `ACCESS_DENIED` — You do not have permission to perform this operation on the specified property.\n- `INVALID_REQUEST` — The request body or parameters are invalid. Check the errorDetails field for specifics.\n- `NOT_UNIQUE_VALUE` — A value that must be unique (such as a name or code) already exists.\n- `INVALID_USER_INFORMATION` — The user information provided is invalid or could not be resolved.\n- `ENTITY_NOT_FOUND` — The requested entity was not found.\n- `ACCOUNTS_RECEIVABLE_LEDGER_FEATURE_DISABLED` — The accounts receivable ledger feature is not enabled for this property.\n- `BOOKING_NOT_FOUND` — The specified reservation or booking was not found.\n- `ACCOUNTS_RECEIVABLE_LEDGER_NOT_FOUND` — The specified accounts receivable ledger was not found.\n- `ACCOUNTS_RECEIVABLE_LEDGER_STATUS_ERROR` — The AR ledger is in a status that does not allow this operation (e.g., attempting to transfer to a closed ledger).\n- `BOOKING_STATUS_ERROR` — The reservation is in a status that does not allow this operation.\n- `GROUP_PROFILE_NOT_FOUND` — The specified group profile was not found.\n- `GROUP_PROFILE_STATUS_ERROR` — The group profile is in a status that does not allow this operation.\n- `GROUP_PROFILE_FOLIO_ERROR` — An error occurred with the group profile folio (e.g., the specified folio does not belong to the group profile).\n",
+        "description": "Error code indicating the type of failure. Use this value for programmatic error handling.\n- `UNKNOWN_ERROR` — An unclassified error occurred. Contact support if this persists.\n- `UNEXPECTED_ERROR` — An unexpected internal error occurred. Retry the request or contact support.\n- `ACCESS_DENIED` — You do not have permission to perform this operation on the specified property.\n- `INVALID_REQUEST` — The request body or parameters are invalid. Check the errorDetails field for specifics.\n- `NOT_UNIQUE_VALUE` — A value that must be unique (such as a name or code) already exists.\n- `INVALID_USER_INFORMATION` — The user information provided is invalid or could not be resolved.\n- `ENTITY_NOT_FOUND` — The requested entity was not found.\n- `ACCOUNTS_RECEIVABLE_LEDGER_FEATURE_DISABLED` — The accounts receivable ledger feature is not enabled for this property.\n- `BOOKING_NOT_FOUND` — The specified reservation or booking was not found.\n- `ACCOUNTS_RECEIVABLE_LEDGER_NOT_FOUND` — The specified accounts receivable ledger was not found.\n- `ACCOUNTS_RECEIVABLE_LEDGER_STATUS_ERROR` — The AR ledger is in a status that does not allow this operation (e.g., attempting to transfer to a closed ledger).\n- `BOOKING_STATUS_ERROR` — The reservation is in a status that does not allow this operation.\n- `GROUP_PROFILE_NOT_FOUND` — The specified group profile was not found.\n- `GROUP_PROFILE_STATUS_ERROR` — The group profile is in a status that does not allow this operation.\n- `GROUP_PROFILE_FOLIO_ERROR` — An error occurred with the group profile folio (e.g., the specified folio does not belong to the group profile).\n- `DEPOSIT_TRANSACTION_CAN_NOT_BE_TRANSFERRED` — The deposit transaction cannot be transferred.\n- `INVALID_ARGUMENT_ERROR` — A provided argument is invalid (e.g., an unrecognized filter or sort field). Check the errorDetails field for specifics.\n- `FOLIO_HAS_TRANSACTIONS` — The folio cannot be deleted because it has transactions assigned to it. Move or unroute the transactions first.\n- `SOURCE_HAS_ROUTED_TRANSACTIONS` — The source's folio configuration cannot be changed because it has routed transactions involving its folios (transactions originating from a reservation source, or routed onto a group source). Unroute the transactions first.\n",
         "enum": [
           "UNKNOWN_ERROR",
           "UNEXPECTED_ERROR",
@@ -2712,7 +2826,11 @@
           "BOOKING_STATUS_ERROR",
           "GROUP_PROFILE_NOT_FOUND",
           "GROUP_PROFILE_STATUS_ERROR",
-          "GROUP_PROFILE_FOLIO_ERROR"
+          "GROUP_PROFILE_FOLIO_ERROR",
+          "DEPOSIT_TRANSACTION_CAN_NOT_BE_TRANSFERRED",
+          "INVALID_ARGUMENT_ERROR",
+          "FOLIO_HAS_TRANSACTIONS",
+          "SOURCE_HAS_ROUTED_TRANSACTIONS"
         ]
       },
       "sortDirection": {
@@ -2801,6 +2919,9 @@
             "type": "string",
             "minLength": 1
           },
+          "conditionalCode": {
+            "type": "string"
+          },
           "group": {
             "type": "string",
             "enum": [
@@ -2810,7 +2931,9 @@
               "taxes_fees",
               "deposit_transfers",
               "accounts_receivable_transfers",
-              "spaces"
+              "current_ledger",
+              "spaces",
+              "channel_commission"
             ]
           },
           "archived": {
@@ -2878,6 +3001,10 @@
           "spaceId": {
             "type": "string",
             "description": "Space ID for spaces group"
+          },
+          "channelId": {
+            "type": "string",
+            "description": "Channel ID for channel commission group"
           }
         }
       },
@@ -3108,6 +3235,14 @@
           }
         }
       },
+      "RouteChildrenType": {
+        "type": "string",
+        "description": "Child transaction types that can follow their parent to the same target folio. Only TAX and FEE are supported.\n",
+        "enum": [
+          "TAX",
+          "FEE"
+        ]
+      },
       "ExternalRelationKind": {
         "type": "string",
         "enum": [
@@ -3124,6 +3259,7 @@
           "ADJUSTMENT",
           "PAYMENT_FEE",
           "BOOKABLE_RESOURCE",
+          "CHANNEL_COMMISSION",
           "CITY_LEDGER"
         ],
         "description": "Kind of the external relation"
@@ -3398,7 +3534,8 @@
               "FEE",
               "ADJUSTMENT",
               "PAYMENT_FEE",
-              "BOOKABLE_RESOURCE"
+              "BOOKABLE_RESOURCE",
+              "CHANNEL_COMMISSION"
             ],
             "description": "Kind of the external relation id, for example if transaction is a payment it will contain PAYMENT."
           },
@@ -3508,31 +3645,9 @@
             "description": "Date time of the transaction.",
             "format": "date-time"
           },
-          "reservationName": {
-            "type": "string",
-            "description": "reservation name."
-          },
-          "checkinDate": {
-            "type": "string",
-            "format": "date",
-            "description": "Check in date."
-          },
-          "checkoutDate": {
-            "type": "string",
-            "format": "date",
-            "description": "Check out date."
-          },
           "amount": {
             "type": "number",
             "description": "amount of the transaction."
-          },
-          "reservationId": {
-            "type": "string",
-            "description": "Id of reservation"
-          },
-          "reservationIdentifier": {
-            "type": "string",
-            "description": "Identifier of reservation"
           },
           "internalTransactionCode": {
             "type": "string",
@@ -3560,6 +3675,18 @@
               "DELETED"
             ]
           },
+          "transferredAmount": {
+            "type": "number",
+            "description": "Total amount already transferred to guest ledger. Null for non-deposit or inactive transactions."
+          },
+          "refundedAmount": {
+            "type": "number",
+            "description": "Total amount already refunded via payment service. Null for non-deposit or inactive transactions."
+          },
+          "availableAmount": {
+            "type": "number",
+            "description": "Amount still available for transfer or refund. Null for non-deposit or inactive transactions."
+          },
           "currency": {
             "type": "string",
             "description": "Currency ISO code"
@@ -3568,8 +3695,8 @@
             "type": "integer",
             "description": "Number of decimal places for the currency."
           },
-          "reservationStatus": {
-            "$ref": "#/components/schemas/ReservationStatus"
+          "source": {
+            "$ref": "#/components/schemas/DepositSource"
           },
           "posted": {
             "type": "boolean",
@@ -3580,6 +3707,9 @@
           },
           "actions": {
             "$ref": "#/components/schemas/Actions"
+          },
+          "paymentDetails": {
+            "$ref": "#/components/schemas/PaymentDetails"
           }
         }
       },
@@ -3690,6 +3820,69 @@
           }
         }
       },
+      "DepositSourceReservation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Reservation ID."
+          },
+          "identifier": {
+            "type": "string",
+            "description": "Reservation identifier."
+          },
+          "guestName": {
+            "type": "string",
+            "description": "Guest name."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReservationStatus"
+          },
+          "checkinDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Check-in date."
+          },
+          "checkoutDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Checkout date."
+          }
+        }
+      },
+      "DepositSourceGroupProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Group profile ID."
+          },
+          "identifier": {
+            "type": "string",
+            "description": "Group profile code."
+          },
+          "name": {
+            "type": "string",
+            "description": "Group profile name."
+          },
+          "status": {
+            "type": "string",
+            "description": "Group profile status."
+          }
+        }
+      },
+      "DepositSource": {
+        "type": "object",
+        "description": "Source entity details. Exactly one of the nested objects will be present.",
+        "properties": {
+          "reservation": {
+            "$ref": "#/components/schemas/DepositSourceReservation"
+          },
+          "groupProfile": {
+            "$ref": "#/components/schemas/DepositSourceGroupProfile"
+          }
+        }
+      },
       "DepositBalanceResponse": {
         "type": "object",
         "properties": {
@@ -3751,6 +3944,10 @@
               "type": "string",
               "description": "List of transaction ids for transferring a deposit"
             }
+          },
+          "amount": {
+            "type": "number",
+            "description": "Partial amount to transfer in decimal form (e.g. 50.00). When provided, transaction_ids must contain exactly one element. When omitted, full amount of each transaction is transferred.\n"
           }
         }
       },
@@ -3843,6 +4040,11 @@
             "format": "double",
             "description": "Balance due amount in smallest currency unit"
           },
+          "channelCommission": {
+            "type": "number",
+            "format": "double",
+            "description": "Channel commission amount in smallest currency unit"
+          },
           "updatedAt": {
             "type": "string",
             "format": "date-time",
@@ -3905,37 +4107,58 @@
       "RoutingRuleResponse": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "description": "Routing rule ID"
-          },
           "propertyId": {
             "type": "string",
             "description": "Property ID"
           },
           "sourceId": {
             "type": "string",
-            "description": "Source ID (e.g., Group Profile ID)"
+            "description": "Group Profile ID"
           },
           "sourceKind": {
-            "$ref": "#/components/schemas/FolioSourceKind"
+            "$ref": "#/components/schemas/RoutingRuleSourceKind"
+          },
+          "subSourceId": {
+            "type": "string",
+            "description": "Allotment Block ID. Null for group-level rules.\n"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingRuleEntryResponse"
+            },
+            "description": "Rule entries. For group-level rules this contains exactly one entry (no folioId). For block-level rules each entry targets a different folio.\n"
+          }
+        }
+      },
+      "RoutingRuleEntryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Rule entry ID"
           },
           "enabled": {
             "type": "boolean",
-            "description": "Whether the rule is enabled"
+            "description": "Whether this rule entry is enabled"
+          },
+          "folioId": {
+            "type": "string",
+            "description": "Target folio ID for this entry"
           },
           "routeChildrenTypes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ExternalRelationKind"
+              "$ref": "#/components/schemas/RouteChildrenType"
             },
-            "description": "Child transaction types that should follow their parent to the same folio"
+            "description": "Child transaction types that follow their parent to the same folio"
           },
           "transactionTypes": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RoutingRuleTransactionTypeResponse"
-            }
+            },
+            "description": "Transaction types this entry routes"
           }
         }
       },
@@ -3951,47 +4174,85 @@
           }
         }
       },
-      "CreateRoutingRuleRequest": {
+      "RoutingRuleTransactionTypeRequest": {
+        "type": "object",
+        "properties": {
+          "externalRelationKind": {
+            "$ref": "#/components/schemas/ExternalRelationKind"
+          },
+          "originId": {
+            "type": "string",
+            "description": "Origin ID for the transaction type (e.g., fee ID, tax ID)"
+          }
+        }
+      },
+      "RoutingRuleEntryRequest": {
         "type": "object",
         "required": [
-          "sourceId",
-          "sourceKind",
           "enabled",
           "routeChildrenTypes",
           "transactionTypes"
         ],
         "properties": {
-          "sourceId": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Source ID (e.g., Group Profile ID)"
-          },
-          "sourceKind": {
-            "$ref": "#/components/schemas/FolioSourceKind"
-          },
           "enabled": {
             "type": "boolean",
-            "description": "Whether the rule is enabled"
+            "description": "Whether this rule entry is enabled"
+          },
+          "folioId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Target folio ID. Required for block-level rule entries (when the outer subSourceId is set). Must be omitted for group-level rule entries.\n"
           },
           "routeChildrenTypes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ExternalRelationKind"
+              "$ref": "#/components/schemas/RouteChildrenType"
             },
             "description": "Child transaction types that should follow their parent to the same folio"
           },
           "transactionTypes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RoutingRuleTransactionTypeResponse"
-            }
+              "$ref": "#/components/schemas/RoutingRuleTransactionTypeRequest"
+            },
+            "description": "Transaction types that this entry routes"
           }
         }
       },
-      "UpdateRoutingRuleRequest": {
+      "CreateRoutingRuleRequest": {
         "type": "object",
         "required": [
-          "id",
+          "sourceId",
+          "rules"
+        ],
+        "properties": {
+          "sourceId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Group Profile ID",
+            "example": 12345
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/RoutingRuleSourceKind"
+          },
+          "subSourceId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Allotment Block ID. Null for group-level rules, required for block-level rules.\n",
+            "example": 67890
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingRuleEntryRequest"
+            },
+            "description": "Rule entries. For group-level rules provide exactly one entry (no folioId). For block-level rules provide one entry per target folio.\n"
+          }
+        }
+      },
+      "UpdateRoutingRuleEntryRequest": {
+        "type": "object",
+        "required": [
           "enabled",
           "routeChildrenTypes",
           "transactionTypes"
@@ -4000,24 +4261,60 @@
           "id": {
             "type": "integer",
             "format": "int64",
-            "description": "Routing rule ID"
+            "description": "ID of the rule entry to update. When omitted, a new rule entry is created (sourceId and subSourceId must be provided on the parent request in that case).\n"
           },
           "enabled": {
             "type": "boolean",
-            "description": "Whether the rule is enabled"
+            "description": "Whether this rule entry is enabled"
+          },
+          "folioId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Target folio ID. For block-level rules only. When omitted the existing folio is preserved (partial-update semantics).\n"
           },
           "routeChildrenTypes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ExternalRelationKind"
+              "$ref": "#/components/schemas/RouteChildrenType"
             },
             "description": "Child transaction types that should follow their parent to the same folio"
           },
           "transactionTypes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RoutingRuleTransactionTypeResponse"
-            }
+              "$ref": "#/components/schemas/RoutingRuleTransactionTypeRequest"
+            },
+            "description": "Transaction types that this entry routes"
+          }
+        }
+      },
+      "UpdateRoutingRuleRequest": {
+        "type": "object",
+        "required": [
+          "rules"
+        ],
+        "properties": {
+          "sourceId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Group Profile ID. Required when any entry in the rules array omits an id (i.e. is a new entry to create).\n",
+            "example": 12345
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/RoutingRuleSourceKind"
+          },
+          "subSourceId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Allotment Block ID. Required for block-level rules when creating new entries.\n",
+            "example": 67890
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdateRoutingRuleEntryRequest"
+            },
+            "description": "Rule entries to create or update. Entries with an id are updated; entries without an id are created as new rules.\n"
           }
         }
       },
@@ -4053,6 +4350,7 @@
           "PAYMENT",
           "ACCOUNTS_RECEIVABLE",
           "SPACE",
+          "CHANNEL_COMMISSION",
           "N_A"
         ]
       },
@@ -4160,39 +4458,79 @@
       "TrialBalanceReportSummary": {
         "type": "object",
         "properties": {
-          "openingBalance": {
-            "type": "number"
-          },
-          "transactionsTotalAmount": {
-            "type": "number"
-          },
-          "ledgerActivity": {
+          "hotelOpeningBalance": {
             "type": "number"
           },
           "depositActivity": {
             "type": "number"
+          },
+          "guestLedgerActivity": {
+            "type": "number",
+            "description": "Net activity in the guest ledger for the day."
+          },
+          "arActivity": {
+            "type": "number"
+          },
+          "totalActivity": {
+            "type": "number",
+            "description": "Sum of all posted transactions of the day across the 3 ledgers."
+          },
+          "hotelClosingBalance": {
+            "type": "number"
+          },
+          "guestLedgerOpeningBalance": {
+            "type": "number",
+            "description": "Guest ledger opening balance for the day."
+          },
+          "guestLedgerTransactionsTotal": {
+            "type": "number",
+            "description": "Total of guest ledger transactions posted on the day (excludes transfers)."
+          },
+          "guestLedgerDepositTransfers": {
+            "type": "number",
+            "description": "Deposit transfers posted into the guest ledger on the day."
+          },
+          "guestLedgerArTransfers": {
+            "type": "number",
+            "description": "AR transfers posted out of the guest ledger on the day."
+          },
+          "guestLedgerClosingBalance": {
+            "type": "number",
+            "description": "Guest ledger closing balance for the day."
+          },
+          "openingBalance": {
+            "deprecated": true,
+            "type": "number",
+            "description": "Deprecated — use `guestLedgerOpeningBalance` instead."
+          },
+          "transactionsTotalAmount": {
+            "deprecated": true,
+            "type": "number",
+            "description": "Deprecated — use `guestLedgerTransactionsTotal` instead."
+          },
+          "ledgerActivity": {
+            "deprecated": true,
+            "type": "number",
+            "description": "Deprecated — use `guestLedgerActivity` instead."
           },
           "arPayments": {
             "deprecated": true,
             "type": "number"
           },
           "depositTransfers": {
-            "type": "number"
-          },
-          "arActivity": {
-            "type": "number"
+            "deprecated": true,
+            "type": "number",
+            "description": "Deprecated — use `guestLedgerDepositTransfers` instead."
           },
           "closingBalance": {
-            "type": "number"
+            "deprecated": true,
+            "type": "number",
+            "description": "Deprecated — use `guestLedgerClosingBalance` instead."
           },
           "arTransfers": {
-            "type": "number"
-          },
-          "hotelOpeningBalance": {
-            "type": "number"
-          },
-          "hotelClosingBalance": {
-            "type": "number"
+            "deprecated": true,
+            "type": "number",
+            "description": "Deprecated — use `guestLedgerArTransfers` instead."
           }
         }
       },
@@ -4309,7 +4647,10 @@
               "AR_PAYMENTS",
               "SPACE",
               "SPACE_A",
-              "SPACE_V"
+              "SPACE_V",
+              "CHANNEL_COMMISSION",
+              "CHANNEL_COMMISSION_A",
+              "CHANNEL_COMMISSION_V"
             ]
           },
           "amount": {
@@ -4505,7 +4846,40 @@
           "folios": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FolioConfigurationFolioData"
+              "$ref": "#/components/schemas/FolioConfigurationFolio"
+            }
+          }
+        }
+      },
+      "FolioConfiguration": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolioConfigurationSourceData"
+            }
+          },
+          "folios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolioConfigurationFolioResponse"
             }
           }
         }
@@ -4525,7 +4899,7 @@
           }
         }
       },
-      "FolioConfigurationFolioData": {
+      "FolioConfigurationFolio": {
         "type": "object",
         "properties": {
           "id": {
@@ -4534,20 +4908,53 @@
           "folioName": {
             "type": "string"
           },
-          "linkType": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Converted to SourceKind"
+          "routeChildrenTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteChildrenType"
+            },
+            "description": "Child transaction types that follow their parent to this folio"
           },
           "transactionTypes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FolioConfigurationFolioTransactionTypeData"
+              "$ref": "#/components/schemas/FolioConfigurationFolioTransactionType"
             }
           }
         }
       },
-      "FolioConfigurationFolioTransactionTypeData": {
+      "FolioConfigurationFolioResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "folioName": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/FolioSourceKind"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Source ID"
+          },
+          "routeChildrenTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteChildrenType"
+            },
+            "description": "Child transaction types that follow their parent to this folio"
+          },
+          "transactionTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolioConfigurationFolioTransactionType"
+            }
+          }
+        }
+      },
+      "FolioConfigurationFolioTransactionType": {
         "type": "object",
         "properties": {
           "folioId": {
@@ -4571,6 +4978,20 @@
         "properties": {
           "id": {
             "type": "string"
+          }
+        }
+      },
+      "FolioConfigurationPatchRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
           }
         }
       },
@@ -4624,20 +5045,19 @@
             "type": "string",
             "description": "Folio name"
           },
-          "folioConfigurationId": {
-            "type": "string",
-            "description": "Folio configuration ID"
-          },
-          "parentId": {
-            "type": "string",
-            "description": "Parent folio ID (for sub-folios)"
-          },
           "sourceId": {
             "type": "string",
             "description": "Source ID (reservation ID or group profile ID)"
           },
           "sourceKind": {
             "$ref": "#/components/schemas/FolioSourceKind"
+          },
+          "routeChildrenTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteChildrenType"
+            },
+            "description": "Child transaction types that follow their parent to this folio"
           },
           "transactionTypes": {
             "type": "array",
@@ -4667,6 +5087,13 @@
             "type": "string",
             "description": "Folio name"
           },
+          "routeChildrenTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteChildrenType"
+            },
+            "description": "Child transaction types that follow their parent to this folio"
+          },
           "transactionTypes": {
             "type": "array",
             "items": {
@@ -4691,9 +5118,14 @@
             "type": "string",
             "description": "Property ID"
           },
-          "folioConfigurationId": {
+          "configurationId": {
             "type": "string",
             "description": "Folio configuration ID"
+          },
+          "folioConfigurationId": {
+            "type": "string",
+            "deprecated": true,
+            "description": "Deprecated. Use configurationId instead. Folio configuration ID.\n"
           },
           "parentId": {
             "type": "string",
@@ -4705,6 +5137,13 @@
           },
           "sourceKind": {
             "$ref": "#/components/schemas/FolioSourceKind"
+          },
+          "routeChildrenTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteChildrenType"
+            },
+            "description": "Child transaction types that follow their parent to this folio. Reflects the folio's current value — set manually via POST/PUT or inherited from the configuration template via propagation.\n"
           },
           "transactionTypes": {
             "type": "array",
@@ -4734,7 +5173,15 @@
           "RESERVATION",
           "GROUP_PROFILE"
         ],
-        "description": "The type of source a folio belongs to. CONFIG indicates a folio configuration template, RESERVATION is an individual guest booking, HOUSE_ACCOUNT is a property-level account, and GROUP_PROFILE is a group booking profile.\n"
+        "description": "The type of source a folio belongs to. CONFIG indicates a folio configuration template, RESERVATION is an individual guest booking, and GROUP_PROFILE is a group booking profile.\n"
+      },
+      "RoutingRuleSourceKind": {
+        "type": "string",
+        "deprecated": true,
+        "enum": [
+          "GROUP_PROFILE"
+        ],
+        "description": "Deprecated. Defaults to GROUP_PROFILE if not provided.\n"
       },
       "ListFolioTransactionsRequest": {
         "type": "object",
@@ -4844,7 +5291,8 @@
           "sub_source_identifier",
           "folio_id",
           "user_id",
-          "reservation_name"
+          "reservation_name",
+          "room_name"
         ],
         "x-enum-varnames": [
           "transaction_date",
@@ -4854,7 +5302,8 @@
           "sub_source_identifier",
           "folio_id",
           "user_id",
-          "reservation_name"
+          "reservation_name",
+          "room_name"
         ],
         "description": "Field to group transactions by. When omitted, all transactions are placed in a single group with key \"default\".\n"
       },
@@ -4942,7 +5391,8 @@
               "custom_item",
               "accountsReceivable",
               "adjustment",
-              "space"
+              "space",
+              "channel_commission"
             ],
             "description": "UI-facing transaction type. Derived from internalTransactionCode: if code suffix is \"A\" → \"adjustment\", otherwise mapped from internalCodeGroup. Maps 1:1 to MFD ReservationTransactionType except roomRevenue is split into 3.\n"
           },
@@ -5323,6 +5773,21 @@
           },
           "reservationName": {
             "type": "string"
+          }
+        }
+      },
+      "FolioSummary": {
+        "type": "object",
+        "description": "Summary data for a single folio.",
+        "properties": {
+          "folioId": {
+            "type": "string",
+            "description": "Folio ID"
+          },
+          "balanceDue": {
+            "type": "number",
+            "format": "double",
+            "description": "Balance due for this folio"
           }
         }
       }
