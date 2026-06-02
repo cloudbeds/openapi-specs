@@ -17,7 +17,7 @@ components:
       description: Enter your JWT token (without the word "Bearer")
   schemas: {}
 paths:
-  /attributes/:
+  /attribute-tagging/v1/attributes/:
     get:
       summary: Returns a list of attributes
       tags:
@@ -299,7 +299,7 @@ paths:
                   - code
                   - message
                 additionalProperties: false
-  /attributes/{id}:
+  /attribute-tagging/v1/attributes/{id}:
     patch:
       summary: Update an attribute
       tags:
@@ -587,7 +587,7 @@ paths:
                   - code
                   - message
                 additionalProperties: false
-  /tags/:
+  /attribute-tagging/v1/tags/:
     get:
       summary: Returns a list of tags for an entity
       tags:
@@ -1076,7 +1076,7 @@ paths:
                   - code
                   - message
                 additionalProperties: false
-  /tags/{id}:
+  /attribute-tagging/v1/tags/{id}:
     delete:
       summary: Delete a tag
       tags:
