@@ -135,10 +135,11 @@ paths:
         OTA. Both `ota_property_id` and `ota_property_password` will be retained by
         us and passed in every call. Should you not need two identification fields
         please let us know and we can set it to only ask for `ota_property_id`.
-        However, this would mean that some kind of activation process is required
-        where our customer support team enters the ID on behalf of the hotel.
-        Otherwise it would be possible for the hotel to enter someone else's
-        credentials.
+        In that case, the hotel can self-serve as long as no other property is
+        already using the same `ota_property_id`. If the ID is already in use by
+        another property, our customer support team will verify that the new
+        connection is allowed before enabling it, to prevent a hotel from entering
+        someone else's credentials.
 
         Implementation suggestions: `ota_property_id` should typically be a username
         or hotel ID on your OTA. The `ota_property_password` is typically a
