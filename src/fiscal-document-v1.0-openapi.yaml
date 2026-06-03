@@ -2514,6 +2514,33 @@ paths:
       security:
         - bearerAuth: []
   /fiscal-document/v1/fiscalization/credentials/certificate:
+    get:
+      tags:
+        - Fiscalization
+      summary: Get fiscalization certificate status for a property
+      description: |
+        Returns metadata about the stored fiscalization certificate (timestamps and
+        verification state). Returns 404 if no certificate has been uploaded or if
+        the country does not require a certificate.
+      operationId: getFiscalizationCertificate
+      parameters:
+        - name: X-Property-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Certificate metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationCertificateStatus'
+        '404':
+          description: No certificate has been uploaded for this property
+      security:
+        - bearerAuth: []
     post:
       tags:
         - Fiscalization
@@ -5104,6 +5131,23 @@ components:
           type: string
           format: date-time
           description: When credentials were last updated
+    FiscalizationCertificateStatus:
+      type: object
+      required:
+        - createdAt
+        - updatedAt
+      properties:
+        verified:
+          type: boolean
+          description: Whether the certificate has been verified by the provider
+        createdAt:
+          type: string
+          format: date-time
+          description: When the certificate was first uploaded
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the certificate was last updated
     CountryInfo:
       type: object
       required:
