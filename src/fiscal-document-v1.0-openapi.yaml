@@ -1470,6 +1470,7 @@ paths:
       summary: Get fiscalization registration for a property
       description: Returns the fiscalization registration (supplier/party info) for the given property.
       operationId: getFiscalizationRegistration
+      deprecated: true
       tags:
         - Fiscalization
       security:
@@ -1494,6 +1495,7 @@ paths:
       summary: Create fiscalization registration
       description: Creates a new fiscalization registration (supplier/party info) for the given property.
       operationId: createFiscalizationRegistration
+      deprecated: true
       tags:
         - Fiscalization
       security:
@@ -1522,6 +1524,7 @@ paths:
       summary: Update fiscalization registration
       description: Updates the fiscalization registration for the given property.
       operationId: updateFiscalizationRegistration
+      deprecated: true
       tags:
         - Fiscalization
       security:
@@ -1667,6 +1670,7 @@ paths:
       description: >-
         Returns country-specific fiscalization rules for building forms. The response always includes the full section list; `fields` is filtered by the optional `sectionKey` query param (default `registration`).
       operationId: getFiscalizationRegistrationRules
+      deprecated: true
       parameters:
         - name: country
           in: query
@@ -1702,6 +1706,7 @@ paths:
       summary: Validate fiscalization registration data
       description: Validates party data against country-specific fiscalization rules based on the $regime field
       operationId: validateFiscalizationData
+      deprecated: true
       requestBody:
         required: true
         content:
@@ -1726,6 +1731,7 @@ paths:
       summary: Get available countries for property registration
       description: Returns list of countries available for fiscalization based on property location
       operationId: getFiscalizationRegistrationCountries
+      deprecated: true
       parameters:
         - name: X-Property-ID
           in: header
@@ -1754,6 +1760,7 @@ paths:
       summary: Get registration status for a property
       description: Returns the registration status with government systems for each configured country
       operationId: getFiscalizationRegistrationStatus
+      deprecated: true
       parameters:
         - name: X-Property-ID
           in: header
@@ -2460,6 +2467,7 @@ paths:
         The password is never returned. Returns 404 if credentials have never been set
         or if the country does not require credentials.
       operationId: getFiscalizationCredentials
+      deprecated: true
       parameters:
         - name: X-Property-ID
           in: header
@@ -2486,6 +2494,7 @@ paths:
         Sets or updates text-based credentials (username/password) for the property's supplier.
         Used for countries that require portal login credentials (e.g., PT AT portal).
       operationId: setFiscalizationCredentials
+      deprecated: true
       parameters:
         - name: X-Property-ID
           in: header
@@ -2550,6 +2559,7 @@ paths:
         for the property's supplier. Used for countries that require certificate-based
         authentication (e.g., HR tax certificate, BE Peppol ownership document).
       operationId: uploadFiscalizationCertificate
+      deprecated: true
       parameters:
         - name: X-Property-ID
           in: header
@@ -2737,6 +2747,473 @@ paths:
           description: Series or config not found
       security:
         - bearerAuth: []
+  /fiscal-document/v1/fiscalization/catalogue/countries:
+    get:
+      tags: [Fiscal Connection Config]
+      summary: List supported countries
+      operationId: listFiscalCountries
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalCountryListResponse'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/catalogue/countries/{countryCode}/channels:
+    get:
+      tags: [Fiscal Connection Config]
+      summary: List fiscal channels for a country
+      operationId: listFiscalChannels
+      parameters:
+        - name: countryCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalChannelListResponse'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/catalogue/countries/{countryCode}/channels/{channelCode}/providers:
+    get:
+      tags: [Fiscal Connection Config]
+      summary: List providers for a channel
+      operationId: listFiscalProviders
+      parameters:
+        - name: countryCode
+          in: path
+          required: true
+          schema: {type: string}
+        - name: channelCode
+          in: path
+          required: true
+          schema: {type: string}
+        - name: enabled
+          in: query
+          required: false
+          schema: {type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalProviderListResponse'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/status:
+    get:
+      tags: [Fiscal Connection Config]
+      summary: Check if the property is ready to issue fiscal documents
+      operationId: getFiscalizationStatus
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationStatusResponse'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections:
+    get:
+      tags: [Fiscal Connection Config]
+      summary: List connections for a property
+      operationId: listFiscalConnections
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: drafts
+          in: query
+          required: false
+          schema: {type: boolean, default: false}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnectionListResponse'
+      security: [{bearerAuth: []}]
+    post:
+      tags: [Fiscal Connection Config]
+      summary: Create a connection
+      operationId: createFiscalConnection
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalConnectionCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnection'
+        '409':
+          description: Provider already connected
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}:
+    get:
+      tags: [Fiscal Connection Config]
+      summary: Get a single connection
+      operationId: getFiscalConnection
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnection'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
+    put:
+      tags: [Fiscal Connection Config]
+      summary: Update a connection
+      operationId: updateFiscalConnection
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalConnectionUpdateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnection'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
+    delete:
+      tags: [Fiscal Connection Config]
+      summary: Disconnect a connection
+      operationId: disconnectFiscalConnection
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '204':
+          description: Disconnected
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/activate:
+    post:
+      tags: [Fiscal Connection Config]
+      summary: Activate a verifying connection
+      operationId: activateFiscalConnection
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnection'
+        '400':
+          $ref: '#/components/responses/400'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/pause:
+    post:
+      tags: [Fiscal Connection Config]
+      summary: Pause a connection
+      operationId: pauseFiscalConnection
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnection'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/resume:
+    post:
+      tags: [Fiscal Connection Config]
+      summary: Resume a paused connection
+      operationId: resumeFiscalConnection
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnection'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/test:
+    post:
+      tags: [Fiscal Connection Config]
+      summary: Test the connection to the tax authority
+      operationId: testFiscalConnection
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnectionTestResult'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/onboarding/{stepKey}/options:
+    get:
+      tags: [Fiscal Connection Config]
+      summary: List available options for an onboarding step
+      description: Returns provider-specific options for the given step (e.g. available accounts for registration, available series for the series step).
+      operationId: listOnboardingStepOptions
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+        - name: stepKey
+          in: path
+          required: true
+          schema: {type: string}
+          description: Step key from the provider catalogue (registration, authentication, series, etc.)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/onboarding/{stepKey}:
+    post:
+      tags: [Fiscal Connection Config]
+      summary: Submit data for an onboarding step
+      description: Submits the user's selection or input for the given step. The request body shape depends on the step and provider.
+      operationId: submitOnboardingStep
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+        - name: stepKey
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnection'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/onboarding/complete:
+    post:
+      tags: [Fiscal Connection Config]
+      summary: Complete onboarding and activate connection
+      operationId: completeOnboarding
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnection'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/drafts:
+    get:
+      tags: [Fiscal Connection Config]
+      summary: List in-progress connection drafts
+      operationId: listFiscalConnectionDrafts
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnectionDraftListResponse'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/drafts/{providerId}:
+    put:
+      tags: [Fiscal Connection Config]
+      summary: Upsert a registration draft
+      operationId: upsertFiscalConnectionDraft
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: providerId
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalConnectionDraftUpsertRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalConnectionDraft'
+        '400':
+          $ref: '#/components/responses/400'
+      security: [{bearerAuth: []}]
+    delete:
+      tags: [Fiscal Connection Config]
+      summary: Discard a registration draft
+      operationId: deleteFiscalConnectionDraft
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: providerId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '204':
+          description: Deleted
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/routing:
+    get:
+      tags: [Fiscal Connection Config]
+      summary: List all routing rules for a property
+      operationId: listFiscalDocumentRouting
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalRoutingListResponse'
+      security: [{bearerAuth: []}]
+    put:
+      tags: [Fiscal Connection Config]
+      summary: Bulk-replace routing rules
+      operationId: replaceFiscalDocumentRouting
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalRoutingListResponse'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalRoutingListResponse'
+        '400':
+          $ref: '#/components/responses/400'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/routing/{countryCode}/{channelCode}/{flowId}:
+    patch:
+      tags: [Fiscal Connection Config]
+      summary: Update a single routing rule
+      operationId: patchFiscalDocumentRouting
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: countryCode
+          in: path
+          required: true
+          schema: {type: string}
+        - name: channelCode
+          in: path
+          required: true
+          schema: {type: string}
+        - name: flowId
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalRoutingRulePatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalRoutingRule'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
 components:
   securitySchemes:
     bearerAuth:
@@ -2790,6 +3267,257 @@ components:
   schemas:
     AnyValue:
       description: 'Can be any of supported OpenApi types.'
+    FiscalCountryListResponse:
+      type: object
+      required: [countries]
+      properties:
+        countries:
+          type: array
+          items: {type: string}
+    FiscalizationStatusResponse:
+      type: object
+      required: [ready, flows]
+      properties:
+        ready: {type: boolean}
+        active: {type: integer}
+        flows:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalizationFlowStatus'
+    FiscalizationFlowStatus:
+      type: object
+      required: [flow, ready]
+      properties:
+        flow:
+          type: object
+          required: [id]
+          properties:
+            id: {type: string}
+        channel:
+          type: object
+          properties:
+            country: {type: string}
+            code: {type: string}
+        connection:
+          type: object
+          nullable: true
+          properties:
+            id: {type: integer, format: int64}
+            provider: {type: string}
+        ready: {type: boolean}
+    FiscalChannel:
+      type: object
+      required: [code, name, flows]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        description: {type: string}
+        flows:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalChannelFlow'
+    FiscalChannelFlow:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        subtitle: {type: string}
+        inherits: {type: string}
+    FiscalChannelListResponse:
+      type: object
+      required: [channels]
+      properties:
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalChannel'
+    FiscalProvider:
+      type: object
+      required: [id, code, name, channel, onboarding, sections, flows, enabled]
+      properties:
+        id: {type: string}
+        code:
+          type: string
+          enum: [invopop, fonoa, fiskaly, fiscaltrust, moloni, epson]
+        name: {type: string}
+        description: {type: string}
+        channel:
+          type: object
+          required: [country, code]
+          properties:
+            country: {type: string}
+            code: {type: string}
+        onboarding:
+          type: array
+          description: Ordered wizard steps (key references into sections). Must complete before activation.
+          items:
+            $ref: '#/components/schemas/FiscalProviderOnboardingStep'
+        sections:
+          type: array
+          description: All tabs — includes onboarding steps (editable) plus post-setup config.
+          items:
+            $ref: '#/components/schemas/FiscalProviderSection'
+        flows:
+          type: array
+          items: {type: string}
+          description: Flow IDs this provider handles. Routing is only auto-seeded for these.
+        visual:
+          $ref: '#/components/schemas/FiscalProviderVisual'
+        enabled: {type: boolean}
+    FiscalProviderOnboardingStep:
+      type: object
+      required: [key]
+      properties:
+        key: {type: string, description: References a section key.}
+    FiscalProviderSection:
+      type: object
+      required: [key, label]
+      properties:
+        key: {type: string}
+        label: {type: string}
+        schema:
+          type: object
+          additionalProperties: true
+    FiscalProviderVisual:
+      type: object
+      properties:
+        bg: {type: string}
+        fg: {type: string}
+        code: {type: string}
+    FiscalProviderListResponse:
+      type: object
+      required: [providers]
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalProvider'
+    FiscalConnection:
+      type: object
+      required: [id, status, connectedAt, provider, channel]
+      properties:
+        id: {type: integer, format: int64}
+        status:
+          type: string
+          enum: [verifying, active, attention, error, paused]
+        detail: {type: string}
+        label: {type: string}
+        taxId: {type: string}
+        connectedAt: {type: string, format: date-time}
+        pausedAt: {type: string, format: date-time}
+        provider:
+          type: object
+          required: [id, code, name]
+          properties:
+            id: {type: string}
+            code: {type: string}
+            name: {type: string}
+            visual:
+              $ref: '#/components/schemas/FiscalProviderVisual'
+        channel:
+          type: object
+          required: [country, code]
+          properties:
+            country: {type: string}
+            code: {type: string}
+            name: {type: string}
+            flows:
+              type: array
+              items:
+                $ref: '#/components/schemas/FiscalChannelFlow'
+    FiscalConnectionListResponse:
+      type: object
+      required: [connections]
+      properties:
+        connections:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalConnection'
+        drafts:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalConnectionDraft'
+    FiscalConnectionCreateRequest:
+      type: object
+      required: [providerId, data]
+      properties:
+        providerId: {type: string}
+        data:
+          type: object
+          additionalProperties: true
+        consentToken: {type: string}
+        taxId: {type: string}
+    FiscalConnectionUpdateRequest:
+      type: object
+      properties:
+        sections:
+          type: object
+          additionalProperties: true
+        taxId: {type: string}
+    FiscalConnectionTestResult:
+      type: object
+      required: [ok, checkedAt]
+      properties:
+        ok: {type: boolean}
+        latencyMs: {type: integer}
+        detail: {type: string}
+        checkedAt: {type: string, format: date-time}
+    FiscalConnectionDraft:
+      type: object
+      required: [providerId, updatedAt]
+      properties:
+        providerId: {type: string}
+        data:
+          type: object
+          additionalProperties: true
+        updatedAt: {type: string, format: date-time}
+    FiscalConnectionDraftListResponse:
+      type: object
+      required: [drafts]
+      properties:
+        drafts:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalConnectionDraft'
+    FiscalConnectionDraftUpsertRequest:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+    FiscalRoutingRule:
+      type: object
+      required: [flow, enabled]
+      properties:
+        channel:
+          type: object
+          required: [country, code]
+          properties:
+            country: {type: string}
+            code: {type: string}
+        flow: {type: string}
+        connection: {type: integer, format: int64, nullable: true}
+        enabled: {type: boolean}
+        inherits: {type: string, nullable: true}
+        source:
+          type: string
+          enum: [manual, seeded, inherited]
+        updatedAt: {type: string, format: date-time}
+    FiscalRoutingListResponse:
+      type: object
+      required: [routing]
+      properties:
+        routing:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalRoutingRule'
+    FiscalRoutingRulePatch:
+      type: object
+      properties:
+        connection: {type: integer, format: int64, nullable: true}
+        enabled: {type: boolean}
     FiscalDocumentEmailRequest:
       type: object
       required:
@@ -4783,6 +5511,12 @@ components:
         - country
         - name
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         country:
           type: string
           description: ISO 3166-1 alpha-2 country code
@@ -5102,6 +5836,12 @@ components:
         - username
         - password
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         username:
           type: string
           description: Provider credentials username
@@ -5381,6 +6121,12 @@ components:
       required:
         - consentedBy
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         consentedBy:
           type: string
           description: Identifier of the user who provided consent (e.g., email or user ID)
@@ -5445,6 +6191,12 @@ components:
     FiscalizationTaxRequest:
       type: object
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         taxes:
           type: array
           items:
@@ -5513,6 +6265,12 @@ components:
     PaymentMethodMappingRequest:
       type: object
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         paymentMethods:
           type: array
           items:
@@ -5571,6 +6329,12 @@ components:
     FiscalizationOperatorRequest:
       type: object
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         operators:
           type: array
           items:
@@ -5673,6 +6437,12 @@ components:
     FiscalizationCustomizationRequest:
       type: object
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         logoHeight:
           type: integer
           description: Logo height in pixels
@@ -5709,6 +6479,12 @@ components:
       required:
         - values
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         values:
           type: object
           additionalProperties:
@@ -5730,6 +6506,12 @@ components:
       required:
         - seriesCode
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         seriesCode:
           type: string
           description: The series code to activate or deactivate (e.g., "FT CB-2026")
@@ -5816,6 +6598,12 @@ components:
     ItemMappingRequest:
       type: object
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         categoryDefaults:
           type: object
           additionalProperties:
@@ -5954,6 +6742,12 @@ components:
         - baseName
         - documentTypes
       properties:
+        partnerId:
+          type: integer
+          format: int64
+          description: |
+            Optional scope to a specific partner instance on a multi-partner
+            property. Omit on single-partner properties (legacy behavior).
         baseName:
           type: string
           description: Series name/code to register for the given keys
