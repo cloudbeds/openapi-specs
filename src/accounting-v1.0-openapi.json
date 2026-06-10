@@ -2262,6 +2262,47 @@
           }
         }
       }
+    },
+    "/accounting/v1.0/folios/transactions/filters": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "$ref": "#/components/parameters/acceptLanguageHeader"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Folio Configuration"
+        ],
+        "operationId": "getFolioTransactionsFilters",
+        "summary": "Get the structured filter tree of routable transaction types",
+        "description": "Returns the debit and credit filter tree the folio-config UI uses to pick transaction types to route into a folio. The tree is composed server-side and returned ready to render; the client does not assemble any nodes itself. Labels are localized via the Accept-Language header.\n",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolioTransactionsFiltersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2725,7 +2766,8 @@
           "spaces",
           "accounts_receivable_transfers",
           "deposit_transfers",
-          "channel_commission"
+          "channel_commission",
+          "gratuity"
         ]
       },
       "DepositConsumptionEnum": {
@@ -2933,7 +2975,8 @@
               "accounts_receivable_transfers",
               "current_ledger",
               "spaces",
-              "channel_commission"
+              "channel_commission",
+              "gratuity"
             ]
           },
           "archived": {
@@ -3260,7 +3303,8 @@
           "PAYMENT_FEE",
           "BOOKABLE_RESOURCE",
           "CHANNEL_COMMISSION",
-          "CITY_LEDGER"
+          "CITY_LEDGER",
+          "GRATUITY"
         ],
         "description": "Kind of the external relation"
       },
@@ -3535,7 +3579,8 @@
               "ADJUSTMENT",
               "PAYMENT_FEE",
               "BOOKABLE_RESOURCE",
-              "CHANNEL_COMMISSION"
+              "CHANNEL_COMMISSION",
+              "GRATUITY"
             ],
             "description": "Kind of the external relation id, for example if transaction is a payment it will contain PAYMENT."
           },
@@ -4045,6 +4090,11 @@
             "format": "double",
             "description": "Channel commission amount in smallest currency unit"
           },
+          "gratuity": {
+            "type": "number",
+            "format": "double",
+            "description": "Gratuity (TIP) total in smallest currency unit (ITC 8995 family)."
+          },
           "updatedAt": {
             "type": "string",
             "format": "date-time",
@@ -4351,6 +4401,7 @@
           "ACCOUNTS_RECEIVABLE",
           "SPACE",
           "CHANNEL_COMMISSION",
+          "GRATUITY",
           "N_A"
         ]
       },
@@ -4650,7 +4701,10 @@
               "SPACE_V",
               "CHANNEL_COMMISSION",
               "CHANNEL_COMMISSION_A",
-              "CHANNEL_COMMISSION_V"
+              "CHANNEL_COMMISSION_V",
+              "GRATUITY",
+              "GRATUITY_A",
+              "GRATUITY_V"
             ]
           },
           "amount": {
@@ -5032,6 +5086,115 @@
           }
         }
       },
+      "FolioTransactionsFiltersResponse": {
+        "type": "object",
+        "description": "Structured filter tree of routable transaction types. The `debits` and `credits` arrays are independent top-level groups; each renders as its own tree. Nodes are recursive — leaf nodes are the ones a user selects to route into a folio.\n",
+        "required": [
+          "debits",
+          "credits"
+        ],
+        "properties": {
+          "debits": {
+            "type": "array",
+            "description": "Charge-side transaction types.",
+            "items": {
+              "$ref": "#/components/schemas/FolioFilterGroup"
+            }
+          },
+          "credits": {
+            "type": "array",
+            "description": "Payment-side transaction types.",
+            "items": {
+              "$ref": "#/components/schemas/FolioFilterGroup"
+            }
+          }
+        }
+      },
+      "FolioFilterGroup": {
+        "type": "object",
+        "description": "A node in the filter tree. Either a parent (with `children`) or a leaf (with `kind` + `originId`). Parent nodes are groupings and are not selectable themselves.\n",
+        "required": [
+          "id",
+          "label",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable identifier within the tree. For leaf nodes this IS the transaction-type identifier persisted on folio configurations (e.g. `tax_5`, `product_3`, `roomRevenue_manual`, `cards`, `accountsReceivable`) — save it as-is when assigning transaction types to a folio; no client-side mapping is needed. Group nodes use synthetic `group:*` / `category:*` ids and are not selectable.\n"
+          },
+          "label": {
+            "type": "string",
+            "description": "Localized display text. May carry a suffix such as \"(deleted)\" or \"(disabled)\".\n"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FolioFilterNodeKind"
+          },
+          "externalRelationKind": {
+            "description": "Leaf nodes only — the transaction category this node routes. Absent on group nodes.\n",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExternalRelationKind"
+              }
+            ]
+          },
+          "originId": {
+            "type": "string",
+            "description": "Leaf nodes only — the identifier of the underlying entity (tax id, product id, addon id, payment method code, …). String because some kinds use non-numeric codes.\n"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "False when the underlying entry is disabled."
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "True when the underlying entry is soft-deleted or past `expiredOn`. Still listed so historical transactions can be routed.\n"
+          },
+          "expiredOn": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Taxes/fees only — the moment the entry stops applying."
+          },
+          "children": {
+            "type": "array",
+            "description": "Present on group nodes.",
+            "items": {
+              "$ref": "#/components/schemas/FolioFilterGroup"
+            }
+          }
+        }
+      },
+      "FolioFilterNodeKind": {
+        "type": "string",
+        "description": "Role of a node in the tree. `GROUP_*` values are container nodes that hold `children`; every other value identifies a leaf node category.\n",
+        "enum": [
+          "GROUP_ROOM_REVENUE",
+          "GROUP_PRODUCTS",
+          "GROUP_PRODUCT_CATEGORY",
+          "GROUP_CUSTOM_ITEMS",
+          "GROUP_ADDONS",
+          "GROUP_TAXES",
+          "GROUP_FEES",
+          "GROUP_RESOURCE_TYPES",
+          "GROUP_CREDIT_CARDS",
+          "GROUP_CARD_SOURCES",
+          "GROUP_PAYMENT_METHODS",
+          "ROOM_REVENUE",
+          "PRODUCT",
+          "CUSTOM_ITEM",
+          "ADDON",
+          "TAX",
+          "FEE",
+          "CUSTOM_ITEM_TAX",
+          "CUSTOM_ITEM_FEE",
+          "BOOKABLE_RESOURCE",
+          "CHANNEL_COMMISSION",
+          "PAYMENT_METHOD",
+          "CARD_TYPE",
+          "CARD_SOURCE",
+          "ACCOUNTS_RECEIVABLE"
+        ]
+      },
       "CreateFolioRequest": {
         "type": "object",
         "required": [
@@ -5392,7 +5555,8 @@
               "accountsReceivable",
               "adjustment",
               "space",
-              "channel_commission"
+              "channel_commission",
+              "gratuity"
             ],
             "description": "UI-facing transaction type. Derived from internalTransactionCode: if code suffix is \"A\" → \"adjustment\", otherwise mapped from internalCodeGroup. Maps 1:1 to MFD ReservationTransactionType except roomRevenue is split into 3.\n"
           },
@@ -5788,6 +5952,11 @@
             "type": "number",
             "format": "double",
             "description": "Balance due for this folio"
+          },
+          "upcomingPayments": {
+            "type": "number",
+            "format": "double",
+            "description": "Upcoming (pending) payments for this folio"
           }
         }
       }
