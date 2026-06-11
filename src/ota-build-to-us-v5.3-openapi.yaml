@@ -774,8 +774,10 @@ paths:
                     Bookings:
                       - booking_id: B84372-281192312
                         version: '1'
+                        use_pci_url: true
                       - booking_id: B84372-281192314
                         version: '2'
+                        use_pci_url: false
                       - booking_id: H1238-99825634
                         version: '1'
                 Failure:
@@ -808,6 +810,10 @@ paths:
                               type: string
                               description: |
                                 Most recent version number of the booking, if the OTA wants to support retrieval of different versions of bookings. Not commonly implemented.
+                            use_pci_url:
+                              type: boolean
+                              description: |
+                                Optional. Controls which endpoint Cloudbeds uses to retrieve this booking's full details with `GetBookingId`. Set to `true` to fetch it from the channel's configured PCI endpoint instead of the standard API URL — use this for bookings whose card data can only be returned from a PCI-compliant endpoint. Set to `false` to force the standard API URL even when a PCI endpoint is configured. If omitted, the channel-level default applies (the PCI endpoint is used for all `GetBookingId` calls only when one is configured). Requires a PCI endpoint to be configured on the channel for `true` to take effect; otherwise the standard API URL is used.
                           required:
                             - booking_id
                     required:
