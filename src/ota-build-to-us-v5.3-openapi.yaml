@@ -827,7 +827,24 @@ paths:
   /GetBookingId:
     post:
       operationId: get_booking_id
-      description: Returns detailed bookings made on the OTA. See the Booking Format section of the documentation for the full booking format specification.
+      description: |-
+        Returns detailed bookings made on the OTA. See the Booking Format section of the documentation for the full booking format specification.
+
+        ## Credit/debit card data
+
+        If your `GetBookingId` responses can include guest credit/debit card data
+        (the `Payments` object), your channel must be enabled for secure card
+        handling. A PCI Attestation of Compliance (AoC) document is required before
+        card data can be enabled for a channel.
+
+        Retrieval of card data is handled over a secure path configured on the
+        Cloudbeds side; your `GetBookingId` implementation returns the `Payments`
+        object as documented in the booking format, with no special handling on your
+        end.
+
+        A booking whose `GetBookingId` response contains card data is **silently
+        dropped and not imported** (no error can be returned on `GetBookingId`)
+        unless your channel has been enabled for card handling.
       requestBody:
         content:
           application/json:
@@ -3258,12 +3275,48 @@ paths:
         example shown on the right is not rendering correctly due to a bug with the
         specification renderer. `mya_property_id`, `shared_secret` and
         `booking_json` should be submitted as form fields.
+
+        ## Sending credit/debit card data
+
+        Guest credit/debit card data (the booking's `Payments` object) is **not
+        accepted at the standard `BookingCreate` endpoint shown above.** Bookings
+        that contain card data must be sent to a dedicated, PCI-compliant endpoint
+        that Cloudbeds provides specifically for your channel.
+
+        To send card data, your channel must be enabled for card handling:
+
+        * **Provide a PCI Attestation of Compliance (AoC)** document to Cloudbeds.
+          Card data cannot be enabled for a channel until the AoC has been received
+          and approved.
+        * Cloudbeds **configures your channel for card handling** and provides you
+          with the dedicated secure URL to use in place of the standard
+          `BookingCreate` endpoint, along with the credentials described below.
+        * **Authenticate** every request to the secure URL either with the
+          `tx-proxy-key` header (a secret key that Cloudbeds issues to your channel),
+          or from a set of source IP addresses that you supply to Cloudbeds for
+          allow-listing.
+
+        The request format is identical to the standard endpoint: post the same JSON
+        booking, including the `Payments` object with the card details. Bookings that
+        do not contain card data are sent to the standard endpoint.
+
+        A booking that contains card data is **rejected with an error and not
+        imported** unless your channel has been enabled for card handling. In that
+        case the response has `Success: false` and `ErrorCode` `1032`.
       servers:
         - url: https://api.myallocator.com/callback/ota/{ota}/v202203
           variables:
             ota:
               description: OTA channel ID as assigned by Cloudbeds
               default: replace_with_ota_id
+      parameters:
+        - name: tx-proxy-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: |
+            Authentication key for the dedicated, PCI-compliant endpoint used to send bookings that contain credit/debit card data. Cloudbeds issues this secret key to your channel when card handling is enabled; include it on every request to that endpoint. Not required for the standard `BookingCreate` endpoint, nor when your channel is authenticated by IP allow-listing instead. See "Sending credit/debit card data" above.
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -3359,6 +3412,12 @@ paths:
                     Success: false
                     ErrorCode: 1031
                     Error: Channel not enabled for property
+                CardDataNotEnabled:
+                  summary: Card data not enabled for channel
+                  value:
+                    Success: false
+                    ErrorCode: 1032
+                    Error: Credit card data is not accepted for this channel. Contact Cloudbeds to enable secure card handling.
               schema:
                 oneOf:
                   - title: Successful Request
