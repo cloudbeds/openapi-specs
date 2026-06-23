@@ -309,6 +309,25 @@ components:
                                 description: 'Policy ID to associate with the interval'
                                 type: string
                                 nullable: true
+                            roomTypeId:
+                                description: 'Room type ID'
+                                type: string
+                            splitInventory:
+                                description: 'Enables split inventory for this virtual room type. When true, the linked physical room types become individually bookable within the allotment block, with their availability drawn from the allotment capacity of this room type. Defaults to false. Automatically set to true for virtual room types. Always false for physical room types.'
+                                type: boolean
+                                nullable: true
+                            shoulderDatesBefore:
+                                description: 'Number of shoulder days before the event start date.'
+                                type: integer
+                                nullable: true
+                            shoulderDatesAfter:
+                                description: 'Number of shoulder days after the event end date.'
+                                type: integer
+                                nullable: true
+                            shoulderDatesRateId:
+                                description: 'Rate plan ID to apply during shoulder date periods.'
+                                type: string
+                                nullable: true
                             availability:
                                 description: ''
                                 type: array
@@ -390,6 +409,73 @@ components:
                                             items:
                                                 type: string
                                             nullable: true
+                    nullable: true
+                resources:
+                    description: 'Optional array of space resource quotes to associate with the block. When the spaces-allotment-blocks flag is off, this field is silently ignored.'
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            id:
+                                description: 'Existing quote ID (omit to create new)'
+                                type: string
+                                nullable: true
+                            resourceTypeId:
+                                description: 'Resource type ID'
+                                type: string
+                            resourceId:
+                                description: 'Specific resource ID (null for quantity-based)'
+                                type: string
+                                nullable: true
+                            resourceTypeQuantity:
+                                description: 'Quantity (for quantity-based)'
+                                type: integer
+                                nullable: true
+                            startAt:
+                                description: 'Start date-time (ISO-8601)'
+                                type: string
+                            endAt:
+                                description: 'End date-time (ISO-8601)'
+                                type: string
+                            intervalRate:
+                                description: 'Rate in cents (e.g. 15000 = $150.00)'
+                                type: integer
+                                nullable: true
+                            intervalType:
+                                description: 'Interval type'
+                                type: string
+                                enum:
+                                    - per_interval
+                                    - per_rental
+                                nullable: true
+                            adults:
+                                description: 'Number of adults (default 0)'
+                                type: integer
+                                nullable: true
+                            children:
+                                description: 'Number of children (default 0)'
+                                type: integer
+                                nullable: true
+                            inventoryStrategy:
+                                description: 'Inventory strategy (RESERVATION or ALLOTMENT)'
+                                type: string
+                                nullable: true
+                            title:
+                                description: 'Title of the resource quote'
+                                type: string
+                                nullable: true
+                            notes:
+                                description: 'Notes for the resource quote'
+                                type: string
+                                nullable: true
+                            eventIntervalPeriod:
+                                description: 'Event interval period (minute/hour/day/week/month/year)'
+                                type: string
+                                nullable: true
+                            eventIntervalAmount:
+                                description: 'Event interval amount'
+                                type: integer
+                                nullable: true
                     nullable: true
         PostCreateAllotmentBlockResponse:
             type: object
@@ -556,6 +642,142 @@ components:
                                                 closedToDeparture:
                                                     description: 'If the interval dates are closed for departure'
                                                     type: integer
+                                        splitInventory:
+                                            description: 'Whether split inventory is enabled for this room type. When true, the linked physical room types are individually bookable within the allotment block, with their availability drawn from the allotment capacity of this room type.'
+                                            type: boolean
+                                            nullable: true
+                                        shoulderDatesBefore:
+                                            description: 'Number of shoulder days before the event start date.'
+                                            type: integer
+                                            nullable: true
+                                        shoulderDatesAfter:
+                                            description: 'Number of shoulder days after the event end date.'
+                                            type: integer
+                                            nullable: true
+                                        shoulderDatesRateId:
+                                            description: 'Rate plan ID applied during shoulder date periods.'
+                                            type: string
+                                            nullable: true
+                            resources:
+                                description: 'Space resource quotes (always present; empty array when flag off or no quotes)'
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        id:
+                                            description: 'Resource quote ID'
+                                            type: string
+                                        resourceTypeId:
+                                            description: 'Resource type ID'
+                                            type: string
+                                        resourceId:
+                                            description: 'Resource ID (null for quantity-based)'
+                                            type: string
+                                            nullable: true
+                                        resourceTypeQuantity:
+                                            description: 'Quantity of resources'
+                                            type: integer
+                                            nullable: true
+                                        startAt:
+                                            description: 'Start date-time (ISO-8601)'
+                                            type: string
+                                        endAt:
+                                            description: 'End date-time (ISO-8601)'
+                                            type: string
+                                        intervalRate:
+                                            description: 'Rate in cents (e.g. 15000 = $150.00)'
+                                            type: integer
+                                            nullable: true
+                                        intervalType:
+                                            description: 'Interval type'
+                                            type: string
+                                            enum:
+                                                - per_interval
+                                                - per_rental
+                                            nullable: true
+                                        confirmed:
+                                            description: 'Whether the resource quote is confirmed'
+                                            type: boolean
+                                        adults:
+                                            description: 'Number of adults'
+                                            type: integer
+                                        children:
+                                            description: 'Number of children'
+                                            type: integer
+                                        inventoryStrategy:
+                                            description: 'Inventory strategy'
+                                            type: string
+                                            nullable: true
+                                        allotmentQuantityTotal:
+                                            description: 'Total allotment quantity'
+                                            type: integer
+                                            nullable: true
+                                        allotmentQuantityConsumed:
+                                            description: 'Consumed allotment quantity'
+                                            type: integer
+                                            nullable: true
+                                        resourceType:
+                                            description: 'Resource type details'
+                                            type: object
+                                            nullable: true
+                                        resource:
+                                            description: 'Resource details'
+                                            type: object
+                                            nullable: true
+                                        title:
+                                            description: Title
+                                            type: string
+                                            nullable: true
+                                        notes:
+                                            description: Notes
+                                            type: string
+                                            nullable: true
+                                        eventIntervalPeriod:
+                                            description: 'Event interval period'
+                                            type: string
+                                            nullable: true
+                                        eventIntervalAmount:
+                                            description: 'Event interval amount'
+                                            type: integer
+                                            nullable: true
+                                        intervalQuantity:
+                                            description: 'Interval quantity'
+                                            type: integer
+                                            nullable: true
+                                        currencyCode:
+                                            description: 'Currency code'
+                                            type: string
+                                            nullable: true
+                                        netAmount:
+                                            description: 'Net amount'
+                                            type: object
+                                            nullable: true
+                                        subtotal:
+                                            description: Subtotal
+                                            type: object
+                                            nullable: true
+                                        inclusiveTaxesAndFeesAmount:
+                                            description: 'Inclusive taxes and fees'
+                                            type: object
+                                            nullable: true
+                                        exclusiveTaxesAndFeesAmount:
+                                            description: 'Exclusive taxes and fees'
+                                            type: object
+                                            nullable: true
+                                        total:
+                                            description: Total
+                                            type: object
+                                            nullable: true
+                                        taxes:
+                                            description: 'Applied taxes'
+                                            type: array
+                                            items:
+                                                type: object
+                                        fees:
+                                            description: 'Applied fees'
+                                            type: array
+                                            items:
+                                                type: object
         PostDeleteAllotmentBlockRequest:
             type: object
             properties:
@@ -766,6 +988,143 @@ components:
                                                 closedToDeparture:
                                                     description: 'If the interval dates are closed for departure'
                                                     type: integer
+                                        splitInventory:
+                                            description: 'Whether split inventory is enabled for this room type. When true, the linked physical room types are individually bookable within the allotment block, with their availability drawn from the allotment capacity of this room type.'
+                                            type: boolean
+                                            nullable: true
+                                        shoulderDatesBefore:
+                                            description: 'Number of shoulder days before the event start date.'
+                                            type: integer
+                                            nullable: true
+                                        shoulderDatesAfter:
+                                            description: 'Number of shoulder days after the event end date.'
+                                            type: integer
+                                            nullable: true
+                                        shoulderDatesRateId:
+                                            description: 'Rate plan ID applied during shoulder date periods.'
+                                            type: string
+                                            nullable: true
+                            resources:
+                                description: 'Space resource quotes (present when includeResources=true)'
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        id:
+                                            description: 'Resource quote ID'
+                                            type: string
+                                        resourceTypeId:
+                                            description: 'Resource type ID'
+                                            type: string
+                                        resourceId:
+                                            description: 'Resource ID (null for quantity-based)'
+                                            type: string
+                                            nullable: true
+                                        resourceTypeQuantity:
+                                            description: 'Quantity of resources'
+                                            type: integer
+                                            nullable: true
+                                        startAt:
+                                            description: 'Start date-time (ISO-8601)'
+                                            type: string
+                                        endAt:
+                                            description: 'End date-time (ISO-8601)'
+                                            type: string
+                                        intervalRate:
+                                            description: 'Rate in cents (e.g. 15000 = $150.00)'
+                                            type: integer
+                                            nullable: true
+                                        intervalType:
+                                            description: 'Interval type'
+                                            type: string
+                                            enum:
+                                                - per_interval
+                                                - per_rental
+                                            nullable: true
+                                        confirmed:
+                                            description: 'Whether the resource quote is confirmed'
+                                            type: boolean
+                                        adults:
+                                            description: 'Number of adults'
+                                            type: integer
+                                        children:
+                                            description: 'Number of children'
+                                            type: integer
+                                        inventoryStrategy:
+                                            description: 'Inventory strategy (RESERVATION or ALLOTMENT)'
+                                            type: string
+                                            nullable: true
+                                        allotmentQuantityTotal:
+                                            description: 'Total allotment quantity'
+                                            type: integer
+                                            nullable: true
+                                        allotmentQuantityConsumed:
+                                            description: 'Consumed allotment quantity'
+                                            type: integer
+                                            nullable: true
+                                        resourceType:
+                                            description: 'Resource type details'
+                                            type: object
+                                            nullable: true
+                                        resource:
+                                            description: 'Resource details'
+                                            type: object
+                                            nullable: true
+                                        title:
+                                            description: 'Title of the resource quote'
+                                            type: string
+                                            nullable: true
+                                        notes:
+                                            description: 'Notes for the resource quote'
+                                            type: string
+                                            nullable: true
+                                        eventIntervalPeriod:
+                                            description: 'Event interval period (minute/hour/day/week/month/year)'
+                                            type: string
+                                            nullable: true
+                                        eventIntervalAmount:
+                                            description: 'Event interval amount'
+                                            type: integer
+                                            nullable: true
+                                        intervalQuantity:
+                                            description: 'Interval quantity'
+                                            type: integer
+                                            nullable: true
+                                        currencyCode:
+                                            description: 'Currency code'
+                                            type: string
+                                            nullable: true
+                                        netAmount:
+                                            description: 'Net amount (amount + currencyCode)'
+                                            type: object
+                                            nullable: true
+                                        subtotal:
+                                            description: 'Subtotal amount'
+                                            type: object
+                                            nullable: true
+                                        inclusiveTaxesAndFeesAmount:
+                                            description: 'Inclusive taxes and fees amount'
+                                            type: object
+                                            nullable: true
+                                        exclusiveTaxesAndFeesAmount:
+                                            description: 'Exclusive taxes and fees amount'
+                                            type: object
+                                            nullable: true
+                                        total:
+                                            description: 'Total amount'
+                                            type: object
+                                            nullable: true
+                                        taxes:
+                                            description: 'Applied taxes'
+                                            type: array
+                                            items:
+                                                type: object
+                                        fees:
+                                            description: 'Applied fees'
+                                            type: array
+                                            items:
+                                                type: object
+                                nullable: true
         PostUpdateAllotmentBlockRequest:
             type: object
             properties:
@@ -825,6 +1184,22 @@ components:
                         properties:
                             policyId:
                                 description: 'Policy ID to associate with the interval'
+                                type: string
+                                nullable: true
+                            splitInventory:
+                                description: 'Enables split inventory for this virtual room type. When true, the linked physical room types become individually bookable within the allotment block, with their availability drawn from the allotment capacity of this room type. If omitted, the existing value is preserved. Must be explicitly set to true when adding a virtual room type via updateAllotmentBlock.'
+                                type: boolean
+                                nullable: true
+                            shoulderDatesBefore:
+                                description: 'Number of shoulder days before the event start date.'
+                                type: integer
+                                nullable: true
+                            shoulderDatesAfter:
+                                description: 'Number of shoulder days after the event end date.'
+                                type: integer
+                                nullable: true
+                            shoulderDatesRateId:
+                                description: 'Rate plan ID to apply during shoulder date periods.'
                                 type: string
                                 nullable: true
                             roomTypeId:
@@ -909,11 +1284,78 @@ components:
                                                     nullable: true
                                             nullable: true
                                         rooms:
-                                            description: 'Array of room IDs assigned to this date the number of applicable keys varies here based on the occupancy settings for the room type.'
+                                            description: 'Array of room IDs assigned to this date'
                                             type: array
                                             items:
                                                 type: string
                                             nullable: true
+                                nullable: true
+                    nullable: true
+                resources:
+                    description: 'Optional full-desired-state array of space resource quotes. Passing an empty array deletes all existing quotes. When the spaces-allotment-blocks flag is off, this field is silently ignored.'
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            id:
+                                description: 'Existing quote ID (omit to create new)'
+                                type: string
+                                nullable: true
+                            resourceTypeId:
+                                description: 'Resource type ID'
+                                type: string
+                            resourceId:
+                                description: 'Specific resource ID (null for quantity-based)'
+                                type: string
+                                nullable: true
+                            resourceTypeQuantity:
+                                description: 'Quantity (for quantity-based)'
+                                type: integer
+                                nullable: true
+                            startAt:
+                                description: 'Start date-time (ISO-8601)'
+                                type: string
+                            endAt:
+                                description: 'End date-time (ISO-8601)'
+                                type: string
+                            intervalRate:
+                                description: 'Rate in cents (e.g. 15000 = $150.00)'
+                                type: integer
+                                nullable: true
+                            intervalType:
+                                description: 'Interval type'
+                                type: string
+                                enum:
+                                    - per_interval
+                                    - per_rental
+                                nullable: true
+                            adults:
+                                description: 'Number of adults (default 0)'
+                                type: integer
+                                nullable: true
+                            children:
+                                description: 'Number of children (default 0)'
+                                type: integer
+                                nullable: true
+                            inventoryStrategy:
+                                description: 'Inventory strategy (RESERVATION or ALLOTMENT)'
+                                type: string
+                                nullable: true
+                            title:
+                                description: 'Title of the resource quote'
+                                type: string
+                                nullable: true
+                            notes:
+                                description: 'Notes for the resource quote'
+                                type: string
+                                nullable: true
+                            eventIntervalPeriod:
+                                description: 'Event interval period (minute/hour/day/week/month/year)'
+                                type: string
+                                nullable: true
+                            eventIntervalAmount:
+                                description: 'Event interval amount the number of applicable keys varies here based on the occupancy settings for the room type.'
+                                type: integer
                                 nullable: true
                     nullable: true
         PostUpdateAllotmentBlockResponse:
@@ -1065,6 +1507,142 @@ components:
                                                 closedToDeparture:
                                                     description: 'If the interval dates are closed for departure'
                                                     type: integer
+                                        splitInventory:
+                                            description: 'Whether split inventory is enabled for this room type. When true, the linked physical room types are individually bookable within the allotment block, with their availability drawn from the allotment capacity of this room type.'
+                                            type: boolean
+                                            nullable: true
+                                        shoulderDatesBefore:
+                                            description: 'Number of shoulder days before the event start date.'
+                                            type: integer
+                                            nullable: true
+                                        shoulderDatesAfter:
+                                            description: 'Number of shoulder days after the event end date.'
+                                            type: integer
+                                            nullable: true
+                                        shoulderDatesRateId:
+                                            description: 'Rate plan ID applied during shoulder date periods.'
+                                            type: string
+                                            nullable: true
+                            resources:
+                                description: 'Space resource quotes (always present; empty array when flag off or no quotes)'
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        id:
+                                            description: 'Resource quote ID'
+                                            type: string
+                                        resourceTypeId:
+                                            description: 'Resource type ID'
+                                            type: string
+                                        resourceId:
+                                            description: 'Resource ID (null for quantity-based)'
+                                            type: string
+                                            nullable: true
+                                        resourceTypeQuantity:
+                                            description: 'Quantity of resources'
+                                            type: integer
+                                            nullable: true
+                                        startAt:
+                                            description: 'Start date-time (ISO-8601)'
+                                            type: string
+                                        endAt:
+                                            description: 'End date-time (ISO-8601)'
+                                            type: string
+                                        intervalRate:
+                                            description: 'Rate in cents (e.g. 15000 = $150.00)'
+                                            type: integer
+                                            nullable: true
+                                        intervalType:
+                                            description: 'Interval type'
+                                            type: string
+                                            enum:
+                                                - per_interval
+                                                - per_rental
+                                            nullable: true
+                                        confirmed:
+                                            description: 'Whether the resource quote is confirmed'
+                                            type: boolean
+                                        adults:
+                                            description: 'Number of adults'
+                                            type: integer
+                                        children:
+                                            description: 'Number of children'
+                                            type: integer
+                                        inventoryStrategy:
+                                            description: 'Inventory strategy'
+                                            type: string
+                                            nullable: true
+                                        allotmentQuantityTotal:
+                                            description: 'Total allotment quantity'
+                                            type: integer
+                                            nullable: true
+                                        allotmentQuantityConsumed:
+                                            description: 'Consumed allotment quantity'
+                                            type: integer
+                                            nullable: true
+                                        resourceType:
+                                            description: 'Resource type details'
+                                            type: object
+                                            nullable: true
+                                        resource:
+                                            description: 'Resource details'
+                                            type: object
+                                            nullable: true
+                                        title:
+                                            description: Title
+                                            type: string
+                                            nullable: true
+                                        notes:
+                                            description: Notes
+                                            type: string
+                                            nullable: true
+                                        eventIntervalPeriod:
+                                            description: 'Event interval period'
+                                            type: string
+                                            nullable: true
+                                        eventIntervalAmount:
+                                            description: 'Event interval amount'
+                                            type: integer
+                                            nullable: true
+                                        intervalQuantity:
+                                            description: 'Interval quantity'
+                                            type: integer
+                                            nullable: true
+                                        currencyCode:
+                                            description: 'Currency code'
+                                            type: string
+                                            nullable: true
+                                        netAmount:
+                                            description: 'Net amount'
+                                            type: object
+                                            nullable: true
+                                        subtotal:
+                                            description: Subtotal
+                                            type: object
+                                            nullable: true
+                                        inclusiveTaxesAndFeesAmount:
+                                            description: 'Inclusive taxes and fees'
+                                            type: object
+                                            nullable: true
+                                        exclusiveTaxesAndFeesAmount:
+                                            description: 'Exclusive taxes and fees'
+                                            type: object
+                                            nullable: true
+                                        total:
+                                            description: Total
+                                            type: object
+                                            nullable: true
+                                        taxes:
+                                            description: 'Applied taxes'
+                                            type: array
+                                            items:
+                                                type: object
+                                        fees:
+                                            description: 'Applied fees'
+                                            type: array
+                                            items:
+                                                type: object
         PostCreateAllotmentBlockNotesRequest:
             type: object
             properties:
@@ -5541,6 +6119,22 @@ components:
                         isDerived:
                             description: 'This rate has been derived from another rate'
                             type: boolean
+                        parentRateID:
+                            description: 'Rate ID of the parent rate row (null when rate is not derived).'
+                            type: string
+                            nullable: true
+                        parentRatePlanID:
+                            description: 'Package ID of the parent rate plan (null when not derived or derived from the room-type base rate).'
+                            type: string
+                            nullable: true
+                        parentRatePlanNamePublic:
+                            description: 'Public name of the parent rate plan (null when parentRatePlanID is null).'
+                            type: string
+                            nullable: true
+                        parentRatePlanNamePrivate:
+                            description: 'Private/internal name of the parent rate plan (null when parentRatePlanID is null).'
+                            type: string
+                            nullable: true
                         roomRate:
                             description: 'Base rate for the room, calculated based on the Room Type ID, selected dates, and promo code. This does not include additional guest charges'
                             type: number
@@ -5740,6 +6334,22 @@ components:
                             baseRate:
                                 description: 'Base rate on given period'
                                 type: number
+                                nullable: true
+                            parentRateID:
+                                description: 'Rate ID of the parent rate row (null when rate is not derived).'
+                                type: string
+                                nullable: true
+                            parentRatePlanID:
+                                description: 'Package ID of the parent rate plan (null when not derived or derived from the room-type base rate).'
+                                type: string
+                                nullable: true
+                            parentRatePlanNamePublic:
+                                description: 'Public name of the parent rate plan (null when parentRatePlanID is null).'
+                                type: string
+                                nullable: true
+                            parentRatePlanNamePrivate:
+                                description: 'Private/internal name of the parent rate plan (null when parentRatePlanID is null).'
+                                type: string
                                 nullable: true
                             daysOfWeek:
                                 description: 'Returns when there is a difference between range given with startDate/endDate and days of week which rate plan applies.'
@@ -5945,6 +6555,10 @@ components:
                                         rate:
                                             description: 'Base rate for the selected date'
                                             type: number
+                                        blocked:
+                                            description: 'Whether the accommodation is blocked.'
+                                            type: boolean
+                                            nullable: true
         PostPutRateResponse:
             type: object
             properties:
@@ -8446,10 +9060,10 @@ components:
                     type: string
                     nullable: true
                 roomBlockType:
-                    description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold block."
+                    description: 'Room block type. ‘blocked_dates’ - Room block. ‘out_of_service’ - Out of service block. ‘courtesy_hold’ - Courtesy hold block.'
                     type: string
                     enum:
-                        - blocked
+                        - blocked_dates
                         - out_of_service
                         - courtesy_hold
                 roomBlockReason:
@@ -8508,10 +9122,10 @@ components:
                     description: 'Room block ID'
                     type: string
                 roomBlockType:
-                    description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold block."
+                    description: 'Room block type. ‘blocked_dates’ - Room block. ‘out_of_service’ - Out of service block. ‘courtesy_hold’ - Courtesy hold block.'
                     type: string
                     enum:
-                        - blocked
+                        - blocked_dates
                         - out_of_service
                         - courtesy_hold
                 roomBlockReason:
@@ -8581,10 +9195,10 @@ components:
                                         description: 'Room block ID'
                                         type: string
                                     roomBlockType:
-                                        description: "Room block type. ‘blocked’ - Room block. ‘out_of_service’ - Out of service block. 'courtesy_hold' - Courtesy hold block."
+                                        description: 'Room block type. ‘blocked_dates’ - Room block. ‘out_of_service’ - Out of service block. ‘courtesy_hold’ - Courtesy hold block.'
                                         type: string
                                         enum:
-                                            - blocked
+                                            - blocked_dates
                                             - out_of_service
                                             - courtesy_hold
                                     roomBlockReason:
@@ -8713,10 +9327,10 @@ components:
                     description: 'Room block ID'
                     type: string
                 roomBlockType:
-                    description: "Room block type. 'blocked' - Room block. 'out_of_service' - Out of service block. 'courtesy_hold' - Courtesy hold."
+                    description: "Room block type. 'blocked_dates' - Room block. 'out_of_service' - Out of service block. 'courtesy_hold' - Courtesy hold."
                     type: string
                     enum:
-                        - blocked
+                        - blocked_dates
                         - out_of_service
                         - courtesy_hold
                 roomBlockReason:
@@ -8763,7 +9377,17 @@ components:
                 message:
                     description: 'To be used in case any error occurs (if success = false).  If success = true, it does not exist.'
                     type: string
-        DeleteRoomBlockResponse:
+        PostDeleteRoomBlockRequest:
+            type: object
+            properties:
+                propertyID:
+                    description: 'Property ID'
+                    type: string
+                    nullable: true
+                roomBlockID:
+                    description: 'Room block ID'
+                    type: string
+        PostDeleteRoomBlockResponse:
             type: object
             properties:
                 success:
@@ -9856,6 +10480,13 @@ paths:
                     required: false
                     in: query
                 -
+                    description: 'GPS (Group Profile Service) external profile ID. Returns all allotment blocks linked to this GPS profile.'
+                    name: groupProfileID
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
                     description: 'An event code'
                     name: eventCode
                     schema:
@@ -9924,6 +10555,13 @@ paths:
                 -
                     description: 'If false (default) this will show the effective availability on each date. If true, will read raw availability from the allotment intervals.'
                     name: forUpdate
+                    schema:
+                        type: boolean
+                    required: false
+                    in: query
+                -
+                    description: 'When true, each block in the response will include a resources[] array with associated space resource quotes. Requires the spaces-allotment-blocks feature flag to be enabled for the property; when the flag is off, resources[] will be empty even if the param is true.'
+                    name: includeResources
                     schema:
                         type: boolean
                     required: false
@@ -10490,6 +11128,13 @@ paths:
                 -
                     description: 'Unique ID for a group'
                     name: groupCode
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'GPS (Group Profile Service) external profile ID. Returns all MFD groups linked to this GPS profile.'
+                    name: groupProfileID
                     schema:
                         type: string
                     required: false
@@ -13818,7 +14463,7 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'Defaults to today. Start date - will filter for any room blocks that include this date (Date range must be one month or less)'
+                    description: 'Defaults to today. Start date - will filter for any room blocks that include this date (Date range must be 35 days or less)'
                     name: startDate
                     schema:
                         type: string
@@ -13826,7 +14471,7 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'Defaults to today. End date - will filter for any room blocks that include this date (Date range must be one month or less)'
+                    description: 'Defaults to today. End date - will filter for any room blocks that include this date (Date range must be 35 days or less)'
                     name: endDate
                     schema:
                         type: string
@@ -13875,7 +14520,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/PutRoomBlockRequest'
     /deleteRoomBlock:
-        delete:
+        post:
             tags:
                 - Room
             summary: deleteRoomBlock
@@ -13886,7 +14531,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/DeleteRoomBlockResponse'
+                                $ref: '#/components/schemas/PostDeleteRoomBlockResponse'
             security:
                 -
                     api_key:
@@ -13894,21 +14539,11 @@ paths:
                 -
                     OAuth2:
                         - 'delete:roomblock'
-            parameters:
-                -
-                    description: 'Property ID'
-                    name: propertyID
-                    schema:
-                        type: string
-                    required: false
-                    in: query
-                -
-                    description: 'Room block ID'
-                    name: roomBlockID
-                    schema:
-                        type: string
-                    required: true
-                    in: query
+            requestBody:
+                content:
+                    application/x-www-form-urlencoded:
+                        schema:
+                            $ref: '#/components/schemas/PostDeleteRoomBlockRequest'
     /getRoomTypes:
         get:
             tags:
