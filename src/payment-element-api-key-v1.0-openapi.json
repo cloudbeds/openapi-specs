@@ -3,7 +3,7 @@
   "info": {
     "title": "Payment SDK API",
     "description": "API Key Management for the Payment Element SDK",
-    "version": "1.0.8"
+    "version": "1.0.10"
   },
   "servers": [
     {
@@ -18,7 +18,7 @@
           "Payment SDK API Key Management"
         ],
         "summary": "Issue API Key",
-        "description": "Issue a new API key for the Payment Element, scoped to one or more properties.\n\nThe response includes both the **identity** (public) and the **secret** (private).\nThe secret is **only returned once** at creation time and cannot be retrieved later.\n\n> **Important:** Treat the `secret` as a password. Store it in a secure vault or secrets manager.\n> Do not log it, commit it to source control, or expose it in client-side code.",
+        "description": "Issue a new API key for the Payment Element, scoped to one or more properties.\n\nThe response includes both the **identity** (public) and the **secret** (private).\nThe secret is **only returned once** at creation time and cannot be retrieved later.\n\n> **Important:** Treat the `secret` as a password. Store it in a secure vault or secrets manager.\n> Do not log it, commit it to source control, or expose it in client-side code.\n\n## Using with the Payment Webcomponent\n\nTo initialize the payment webcomponent your backend must produce a token from the\n`identity` and `secret`, then populate the webcomponents `api-key` field.\nThe token format is:\n\n```\n{identity}.{base64(HMAC_SHA256(message, secret))}\n```\n\nWhere:\n\n- **`message`** is the literal string `\"{identity}|{property_id}\"` (UTF-8 bytes, pipe-separated, no surrounding whitespace).\n- **`secret`** is the value returned by this endpoint, used **as-is** (its raw ASCII bytes). Do **not** base64-decode it before signing.\n- The HMAC digest is the **raw 32 bytes** of HMAC-SHA256, then **standard base64** encoded (not base64url, no `=` stripping).\n- The token is the `identity`, a literal `.`, then the base64 digest.",
         "operationId": "payments-sdk-api-issue",
         "security": [
           {
@@ -326,7 +326,7 @@
           "secret": {
             "type": "string",
             "description": "Private key secret. Only returned once at creation. Store securely and never expose publicly.",
-            "example": "sk_live_YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU"
+            "example": "hNRMf27aSRBJcSUNhFbeoJFkvEehq2pmSjnc6PTWoT"
           },
           "property_ids": {
             "type": "array",
