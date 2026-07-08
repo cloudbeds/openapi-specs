@@ -842,6 +842,11 @@ paths:
         object as documented in the booking format, with no special handling on your
         end.
 
+        Within the `Payments` object, `CardNumber` and `SeriesCode` **must be encoded
+        as JSON strings** (quoted values, e.g. `"SeriesCode": "143"`), never as bare
+        JSON numbers. Card data is tokenized in place with non-numeric tokens;
+        unquoted numeric values cannot be tokenized.
+
         A booking whose `GetBookingId` response contains card data is **silently
         dropped and not imported** (no error can be returned on `GetBookingId`)
         unless your channel has been enabled for card handling.
@@ -3299,6 +3304,11 @@ paths:
         The request format is identical to the standard endpoint: post the same JSON
         booking, including the `Payments` object with the card details. Bookings that
         do not contain card data are sent to the standard endpoint.
+
+        Within the `Payments` object, `CardNumber` and `SeriesCode` **must be encoded
+        as JSON strings** (quoted values, e.g. `"SeriesCode": "143"`), never as bare
+        JSON numbers. The secure endpoint tokenizes these values in place with
+        non-numeric tokens; unquoted numeric values cannot be tokenized.
 
         A booking that contains card data is **rejected with an error and not
         imported** unless your channel has been enabled for card handling. In that
