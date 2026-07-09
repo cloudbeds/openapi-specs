@@ -81,7 +81,7 @@
           },
           "card_brand": {
             "type": "string",
-            "description": "The card brand. Supported values: VISA, MASTERCARD, AMEX, DISCOVER, etc.",
+            "description": "The card brand. Supported values: VISA, MASTERCARD, AMEX, DISCOVER, etc. Defaults to VISA when omitted.",
             "example": "VISA",
             "nullable": false
           },
@@ -101,7 +101,6 @@
         "required": [
           "card_number",
           "cvv",
-          "card_brand",
           "cardholder_name",
           "expiration"
         ]
