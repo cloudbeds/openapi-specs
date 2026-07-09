@@ -3253,6 +3253,284 @@ paths:
       summary: CheckAvailability
       tags:
         - Callbacks
+  /GetARI:
+    post:
+      operationId: get_ari
+      description: |-
+        **Endpoint:** `https://api.myallocator.com/callback/ota/{ota}/v202203` (replace `{ota}` with your channel ID)
+
+        > **Not enabled by default.** Support for this method is disabled by
+        > default and is only enabled upon request. When requesting access,
+        > please provide details on why the method is needed and how it will
+        > be used.
+
+        > **Not intended for frequent usage.** This method must not be called
+        > at a high frequency, and in particular must not be wired to
+        > customer-exposed UI (e.g. called on page load or user interaction).
+        > Use `ARIUpdate` push notifications to stay in sync; treat `GetARI`
+        > as an occasional reconciliation tool.
+
+        Retrieve the current ARI (availability, rates, restrictions) for one or
+        more rooms over a given date range. Each `Inventory` row in the response
+        has the same shape as the rows Cloudbeds sends via `ARIUpdate`, so an OTA
+        can reuse the same inventory-row processor.
+
+        A requested room with no enabled channel mapping is omitted from
+        `room_ari` and reported under `warnings`. Likewise, a resolved
+        property that is not available for the channel is skipped and
+        reported under `warnings`; if no resolved property is available,
+        the request fails with an error.
+      servers:
+        - url: https://api.myallocator.com/callback/ota/{ota}/v202203
+          variables:
+            ota:
+              description: OTA channel ID as assigned by Cloudbeds
+              default: replace_with_ota_id
+      requestBody:
+        content:
+          application/json:
+            examples:
+              GetARI:
+                summary: GetARI
+                value:
+                  shared_secret: s3cr3ts4uc3
+                  ota_property_id: '998201'
+                  rooms:
+                    '61365':
+                      start_date: '2027-01-01'
+                      end_date: '2027-01-31'
+                    '61366':
+                      start_date: '2027-02-01'
+                      end_date: '2027-02-28'
+            schema:
+              type: object
+              properties:
+                shared_secret:
+                  description: Authentication between the OTA and the channel. Identical for all requests. Not to be shared with customers.
+                  type: string
+                ota_property_id:
+                  description: Username, login or property ID on the OTA
+                  type: string
+                rooms:
+                  description: |
+                    Object keyed by `ota_room_id`. Each value is the date range for which ARI should be returned for that room. `end_date` is inclusive.
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      start_date:
+                        type: string
+                        format: date
+                        description: First date of the requested ARI window (inclusive).
+                      end_date:
+                        type: string
+                        format: date
+                        description: Last date of the requested ARI window (inclusive).
+                    required:
+                      - start_date
+                      - end_date
+                  minProperties: 1
+              required:
+                - shared_secret
+                - ota_property_id
+                - rooms
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              examples:
+                Success:
+                  summary: Success
+                  value:
+                    Success: true
+                    currency: USD
+                    room_ari:
+                      '61365':
+                        - ota_room_id: '61365'
+                          ota_rate_id: rate_456
+                          start_date: '2027-01-01'
+                          end_date: '2027-01-15'
+                          units: 5
+                          rate: '15.00'
+                          rdef_single: '12.00'
+                          max_los: 14
+                          min_los: 2
+                          closearr: false
+                          closedep: false
+                          close: false
+                        - ota_room_id: '61365'
+                          ota_rate_id: rate_456
+                          start_date: '2027-01-16'
+                          end_date: '2027-01-31'
+                          units: 5
+                          rate: '20.00'
+                          close: false
+                      '61366':
+                        - ota_room_id: '61366'
+                          ota_rate_id: rate_888
+                          start_date: '2027-02-01'
+                          end_date: '2027-02-28'
+                          units: 3
+                          rate: '30.00'
+                          close: false
+                PartialMappingWarning:
+                  summary: Some rooms unmapped
+                  value:
+                    Success: true
+                    currency: USD
+                    room_ari:
+                      '61365':
+                        - ota_room_id: '61365'
+                          ota_rate_id: rate_456
+                          start_date: '2027-01-01'
+                          end_date: '2027-01-31'
+                          units: 5
+                          rate: '15.00'
+                          close: false
+                    warnings:
+                      - ota_room_id: '61999'
+                        id: WARNING.ROOMS.UNMAPPED.SKIPPED
+                        message: No enabled channel mapping found for ota_room_id '61999'
+                Failure:
+                  summary: Authentication failure
+                  value:
+                    Success: false
+                    ErrorCode: 9201
+                    Error: shared_secret does not match
+              schema:
+                oneOf:
+                  - title: Successful request
+                    type: object
+                    properties:
+                      Success:
+                        type: boolean
+                        enum:
+                          - true
+                        description: Always `true` on success.
+                      currency:
+                        type: string
+                        pattern: ^[A-Z]{3}$
+                        description: |
+                          3-letter ISO 4217 currency code. This is the currency the property has set for the channel connection, and may differ from the property's native currency.
+                      room_ari:
+                        description: |
+                          ARI data grouped by `ota_room_id`. Each value is an array of inventory rows. Each row has the same shape as rows sent via `ARIUpdate`.
+                        type: object
+                        additionalProperties:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              ota_room_id:
+                                type: string
+                                description: Room ID on the OTA.
+                              ota_rate_id:
+                                type: string
+                                description: Rate plan ID on the OTA.
+                              start_date:
+                                type: string
+                                format: date
+                                description: Start date for when the returned ARI is applicable.
+                              end_date:
+                                type: string
+                                format: date
+                                description: |
+                                  End date for when the returned ARI is applicable. Inclusive.
+                              units:
+                                type: integer
+                                minimum: 0
+                                description: |
+                                  Number of rooms bookable (available) for private rooms, or for the number of beds for shared/dorm rooms.
+                              rate:
+                                type: string
+                                pattern: ^\d+(\.\d+)?$
+                                description: Price per unit for a single night.
+                              rdef_single:
+                                type: string
+                                pattern: ^\d+(\.\d+)?$
+                                description: |
+                                  The single use rate, if only one person is staying.
+                              num_adults_included:
+                                type: integer
+                                minimum: 0
+                                description: |
+                                  Number of adults included in base rate. Returned for OBP enabled channels.
+                              num_children_included:
+                                type: integer
+                                minimum: 0
+                                description: |
+                                  Number of children included in base rate. Returned for OBP enabled channels.
+                              max_los:
+                                type: integer
+                                minimum: 0
+                                description: Maximum length of stay. `0` means no restriction.
+                              min_los:
+                                type: integer
+                                minimum: 1
+                                description: Minimum length of stay.
+                              closearr:
+                                type: boolean
+                                description: If `true` the guest cannot arrive within the date range.
+                              closedep:
+                                type: boolean
+                                description: If `true` the guest cannot depart within the date range.
+                              close:
+                                type: boolean
+                                description: If `true` the guest cannot arrive, stay, or depart within the date range.
+                              min_advanced_offset:
+                                type: integer
+                                minimum: 0
+                                description: Minimum number of days before arrival a guest may book. `0` = no restriction.
+                              max_advanced_offset:
+                                type: integer
+                                minimum: 0
+                                description: Maximum number of days before arrival a guest may book. `0` = no restriction.
+                              adult_3:
+                                type: string
+                                pattern: ^\d+(\.\d+)?$
+                                description: Extra price for the 3rd adult. Additional adults follow the same pattern (adult_4, adult_5, etc.). Returned for OBP enabled channels.
+                              child_3:
+                                type: string
+                                pattern: ^\d+(\.\d+)?$
+                                description: Extra price for the 3rd child. Additional children follow the same pattern (child_4, child_5, etc.). Returned for OBP enabled channels.
+                            required:
+                              - ota_room_id
+                              - ota_rate_id
+                              - start_date
+                              - end_date
+                      warnings:
+                        description: |
+                          Non-fatal warnings for requested rooms or resolved properties that could not be served. Present only when at least one warning was produced.
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            ota_room_id:
+                              type: string
+                              description: |
+                                Present on room-level warnings (`WARNING.ROOMS.UNMAPPED.SKIPPED`).
+                            property_id:
+                              type: integer
+                              description: |
+                                Cloudbeds property ID. Present on property-level warnings (`WARNING.PROPERTY.SKIPPED`).
+                            id:
+                              type: string
+                              description: |
+                                Warning identifier (`WARNING.ROOMS.UNMAPPED.SKIPPED`, `WARNING.PROPERTY.SKIPPED`).
+                            message:
+                              type: string
+                              description: Human-readable warning text.
+                          required:
+                            - id
+                    required:
+                      - Success
+                      - room_ari
+                  - $ref: '#/components/schemas/response_callback_error'
+          description: GetARI
+      summary: GetARI
+      tags:
+        - Callbacks
   /BookingCreate:
     post:
       operationId: booking_create
