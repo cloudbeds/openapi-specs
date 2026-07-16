@@ -3058,7 +3058,7 @@ paths:
               default: replace_with_ota_id
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             examples:
               ARIFullRefresh:
                 summary: ARIFullRefresh
@@ -3146,7 +3146,7 @@ paths:
               default: replace_with_ota_id
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             examples:
               CheckAvailability:
                 summary: CheckAvailability
@@ -3554,10 +3554,11 @@ paths:
         The specification listed here is not complete and just the minimal
         requirement.
 
-        The `booking_json` form field is expected to be JSON encoded. Note that the
-        example shown on the right is not rendering correctly due to a bug with the
-        specification renderer. `mya_property_id`, `shared_secret` and
-        `booking_json` should be submitted as form fields.
+        The request body is a JSON object (`Content-Type: application/json`)
+        carrying `mya_property_id` (or `ota_property_id`), `shared_secret` and
+        `booking_json`, with `booking_json` embedded directly as a JSON object.
+        Existing integrations submitting `application/x-www-form-urlencoded`
+        form fields continue to work.
 
         ## Sending credit/debit card data
 
@@ -3588,6 +3589,9 @@ paths:
         JSON numbers. The secure endpoint tokenizes these values in place with
         non-numeric tokens; unquoted numeric values cannot be tokenized.
 
+        Requests to the secure endpoint must use `application/json`.
+        `multipart/form-data` is **not supported on the secure endpoint**.
+
         A booking that contains card data is **rejected with an error and not
         imported** unless your channel has been enabled for card handling. In that
         case the response has `Success: false` and `ErrorCode` `1032`.
@@ -3607,56 +3611,43 @@ paths:
             Authentication key for the dedicated, PCI-compliant endpoint used to send bookings that contain credit/debit card data. Cloudbeds issues this secret key to your channel when card handling is enabled; include it on every request to that endpoint. Not required for the standard `BookingCreate` endpoint, nor when your channel is authenticated by IP allow-listing instead. See "Sending credit/debit card data" above.
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             examples:
               BookingCreate:
                 summary: BookingCreate
                 value:
                   mya_property_id: 998201
                   shared_secret: s3cr3ts4uc3
-                  booking_json: |
-                    {
-                      "OrderId": "123456789",
-                      "OrderDate": "2018-04-22",
-                      "OrderTime": "18:02:58",
-                      "IsCancellation": 0,
-                      "TotalCurrency": "USD",
-                      "TotalPrice": 134,
-                      "Customers": [
-                        {
-                          "CustomerCountry": "US",
-                          "CustomerEmail": "test@test.com",
-                          "CustomerFName": "Test Firstname",
-                          "CustomerLName": "Test Lastname"
-                        }
-                      ],
-                      "Rooms": [
-                        {
-                          "ChannelRoomType": "abcdef",
-                          "Currency": "USD",
-                          "DayRates": [
-                            {
-                              "Date": "2017-11-08",
-                              "Description": "Refundable Rate",
-                              "Rate": 32.5,
-                              "Currency": "USD",
-                              "RateId": "13649"
-                            },
-                            {
-                              "Date": "2017-11-09",
-                              "Description": "Refundable Rate",
-                              "Rate": 34.5,
-                              "Currency": "USD",
-                              "RateId": "13649"
-                            }
-                          ],
-                          "StartDate": "2017-11-08",
-                          "EndDate": "2017-11-09",
-                          "Price": 134,
-                          "Units": 2
-                        }
-                      ]
-                    }
+                  booking_json:
+                    OrderId: '123456789'
+                    OrderDate: '2018-04-22'
+                    OrderTime: '18:02:58'
+                    IsCancellation: 0
+                    TotalCurrency: USD
+                    TotalPrice: 134
+                    Customers:
+                      - CustomerCountry: US
+                        CustomerEmail: test@test.com
+                        CustomerFName: Test Firstname
+                        CustomerLName: Test Lastname
+                    Rooms:
+                      - ChannelRoomType: abcdef
+                        Currency: USD
+                        DayRates:
+                          - Date: '2017-11-08'
+                            Description: Refundable Rate
+                            Rate: 32.5
+                            Currency: USD
+                            RateId: '13649'
+                          - Date: '2017-11-09'
+                            Description: Refundable Rate
+                            Rate: 34.5
+                            Currency: USD
+                            RateId: '13649'
+                        StartDate: '2017-11-08'
+                        EndDate: '2017-11-09'
+                        Price: 134
+                        Units: 2
             schema:
               type: object
               properties:
@@ -3675,15 +3666,14 @@ paths:
                   description: Authentication between the OTA and the channel. Identical for all requests. Not to be shared with customers.
                   type: string
                 booking_json:
-                  type: string
                   description: |
-                    The booking payload encoded in JSON. See the response for `GetBookingId` for a minimal example and check the "Booking Format" section of this documentation.
+                    The booking payload, embedded directly as a JSON object (recommended) or as a JSON-encoded string. See the response for `GetBookingId` for a minimal example and check the "Booking Format" section of this documentation.
+                  oneOf:
+                    - type: object
+                    - type: string
               required:
                 - shared_secret
                 - booking_json
-            encoding:
-              booking_json:
-                contentType: application/json
         required: true
       responses:
         '200':
@@ -3751,7 +3741,7 @@ paths:
               default: replace_with_ota_id
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             examples:
               NotifyBooking:
                 summary: NotifyBooking
@@ -3830,7 +3820,7 @@ paths:
               default: replace_with_ota_id
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             examples:
               RoomInfo:
                 summary: RoomInfo
@@ -5039,6 +5029,22 @@ components:
                       type: number
                       description: |
                         Price for this day, including `Commission` and `Tax`.
+                    RateAfterTax:
+                      type: number
+                      description: |
+                        Gross price for this day (what the guest pays), including taxes.
+                    RateBeforeTax:
+                      type: number
+                      description: |
+                        Gross price for this day (what the guest pays), excluding taxes.
+                    NetRateAfterTax:
+                      type: number
+                      description: |
+                        Net price for this day (what the property receives, after channel commission), including taxes.
+                    NetRateBeforeTax:
+                      type: number
+                      description: |
+                        Net price for this day (what the property receives, after channel commission), excluding taxes.
                     Currency:
                       type: string
                       pattern: ^[A-Z]{3}$
