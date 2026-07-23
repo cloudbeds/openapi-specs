@@ -3101,7 +3101,7 @@ paths:
                   value:
                     Success: false
                     ErrorCode: 1031
-                    Error: Channel not enabled for property
+                    Error: Channel ota not enabled for property 998201, may not proceed.
               schema:
                 oneOf:
                   - title: Successful request
@@ -3183,11 +3183,11 @@ paths:
                   type: string
                   enum:
                     - room
-                    - bed
-                  description: Room availability can be checked by number of rooms or by number of guests (beds) to stay. We recommend using `bed` in case a room is a dormitory/shared room and is sold by beds.
+                    - guest
+                  description: Room availability can be checked by number of rooms or by number of guests (beds) to stay. We recommend using `guest` in case a room is a dormitory/shared room and is sold by beds.
                 number_of_units:
                   type: integer
-                  description: Number of rooms or beds to check availability for
+                  description: Number of rooms or guests to check availability for
                 shared_secret:
                   description: Authentication between the OTA and the channel. Identical for all requests. Not to be shared with customers.
                   type: string
@@ -3218,8 +3218,8 @@ paths:
                   summary: Failure
                   value:
                     Success: false
-                    ErrorCode: 1031
-                    Error: Channel not enabled for property
+                    ErrorCode: 1001
+                    Error: Could not resolve cid:ota ota_property_id:998201
               schema:
                 oneOf:
                   - title: Successful Request
@@ -3689,7 +3689,7 @@ paths:
                   value:
                     Success: false
                     ErrorCode: 1031
-                    Error: Channel not enabled for property
+                    Error: Channel ota not enabled for property 998201, may not proceed.
                 CardDataNotEnabled:
                   summary: Card data not enabled for channel
                   value:
@@ -3781,8 +3781,8 @@ paths:
                   summary: Failure
                   value:
                     Success: false
-                    ErrorCode: 1031
-                    Error: Channel not enabled for property
+                    ErrorCode: 1001
+                    Error: Could not resolve cid:ota ota_property_id:lake_view_hotel
               schema:
                 oneOf:
                   - title: Successful Request
