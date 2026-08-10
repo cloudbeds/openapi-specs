@@ -493,7 +493,7 @@ paths:
         -
           default:
             - 'hotel:write'
-  '/amenities/v1/properties/{propertyId}/rooms/{roomId}/amenities':
+  '/amenities/v1/properties/{propertyId}/rooms/{roomTypeId}/amenities':
     get:
       tags:
         - Amenities
@@ -502,9 +502,9 @@ paths:
       operationId: 'RoomAmenityController::getRoomAmenities'
       parameters:
         -
-          name: roomId
+          name: roomTypeId
           in: path
-          description: 'The room id'
+          description: 'The room type id'
           required: true
           schema:
             type: integer
@@ -568,9 +568,9 @@ paths:
       operationId: 'RoomAmenityController::updateRoomAmenities'
       parameters:
         -
-          name: roomId
+          name: roomTypeId
           in: path
-          description: 'The room id'
+          description: 'The room type id'
           required: true
           schema:
             type: integer
@@ -756,6 +756,137 @@ paths:
       security:
         -
           default: []
+  /folio/v1/checks:
+    post:
+      tags:
+        - Checks
+      summary: 'Post a completed POS check (e.g., F&B) to a guest folio, house account, or group profile'
+      description: 'Replaces postCustomItem with first-class folio transactions enriched with hospitality POS context (check identity, revenue center, meal period, gratuity, service charge). Items posted via this endpoint are recorded as regular folio items, not Custom Items, and are tagged as POS-originated for UI differentiation.'
+      operationId: 'CheckController::createCheck'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: Idempotency-Key
+          in: header
+          description: 'Required per-request idempotency key and the sole dedup key for this endpoint: a retry carrying the same key and the same payload replays the original posting (notice populated); the same key with a different payload is rejected with IDEMPOTENCY_KEY_REUSED. Absent, empty, or whitespace-only → 400.'
+          required: true
+          schema:
+            type: string
+            maxLength: 255
+            example: req-2026-05-05-2047-9b3f
+      requestBody:
+        description: 'Check details: account target, line items, optional gratuities, service charge, discounts and payments.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCheckRequestSchema'
+      responses:
+        '201':
+          description: 'Check successfully posted. The response includes the public checkId (for downstream void/reversal) and the resolved checkNumber.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCheckResponseSchema'
+        '400':
+          description: 'Bad request — missing/oversized Idempotency-Key header, invalid parameters, validation failures, or unmatched tax/fee IDs. See CheckErrorCodeEnumSchema for the structured error codes returned in the body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden — insufficient permissions on the requested property.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found — reservation, house account, group, or folio not found.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '409':
+          description: 'Conflict — see CheckErrorCodeEnumSchema for the structured codes: IDEMPOTENCY_KEY_REUSED (Idempotency-Key header reused with a different payload), PRODUCT_NAME_CONFLICT (line''s name collides with an existing active product that has a different SKU).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:item'
+  '/folio/v1/checks/{checkId}':
+    delete:
+      tags:
+        - Checks
+      summary: 'Void a posted check end-to-end (ledger + payments + its gratuities) by its checkId'
+      description: 'Voids the whole check: reverses each line (item / service charge / discount) and its tax/fee children on both CDC and DOMAIN, cascade-voids every gratuity linked to the check (each with its own tax children), and voids the anchored payments via the payments service. Idempotent — voiding an already-voided check returns 204.'
+      operationId: 'CheckController::deleteCheck'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: checkId
+          in: path
+          description: 'The check''s public checkId (partner-supplied or Cloudbeds-generated) returned by createCheck.'
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'Check voided (or already voided — idempotent).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '403':
+          description: 'Forbidden — insufficient permissions on the requested property.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found — no check matches the checkId on this property (CHECK_NOT_FOUND).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '409':
+          description: 'Conflict — the check''s folio target was never persisted (pre-feature posting) (CHECK_VOID_UNAVAILABLE).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponseSchema'
+        '500':
+          description: 'Internal server error — ledger void completed but one or more payment voids failed (PAYMENT_VOID_FAILED). Retry to converge.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:item'
   '/doorlock/v1/keys/{propertyId}':
     get:
       tags:
@@ -1670,6 +1801,211 @@ paths:
         -
           default:
             - 'write:group'
+  /folio/v1/gratuities:
+    post:
+      tags:
+        - Gratuities
+      summary: 'Post one or more guest tips to a folio, house account, or group profile'
+      description: 'Posts one or more tips (ITC 8995) as first-class folio transactions. Recipient attribution and POS context are stored MFD-side only; the Accounting Service Transaction carries the accounting state alone. Idempotent via the required Idempotency-Key header.'
+      operationId: 'GratuityController::createGratuity'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: Idempotency-Key
+          in: header
+          description: 'Required per-request idempotency key and the sole dedup key for this endpoint: a retry carrying the same key and the same payload replays the original posting (notice populated); the same key with a different payload is rejected with IDEMPOTENCY_KEY_REUSED. Absent, empty, or whitespace-only → 400.'
+          required: true
+          schema:
+            type: string
+            maxLength: 255
+            example: req-2026-05-05-2047-9b3f
+      requestBody:
+        description: 'Gratuity posting request: folio target and one or more gratuity entries.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostGratuityRequestSchema'
+      responses:
+        '201':
+          description: 'Gratuity successfully posted. Returns the Cloudbeds-assigned gratuityId for each posted gratuity and notice=null.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGratuityResponseSchema'
+        '400':
+          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched taxId, unknown recipient userId, or an unresolvable folio target. See GratuityErrorCodeEnumSchema for structured error codes.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden — insufficient permissions on the requested property.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '409':
+          description: 'Conflict — see GratuityErrorCodeEnumSchema for the structured codes: IDEMPOTENCY_KEY_REUSED (Idempotency-Key reused with a different payload) or DUPLICATE_GRATUITY_ID (a partner-supplied gratuityId collides with an active gratuity).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:item'
+  '/folio/v1/checks/{checkId}/gratuities':
+    post:
+      tags:
+        - Gratuities
+      summary: 'Post one or more guest tips linked to an existing check'
+      description: 'Posts one or more tips (ITC 8995) linked to the check identified by the path {checkId}. The gratuities inherit the check''s folio target and checkNumber; POS context stays an attribute of the linked check (not copied onto the gratuity). The body carries only the gratuity entries. A check may carry many gratuities. Idempotent via the required Idempotency-Key header.'
+      operationId: 'GratuityController::createCheckGratuity'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: Idempotency-Key
+          in: header
+          description: 'Required per-request idempotency key and the sole dedup key for this endpoint: a retry carrying the same key and the same payload replays the original posting (notice populated); the same key with a different payload is rejected with IDEMPOTENCY_KEY_REUSED. Absent, empty, or whitespace-only → 400.'
+          required: true
+          schema:
+            type: string
+            maxLength: 255
+            example: req-2026-05-05-2047-9b3f
+        -
+          name: checkId
+          in: path
+          description: 'The partner checkId of the check to link these gratuities to.'
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: 'Gratuity entries to link to the check.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCheckGratuityRequestSchema'
+      responses:
+        '201':
+          description: 'Gratuity successfully posted. Returns the Cloudbeds-assigned gratuityId for each posted gratuity and notice=null.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostGratuityResponseSchema'
+        '400':
+          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched taxId, unknown recipient userId, or the resolved check carries no folio target. See GratuityErrorCodeEnumSchema.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden — insufficient permissions on the requested property.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found — no check matches {checkId} on this property (CHECK_NOT_FOUND).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '409':
+          description: 'Conflict — IDEMPOTENCY_KEY_REUSED (Idempotency-Key reused with a different payload) or DUPLICATE_GRATUITY_ID (a partner-supplied gratuityId collides with an active gratuity).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:item'
+  '/folio/v1/gratuities/{gratuityId}':
+    delete:
+      tags:
+        - Gratuities
+      summary: 'Void a posted gratuity by its gratuityId'
+      description: 'Voids a single gratuity (as returned at post time) — reverses its tip line and its tax children on both CDC and DOMAIN. Idempotent: voiding an already-voided gratuity returns 204. The gratuityId is not re-issued after void.'
+      operationId: 'GratuityController::deleteGratuity'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: gratuityId
+          in: path
+          description: 'The public gratuityId of the gratuity to void, as returned at post time.'
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'Gratuity voided (or already voided — idempotent).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '403':
+          description: 'Forbidden — insufficient permissions on the requested property.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found — no gratuity matches the gratuityId on this property (GRATUITY_NOT_FOUND).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '409':
+          description: 'Conflict — the gratuity predates void support and cannot be voided (GRATUITY_VOID_UNAVAILABLE).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:item'
   '/housekeeping/v1/inspections/{propertyId}':
     get:
       tags:
@@ -3149,6 +3485,419 @@ paths:
         -
           default:
             - 'read:hotel'
+  /rates/v1/rate-plans:
+    get:
+      tags:
+        - 'Rate Plans'
+      summary: 'Get a list of Rates Plans.'
+      operationId: 'RatePlanController::index'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: offset
+          in: query
+          description: 'The number of items to skip before starting to collect the result set. Used for pagination.'
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          example: '0'
+        -
+          name: limit
+          in: query
+          description: 'The maximum number of items to return in the response. Default is 100.'
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 500
+            minimum: 1
+          example: '100'
+      responses:
+        '200':
+          description: 'List of Rates Plans.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlanListResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:rate'
+    post:
+      tags:
+        - 'Rate Plans'
+      summary: 'Create a new Rate Plan.'
+      operationId: 'RatePlanController::create'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Rate Plan data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatePlanCreateRequestSchema'
+      responses:
+        '201':
+          description: 'Created Rate Plan.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlanResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:rate'
+  '/rates/v1/rate-plans/{id}':
+    get:
+      tags:
+        - 'Rate Plans'
+      summary: 'Get Rate Plan data.'
+      operationId: 'RatePlanController::single'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Rate Plan ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/RatePlanSingleRequestSchema/properties/id'
+      responses:
+        '200':
+          description: 'Rate Plan data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlanResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not Found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal Server Error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:rate'
+    delete:
+      tags:
+        - 'Rate Plans'
+      summary: 'Delete a Rate Plan.'
+      operationId: 'RatePlanController::delete'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Rate Plan ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/RatePlanDeleteRequestSchema/properties/id'
+      responses:
+        '204':
+          description: 'Rate Plan was deleted.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:rate'
+    patch:
+      tags:
+        - 'Rate Plans'
+      summary: 'Update an existing Rate Plan.'
+      operationId: 'RatePlanController::update'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: id
+          in: path
+          description: 'Rate Plan ID.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/RatePlanUpdateRequestSchema/properties/id'
+      requestBody:
+        description: 'Rate Plan data.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatePlanUpdateRequestSchema'
+      responses:
+        '200':
+          description: 'Updated Rate Plan.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlanResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:rate'
+  /smart-policies/v1/payments/preview-adjustment:
+    post:
+      tags:
+        - 'Smart Policies'
+      summary: 'Preview how a folio adjustment (tax/fee/rate/room-revenue) would affect Smart Policy scheduled payments.'
+      operationId: 'AdjustmentPreviewController::preview'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Adjustment preview input.'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewAdjustmentRequestSchema'
+      responses:
+        '200':
+          description: 'Adjustment preview result.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreviewAdjustmentResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:rate'
+  '/smart-policies/v1/reservations/{reservationId}/policy-information':
+    get:
+      tags:
+        - 'Smart Policies'
+      summary: 'Get the rendered smart policy text and scheduled payments for a reservation.'
+      operationId: 'GetBookingPolicyInformationController::getBookingPolicyInformation'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: reservationId
+          in: path
+          description: 'Reservation identifier.'
+          required: true
+          schema:
+            $ref: '#/components/schemas/GetBookingPolicyInformationRequestSchema/properties/reservationId'
+        -
+          name: languageCode
+          in: query
+          description: 'Language code for the rendered policy text (e.g. "fr", "en-US"). Defaults to the property''s language when omitted.'
+          required: false
+          schema:
+            type: string
+            nullable: true
+      responses:
+        '200':
+          description: 'Policy information for the reservation. When the reservation is not governed by a smart policy, falls back to the property''s legacy cancellation policy text (policyTextSource="legacy"); when neither is available, returns a null policyText rather than an error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingPolicyInformationResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'The API client is not authorized for this property or lacks the required scope.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'No reservation with the given identifier exists for the requesting property.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:reservation'
   /smart-policies/v1/exceptions/eligible-rates/search:
     post:
       tags:
@@ -3199,7 +3948,7 @@ paths:
       security:
         -
           default:
-            - 'read:smart-policies'
+            - 'read:rate'
   /smart-policies/v1/exceptions:
     get:
       tags:
@@ -3280,7 +4029,7 @@ paths:
       security:
         -
           default:
-            - 'read:smart-policies'
+            - 'read:rate'
     post:
       tags:
         - 'Smart Policy Exceptions'
@@ -3336,7 +4085,7 @@ paths:
       security:
         -
           default:
-            - 'write:smart-policies'
+            - 'write:rate'
   '/smart-policies/v1/exceptions/{exceptionId}':
     get:
       tags:
@@ -3393,7 +4142,7 @@ paths:
       security:
         -
           default:
-            - 'read:smart-policies'
+            - 'read:rate'
     put:
       tags:
         - 'Smart Policy Exceptions'
@@ -3462,7 +4211,7 @@ paths:
       security:
         -
           default:
-            - 'write:smart-policies'
+            - 'write:rate'
     delete:
       tags:
         - 'Smart Policy Exceptions'
@@ -3518,7 +4267,7 @@ paths:
       security:
         -
           default:
-            - 'delete:smart-policies'
+            - 'write:rate'
     patch:
       tags:
         - 'Smart Policy Exceptions'
@@ -3587,7 +4336,7 @@ paths:
       security:
         -
           default:
-            - 'write:smart-policies'
+            - 'write:rate'
 components:
   schemas:
     FeatureEnum:
@@ -3595,19 +4344,20 @@ components:
       type: string
       enum:
         - feature.integrations.example
+        - feature.payment-processing.postcheck-third-party-payments
         - feature.integrations.generate-dummy-doorlock-keys
-        - feature.distribution.market-segmentation
+        - feature.integrations.doorlock-await-invalidation-confirmation
         - feature.distribution.market-segmentation-enable-custom-group
         - feature.distribution.age-policy-new-system-enabled
         - feature.distribution.age-policy-dual-write-enabled
         - feature.distribution.age-policy-validation-enabled
         - feature.distribution.age-policy-auto-rollback-enabled
         - feature.distribution.age-policy-centralized-service-layer
-        - feature.distribution.market-segmentation-debug-logs
         - feature.distribution.accommodations_v2
+        - feature.distribution.accommodations-v2-alternative-arrangements
         - feature.inventory.rate-plans
-        - feature.inventory.derived-rate-plans-from-non-base-rate-plans
         - feature.inventory.derived-rate-plans-from-another-derived-rate-plans
+        - feature.inventory.derived-rate-plan-inherit-restrictions
         - feature.inventory.enable-rate-snapshots
         - feature.prop-staff.property-feature-cache
     GetAddonsRequestSchema:
@@ -3697,6 +4447,7 @@ components:
                 enum:
                   - child
                   - adult
+                  - infant
               minAge:
                 description: 'Minimum age for this age group.'
                 type: integer
@@ -3713,6 +4464,11 @@ components:
           description: 'Custom label (Adults or Guests)'
           type: string
           example: Adults
+          nullable: true
+        countsTowardBaseOccupancy:
+          description: 'Whether guests under this age policy count toward base occupancy.'
+          type: boolean
+          example: false
           nullable: true
       type: object
     AgePolicyPatchRequestSchema:
@@ -3745,6 +4501,11 @@ components:
           description: 'Custom label (Adults or Guests)'
           type: string
           example: Adults
+          nullable: true
+        countsTowardBaseOccupancy:
+          description: 'Whether guests under this age policy count toward base occupancy.'
+          type: boolean
+          example: false
           nullable: true
       type: object
     AgePolicyUpdateRequestSchema:
@@ -3789,6 +4550,7 @@ components:
                 enum:
                   - child
                   - adult
+                  - infant
               minAge:
                 description: 'Minimum age for this age group.'
                 type: integer
@@ -3810,6 +4572,11 @@ components:
           description: 'Custom label (Adults or Guests)'
           type: string
           example: Adults
+          nullable: true
+        countsTowardBaseOccupancy:
+          description: 'Whether guests under this age policy count toward base occupancy.'
+          type: boolean
+          example: false
           nullable: true
       type: object
     PricingCreateRequestSchema:
@@ -3932,6 +4699,9 @@ components:
         customLabel:
           type: string
           nullable: true
+        countsTowardBaseOccupancy:
+          description: 'Whether guests under this age policy count toward base occupancy.'
+          type: boolean
         groups:
           type: array
           items:
@@ -4165,6 +4935,56 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AllotmentBlockAutoReleaseScheduleBulkCreateItemSchema'
+      type: object
+    AllotmentBlockAutoReleaseScheduleBulkSyncItemSchema:
+      required:
+        - releaseDate
+        - roomTypeId
+        - startDate
+        - endDate
+        - releaseValueType
+        - releaseValue
+      properties:
+        id:
+          type: string
+          example: '123'
+          nullable: true
+        releaseDate:
+          description: 'Release date and time in Y-m-d H:i:s format'
+          type: string
+          example: '2025-01-01 14:00:00'
+        roomTypeId:
+          type: string
+          example: '5'
+        startDate:
+          type: string
+          example: '2025-01-01'
+        endDate:
+          type: string
+          example: '2025-01-07'
+        releaseValueType:
+          type: string
+          example: quantity
+        releaseValue:
+          type: integer
+          example: 5
+        releaseUnits:
+          type: string
+          example: '1,2,3'
+          nullable: true
+      type: object
+    AllotmentBlockAutoReleaseScheduleBulkSyncRequestSchema:
+      required:
+        - allotmentBlockId
+        - items
+      properties:
+        allotmentBlockId:
+          type: string
+          example: '10'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllotmentBlockAutoReleaseScheduleBulkSyncItemSchema'
       type: object
     AllotmentBlockAutoReleaseScheduleBulkUpdateItemSchema:
       required:
@@ -4813,6 +5633,736 @@ components:
             - 'Mobile App'
             - Accounting
       type: object
+    AmountsForSaleListRequestSchema:
+      required:
+        - roomTypeId
+        - startDate
+        - endDate
+      properties:
+        roomTypeId:
+          description: 'Room Type ID.'
+          type: integer
+          example: 12345
+        startDate:
+          description: 'Start date (YYYY-MM-DD).'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-01'
+        endDate:
+          description: 'End date (YYYY-MM-DD), inclusive.'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-31'
+      type: object
+    AmountsForSalePatchRequestSchema:
+      required:
+        - availability
+      properties:
+        availability:
+          description: 'Availability adjustments per room type.'
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityUpdatePatchRequestSchema'
+        testRequest:
+          description: 'Mark as test request (honored in non-production only).'
+          type: boolean
+          example: false
+      type: object
+    AmountsForSalePutRequestSchema:
+      required:
+        - availability
+      properties:
+        availability:
+          description: 'Availability updates per room type.'
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityUpdatePutRequestSchema'
+        testRequest:
+          description: 'Mark as test request (honored in non-production only).'
+          type: boolean
+          example: false
+      type: object
+    AvailabilityUpdatePatchRequestSchema:
+      required:
+        - roomTypeId
+        - intervals
+      properties:
+        roomTypeId:
+          description: 'Room Type ID.'
+          type: integer
+          example: 12345
+        intervals:
+          description: 'Date intervals to adjust.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PatchIntervalRequestSchema'
+      type: object
+    AvailabilityUpdatePutRequestSchema:
+      required:
+        - roomTypeId
+        - intervals
+      properties:
+        roomTypeId:
+          description: 'Room Type ID.'
+          type: integer
+          example: 12345
+        intervals:
+          description: 'Date intervals to set.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PutIntervalRequestSchema'
+      type: object
+    PatchIntervalRequestSchema:
+      required:
+        - startDate
+        - endDate
+        - amountAllottedForSaleDelta
+      properties:
+        startDate:
+          description: 'Interval start date (YYYY-MM-DD).'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-01'
+        endDate:
+          description: 'Interval end date (YYYY-MM-DD), inclusive.'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-07'
+        amountAllottedForSaleDelta:
+          description: 'Relative change (must be non-zero; may be negative; result is floored at 0).'
+          type: integer
+          example: -2
+          nullable: true
+      type: object
+    PutIntervalRequestSchema:
+      required:
+        - startDate
+        - endDate
+        - amountAllottedForSale
+      properties:
+        startDate:
+          description: 'Interval start date (YYYY-MM-DD).'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-01'
+        endDate:
+          description: 'Interval end date (YYYY-MM-DD), inclusive.'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-07'
+        amountAllottedForSale:
+          description: 'New amount allotted for sale (>= 0).'
+          type: integer
+          example: 10
+          nullable: true
+      type: object
+    AmountsForSaleListResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          description: 'Per-date amounts allotted for sale.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DateAmountResponseSchema'
+      type: object
+    DateAmountResponseSchema:
+      required:
+        - date
+        - amountAllottedForSale
+      properties:
+        date:
+          description: 'Date (YYYY-MM-DD).'
+          type: string
+          example: '2030-01-01'
+        amountAllottedForSale:
+          description: 'Operator-set amount allotted for sale.'
+          type: integer
+          example: 12
+      type: object
+    JobAcceptedResponseSchema:
+      required:
+        - jobReferenceId
+      properties:
+        jobReferenceId:
+          description: 'Reference ID for tracking via getAsyncApiJob.'
+          type: integer
+          example: 1234
+      type: object
+    AssignableRoomsRequestSchema:
+      properties:
+        roomTypeId:
+          description: 'Scope rates and rooms to this room type. Absent returns the reservation''s current type.'
+          type: string
+          example: '713'
+          nullable: true
+      type: object
+    AssignableRoomSchema:
+      required:
+        - roomId
+        - name
+        - housekeepingStatus
+      properties:
+        roomId:
+          description: 'Composite room id "{roomTypeId}-{roomNumber}" used by the reassign action.'
+          type: string
+          example: 713-2
+        name:
+          type: string
+          example: 'Room 201'
+        housekeepingStatus:
+          description: 'Housekeeping status key.'
+          type: string
+          enum:
+            - clean
+            - dirty
+            - inspected
+          example: clean
+      type: object
+    AssignableRoomsResponseSchema:
+      required:
+        - reservation
+        - roomTypes
+        - selectedRoomTypeId
+        - rates
+        - rooms
+      properties:
+        reservation:
+          $ref: '#/components/schemas/ReservationContextSchema'
+        roomTypes:
+          description: 'Selectable room types (names only, no pricing).'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomTypeOptionSchema'
+        selectedRoomTypeId:
+          description: 'The room type the rates and rooms below are scoped to.'
+          type: integer
+          example: 713
+        rates:
+          description: 'Rate plans for the selected room type, totalled over the stay.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanSchema'
+        rooms:
+          description: 'Rooms of the selected type free for the whole stay. Includes the reservation''s currently-assigned room when the selected type matches its current type (match on reservation.currentRoomId), so the drawer can render it as selected.'
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignableRoomSchema'
+      type: object
+    RatePlanSchema:
+      required:
+        - rateId
+        - rateType
+        - name
+        - rateTotal
+      properties:
+        rateId:
+          type: integer
+          example: 4521
+        rateType:
+          description: 'standard | derived | package | allotment'
+          type: string
+          example: standard
+        name:
+          type: string
+          example: 'Deluxe King Room'
+        rateTotal:
+          description: 'Total for the stay (sum of nightly rates).'
+          type: number
+          format: float
+          example: 320
+        packageId:
+          type: integer
+          example: null
+          nullable: true
+        packageName:
+          type: string
+          example: null
+          nullable: true
+      type: object
+    ReservationContextSchema:
+      required:
+        - bookingRoomId
+        - checkinDate
+        - checkoutDate
+        - currentRoomTypeId
+        - currentRateId
+        - originalRateTotal
+      properties:
+        bookingRoomId:
+          type: integer
+          example: 123456
+        checkinDate:
+          type: string
+          format: date
+          example: '2026-04-04'
+        checkoutDate:
+          type: string
+          format: date
+          example: '2026-04-06'
+        currentRoomTypeId:
+          type: integer
+          example: 713
+        currentRoomId:
+          description: 'Composite room id "{roomTypeId}-{roomNumber}", or null when no room is assigned.'
+          type: string
+          example: 713-2
+          nullable: true
+        currentRateId:
+          type: integer
+          example: 4521
+        originalRateTotal:
+          type: number
+          format: float
+          example: 320
+        allotmentBlockCode:
+          description: 'Allotment block code the reservation belongs to, if any.'
+          type: string
+          nullable: true
+      type: object
+    RoomTypeOptionSchema:
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          example: 713
+        name:
+          type: string
+          example: 'Deluxe King Room'
+      type: object
+    ValidationErrorFieldSchema:
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          example: roomTypeId
+        message:
+          type: string
+          example: 'Room type 999 is not valid for this property.'
+      type: object
+    ValidationErrorResponseSchema:
+      required:
+        - message
+        - code
+      properties:
+        message:
+          type: string
+          example: 'Room type 999 is not valid for this property.'
+        code:
+          description: 'Machine-readable error code.'
+          type: string
+          enum:
+            - INVALID_ROOM_TYPE
+            - RESERVATION_NOT_REASSIGNABLE
+          example: INVALID_ROOM_TYPE
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationErrorFieldSchema'
+      type: object
+    CheckDiscountRequestSchema:
+      description: 'A discount applied to the check. Check-level discounts (no `appliesToItem`) post as a distinct negative folio line. Item-level discounts (`appliesToItem` set) are folded into the target item: the item''s amount is reduced by the discount value and the discount description is appended to the item''s note so it remains visible on the folio.'
+      required:
+        - amount
+        - name
+        - code
+      properties:
+        amount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Discount amount as a positive value in the property currency. Cloudbeds posts it as a negative folio line.'
+        name:
+          description: 'Human-readable label displayed on the folio line.'
+          type: string
+          example: 'Happy Hour 20%'
+        code:
+          description: 'Partner-supplied code identifying the discount (e.g., promotion or coupon code).'
+          type: string
+          example: HAPPY_HOUR
+        note:
+          description: 'Optional free-text note attached to the discount line item.'
+          type: string
+          example: 'Manager comp'
+          nullable: true
+        appliesToItem:
+          description: 'Optional zero-based index into the `items` array on the same postCheck request. When set, the discount is folded into that item: item.amount is reduced by the discount value and the discount description is appended to item.note. When omitted, the discount is check-level and posts as its own folio line.'
+          type: integer
+          example: 0
+          nullable: true
+      type: object
+    CheckItemDetailsSchema:
+      description: 'Marker base for the polymorphic `details` block on a check item. Concrete shape is selected by the sibling `itemType` field — see CheckItemRequestSchema.details.'
+      type: object
+    CheckItemRequestSchema:
+      description: 'A single line on a POS check. Shared envelope fields — itemName, itemQuantity, itemPrice, itemAmount, itemTaxes, itemFees, itemNote, customTransactionCode, generalLedgerCustomCode — describe the line. itemQuantity is the unit count; itemPrice, when supplied, is the per-unit rate but is informational metadata only. The `details` block is polymorphic: its concrete shape is selected by the `itemType` discriminator. Today only PRODUCT is accepted, so `details` carries product-specific fields (sku, category, sub-reservation routing). Bookable-resource details will land alongside as a second `oneOf` branch when that flow is reintroduced. itemAmount is the financial source of truth — the server posts it verbatim without recomputing from itemPrice * itemQuantity.'
+      required:
+        - itemType
+        - itemName
+        - itemQuantity
+        - itemAmount
+        - details
+      properties:
+        itemType:
+          description: 'Discriminator selecting the kind of line — see CheckItemTypeEnum.'
+          type: string
+          enum:
+            - PRODUCT
+          example: PRODUCT
+        itemName:
+          description: 'Human-readable line name displayed on the folio (dish or beverage name).'
+          type: string
+          example: Cheeseburger
+        itemQuantity:
+          description: 'Number of units. Informational metadata only — not used for accounting math (itemAmount is the line total, not itemPrice * itemQuantity).'
+          type: integer
+          example: 2
+        itemPrice:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Per-unit price in the property currency. Optional informational metadata — recorded on the folio for display and reporting; not used for accounting math. itemAmount is the financial source of truth for this line; when itemPrice is omitted, itemAmount is used as the per-unit price on the folio row.'
+        itemAmount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Total line amount in the property currency — the financial source of truth for this line. The server posts this value to the folio without recomputing it from itemPrice * itemQuantity.'
+        itemNote:
+          description: 'Optional free-text note for this line (modifier, allergen, special request).'
+          type: string
+          example: 'No onions'
+          nullable: true
+        customTransactionCode:
+          description: 'Custom Transaction Code (chart-of-accounts mapping) snapshotted onto the folio transaction at posting time. If omitted, the property''s default mapping is applied.'
+          type: string
+          example: FOOD-REVENUE
+          nullable: true
+        generalLedgerCustomCode:
+          description: 'General Ledger custom code, snapshotted onto the folio transaction at posting time. If omitted, the property''s default mapping is applied.'
+          type: string
+          example: GL-4100
+          nullable: true
+        itemTaxes:
+          description: 'Tax rows for this line, keyed by the property''s configured tax IDs. Cloudbeds maps each entry to an existing tax record on the property; unknown taxIds are rejected. Schema reused from the Gratuity domain.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxSchema'
+        itemFees:
+          description: 'Fee amounts for this line, keyed by the property''s configured fee IDs.'
+          type: array
+          items:
+            $ref: '#/components/schemas/FeeSchema'
+        details:
+          oneOf:
+            -
+              $ref: '#/components/schemas/ProductDetailsSchema'
+          nullable: true
+          description: 'Type-specific block. Concrete shape is selected by the sibling `itemType` field — today PRODUCT → ProductDetailsSchema (sku, category, sub-reservation routing). Additional branches (e.g. bookable resource) will be added as further `oneOf` variants without renaming. A formal OpenAPI `discriminator` is not declared because the discriminator field lives on the parent schema, not inside each variant — out of spec for discriminator.propertyName. Server-side dispatch into the right variant is handled by CheckItemRequestSchemaDenormalizer.'
+      type: object
+    CheckItemTypeEnum:
+      description: 'Line item kind — also the discriminator that selects the concrete shape of the `details` block on the same item. Currently only PRODUCT is accepted (ordinary POS items: food / beverage / retail), and `details` is a ProductDetailsSchema. BOOKABLE_RESOURCE will be reintroduced once the bookable-resource service exposes the synchronous create-reservation RPC postCheck needs to route those lines.'
+      type: string
+      enum:
+        - PRODUCT
+    CheckPaymentRequestSchema:
+      required:
+        - paymentType
+        - amount
+      properties:
+        paymentType:
+          description: 'Payment method type. Use the getPaymentMethods API to retrieve available payment methods for the property.'
+          type: string
+          example: cash
+        amount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Payment amount in the property currency.'
+        cardType:
+          description: 'Card type, when paymentType is a card. Optional.'
+          type: string
+          example: visa
+          nullable: true
+        notes:
+          description: 'Optional payment notes'
+          type: string
+          example: 'Paid at checkout'
+          nullable: true
+      type: object
+    CheckServiceChargeRequestSchema:
+      description: 'Service charge associated with the check. Posted as a distinct folio line item, separate from items[] and gratuity. Reported and routed independently from food/beverage revenue.'
+      required:
+        - amount
+      properties:
+        amount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Service charge amount in the property currency.'
+        taxes:
+          description: 'Tax rows applied to the service charge. Each row references a property-configured tax by ID. Schema reused from the Gratuity domain.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxSchema'
+        customTransactionCode:
+          description: 'Override the property''s default service-charge Custom Transaction Code for this posting. If omitted, the property''s configured default applies.'
+          type: string
+          example: SVC-CHRG-VIP
+          nullable: true
+        generalLedgerCustomCode:
+          description: 'Override the property''s default service-charge General Ledger code for this posting. If omitted, the property''s configured default applies.'
+          type: string
+          example: GL-2410
+          nullable: true
+        note:
+          description: 'Optional free-text note attached to the service charge line item.'
+          type: string
+          example: '20% mandatory service charge'
+          nullable: true
+      type: object
+    CheckTotalsSchema:
+      description: 'Partner-supplied check totals broken out by component. Used for two purposes: (1) totals-only postings — when items[] is empty, itemsSubtotal carries the items subtotal and the server posts a single synthetic items folio line; inline serviceCharge / discounts[] continue to write their own rows; (2) cross-validation — when items[] is also supplied, each total field cross-validates against the corresponding server-computed sum (items / SC / gratuity / discount / tax / fees). Mismatches surface as INVALID_TOTAL_MISMATCH with the failing component identified. totalTax / totalFees are cross-cutting aggregates: in items mode they cross-validate the sum across the whole check; in totals-only mode the partner amount routes to the per-property "Default POS tax" / "Default POS fee" catch-all catalog records (lazy-created), keeping the ledger invariant that every tax_id / fee_id reference resolves to a real row.'
+      required:
+        - itemsSubtotal
+      properties:
+        itemsSubtotal:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Items subtotal — sum of items[].itemAmount + items[].itemTaxes + items[].itemFees. When items[] is supplied alongside, this value must equal the server-computed items subtotal within 1 minor unit per currency. When items[] is empty, this is the gross figure the synthetic pos_check_total folio line carries. Not a grand-total — service charge, gratuity, and discount totals are reported in their own fields below.'
+        totalServiceCharge:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Service-charge subtotal — serviceCharge.amount + sum(serviceCharge.taxes). Optional; cross-validates against the inline serviceCharge data ONLY when both are supplied. In totals-only mode without inline serviceCharge, this value is the partner-declared SC aggregate (validation deferred to the persistence layer).'
+        totalGratuity:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Gratuity subtotal — sum(gratuities[].amount + gratuities[].taxes). Optional; accepted on the wire but server-side validation is deferred until the embedded-gratuity domain handling lands (today gratuities are accepted but not mapped to the domain payload).'
+        totalDiscount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Discount subtotal — sum(discounts[].amount), partner-supplied as a positive value. Optional; cross-validates against the inline discounts[] ONLY when both are supplied. In totals-only mode without inline discounts, this value is the partner-declared discount aggregate.'
+        totalTax:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Total tax across the check — sum of every tax line (items[].itemTaxes, items[].itemFees[].taxes, serviceCharge.taxes, gratuities[].taxes). Optional. When items[] is supplied, the partner value cross-validates against the server-computed sum (INVALID_TOTAL_MISMATCH on drift). In totals-only mode (items[] empty), the partner value is persisted as a single tax line on the synthetic POS-sale item, linked to the property''s lazily-created "Default POS tax" catalog record. Zero or omitted skips the synthesis.'
+        totalFees:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Total fees across the check — sum of items[].itemFees[].feeValue. Fees only attach to items in the postCheck data model, so the sum is items-scoped. Optional. Same items-mode cross-validation and totals-only synthesis semantics as totalTax, routed through the property''s "Default POS fee" catalog record. Zero or omitted skips the synthesis.'
+      type: object
+    DeleteCheckRequestSchema:
+      required:
+        - checkId
+      properties:
+        checkId:
+          description: 'The check''s public checkId (partner-supplied or Cloudbeds-generated) returned by createCheck.'
+          type: string
+      type: object
+    PostCheckRequestSchema:
+      description: 'Posts a completed POS check (e.g., F&B) to a guest folio, house account, or group profile. Replaces postCustomItem with first-class folio transactions enriched with hospitality POS context (check identity, revenue center, meal period, gratuity, service charge). All items, itemTaxes, itemFees, gratuities, service charge, discounts, and payments in this request belong to the single check identified by checkNumber/checkId. Multi-check batching is not supported — issue a separate postCheck call per check.'
+      properties:
+        checkNumber:
+          description: 'Partner-assigned check number visible on the customer receipt (e.g., POS terminal display number). Stored on each posted folio line and visible in the folio UI. Optional — when omitted, the server mints a Cloudbeds reference (cb-<id>) and returns it in the response so the partner can echo it back.'
+          type: string
+          example: '2047'
+          nullable: true
+        checkId:
+          description: 'Partner-assigned durable external reference for the check (UUID or opaque string). Distinct from referenceID — used to correlate the check across systems regardless of retries. Letters, digits, and . _ ~ - only (addressed as a URL path segment for void).'
+          type: string
+          example: 8f2c1e3a-9b6d-4f1e-9d2a-3b6c0a1f7e51
+          nullable: true
+        reservationId:
+          description: 'Reservation identifier. Required if houseAccountId and groupCode are not provided. Per-item sub-reservation targeting is expressed via items[].subReservationId.'
+          type: string
+          example: RES123456
+          nullable: true
+        houseAccountId:
+          description: 'House account identifier. Required if reservationId and groupCode are not provided.'
+          type: string
+          example: HA-99812
+          nullable: true
+        groupCode:
+          description: 'Group code. Required if reservationId and houseAccountId are not provided.'
+          type: string
+          example: GRP2026
+          nullable: true
+        folioId:
+          description: 'Folio identifier within the chosen account target. Numeric string (the underlying folio_id is a 64-bit unsigned integer). Optional — when omitted, the default folio for the target is used.'
+          type: string
+          example: '12345'
+          nullable: true
+        roomId:
+          description: 'Room identifier where the charge originated, when applicable.'
+          type: string
+          example: ROOM-204
+          nullable: true
+        guestId:
+          description: 'Guest identifier. Optional — used for guest-attributed POS reporting.'
+          type: string
+          example: GST-77123
+          nullable: true
+        guestName:
+          description: 'Guest name as captured at the POS. Used when no guestId is provided.'
+          type: string
+          example: 'Jane Smith'
+          nullable: true
+        saleDate:
+          description: 'Sale date in RFC 3339 format. If not provided, the current timestamp is used. A future saleDate produces a ''pending'' transaction.'
+          type: string
+          example: '2026-05-05T20:30:00-04:00'
+          nullable: true
+        posContext:
+          oneOf:
+            -
+              $ref: '#/components/schemas/PosContextSchema'
+          nullable: true
+          description: 'Optional POS source metadata for the check (restaurant, revenue center, meal period, staff reference). Inherited by every gratuity, item, and service charge posted as part of this request — embedded gratuities therefore omit their own posContext.'
+        coverCount:
+          description: 'Number of guests on the check. Used for per-cover F&B reporting.'
+          type: integer
+          example: 4
+          nullable: true
+        totals:
+          oneOf:
+            -
+              $ref: '#/components/schemas/CheckTotalsSchema'
+          nullable: true
+          description: 'Optional partner-supplied totals. Required when items[] is empty (totals-only posting). When supplied alongside items[], the server validates itemsSubtotal against the computed sum and rejects with INVALID_TOTAL_MISMATCH if they disagree (tolerance: 1 minor unit per currency).'
+        items:
+          description: 'Line items on the check. Each line is posted as a regular folio item, not a Custom Item. At least one of items[] or totals must be supplied — when items[] is empty, totals is required, and the server posts a single folio line carrying totals.itemsSubtotal.'
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckItemRequestSchema'
+        gratuities:
+          description: 'Optional list of gratuities on the check. Each entry becomes its own folio line item and its own Accounting Service transaction. Use multiple entries when both AUTO_GRATUITY (system-applied) and TIP (voluntary) are present, or when several servers each receive a tip. Embedded gratuities use GratuitySchema (without posContext) — POS context (checkNumber, restaurantName, revenueCenter, mealPeriod, staffReference) is inherited from this parent check.'
+          type: array
+          items:
+            $ref: '#/components/schemas/GratuitySchema'
+        serviceCharge:
+          oneOf:
+            -
+              $ref: '#/components/schemas/CheckServiceChargeRequestSchema'
+          nullable: true
+          description: 'Optional service charge for the check. Posted as a separate folio line item, distinct from gratuity.'
+        discounts:
+          description: 'Optional discounts applied to the check. Each entry becomes a distinct (negative) folio line item.'
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckDiscountRequestSchema'
+        payments:
+          description: 'Optional payments to register against the check at posting time. If provided, itemPaid is ignored.'
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckPaymentRequestSchema'
+        itemPaid:
+          description: 'If true, a cash payment is automatically registered for the full check total (items + taxes + fees + gratuity + service charge - discounts). Ignored when payments[] is provided.'
+          type: boolean
+          example: false
+      type: object
+      oneOf:
+        -
+          required:
+            - reservationId
+        -
+          required:
+            - houseAccountId
+        -
+          required:
+            - groupCode
+    ProductDetailsSchema:
+      description: 'Product-only fields for a check item whose itemType is PRODUCT. itemSku is required — it is the catalog dedup key. Category and sub-reservation override remain optional.'
+      required:
+        - itemSku
+      type: object
+      allOf:
+        -
+          $ref: '#/components/schemas/CheckItemDetailsSchema'
+        -
+          properties:
+            itemSku:
+              description: 'Partner-supplied SKU for the item. Required — used as the catalog dedup key and recorded on the folio line for cross-reference.'
+              type: string
+              example: SKU-CHEESE-001
+              nullable: true
+            itemCategoryName:
+              description: 'Category name as classified by the POS (e.g., ''Food'', ''Beverage'', ''Alcohol''). Used for reporting and item classification.'
+              type: string
+              example: Food
+              nullable: true
+            subReservationId:
+              description: 'Sub-reservation identifier. If provided, this item is routed to the specified sub-reservation within the parent reservation (request-level reservationId). Has no effect when the request-level target is houseAccountId or groupCode.'
+              type: string
+              example: SUB123
+              nullable: true
+          type: object
+    CheckErrorCodeEnumSchema:
+      description: 'Machine-readable error code returned in BadRequest / NotFound / Conflict responses for postCheck. Aligned with the structured error approach used by STS Gen2 and the Accounting API.'
+      type: string
+      enum:
+        - FOLIO_NOT_FOUND
+        - RESERVATION_CHECKED_OUT
+        - DUPLICATE_REFERENCE
+        - IDEMPOTENCY_KEY_REUSED
+        - DUPLICATE_CHECK_ID
+        - TAX_ID_NOT_FOUND
+        - FEE_ID_NOT_FOUND
+        - PRODUCT_NAME_CONFLICT
+        - INVALID_TOTAL_MISMATCH
+        - MISSING_ITEMS_OR_TOTALS
+        - INVALID_CURRENCY_MISMATCH
+        - INVALID_TARGET
+        - SUBRESERVATION_NOT_FOUND
+        - CHECK_NOT_FOUND
+        - CHECK_VOID_UNAVAILABLE
+        - PAYMENT_VOID_FAILED
+    PostCheckResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PostedCheckResponseSchema'
+      type: object
+    PostedCheckResponseSchema:
+      description: 'Result of a postCheck call. checkId is the public, partner-addressable handle for the posted check — use it for downstream void/reversal.'
+      required:
+        - checkNumber
+        - checkId
+      properties:
+        checkNumber:
+          description: 'Resolved receipt-visible check number — either the partner-supplied value from the request, or a server-minted Cloudbeds reference (cb-<id>) when the partner omitted it. Always returned so the partner can echo it back.'
+          type: string
+          example: '2047'
+        checkId:
+          description: 'Public, partner-addressable check identifier (accept-or-generate): the value the partner supplied, or a Cloudbeds-generated handle when omitted. Use it to address the check for void via DELETE /folio/v1/checks/{checkId}. Always returned.'
+          type: string
+          example: CHK-9911283
+        notice:
+          description: 'Set when the request was identified as a duplicate via referenceId. When present, no new posting was created and the original response is returned.'
+          type: string
+          example: 'Duplicate referenceId detected; original response returned.'
+          nullable: true
+      type: object
     DynamicFilterFieldSchema:
       description: 'Represents a single filter condition'
       properties:
@@ -5085,6 +6635,11 @@ components:
       properties:
         message:
           type: string
+        code:
+          description: 'Error code identifying the type of error'
+          type: string
+          example: PAYMENT_VOID_FAILED
+          nullable: true
       type: object
     MoneySchema:
       description: 'Money representation with amount in smallest currency unit and ISO 4217 currency code'
@@ -5106,6 +6661,11 @@ components:
       properties:
         message:
           type: string
+        code:
+          description: 'Error code identifying the type of error'
+          type: string
+          example: RESOURCE_NOT_FOUND
+          nullable: true
       type: object
     MyallocatorProxyRequestSchema:
       required:
@@ -5121,6 +6681,9 @@ components:
           example: RoomUpdate
         payload:
           description: 'Request payload to forward to MyAllocator. Opaque JSON body.'
+          type: object
+        meta:
+          description: 'Internal metadata used for activity logging (e.g. MfdAccommodationId, MaAccommodationId). Not forwarded to MyAllocator.'
           type: object
       type: object
     MyallocatorProxyResponseSchema:
@@ -5166,6 +6729,9 @@ components:
                   - is_distribution_enabled
                   - allow_ota_reservation_cancellation
                   - allow_ota_reservation_reconciliation
+                  - smart_policies_enabled_channels
+                  - include_breakfast_pricing
+                  - report_no_show_to_booking
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting you are updating.'
@@ -5195,6 +6761,9 @@ components:
                   - is_distribution_enabled
                   - allow_ota_reservation_cancellation
                   - allow_ota_reservation_reconciliation
+                  - smart_policies_enabled_channels
+                  - include_breakfast_pricing
+                  - report_no_show_to_booking
                 example: example_setting_key
               value:
                 description: 'Parsed setting value. Can be string, number, boolean, or structured data, depending on the setting.'
@@ -5243,6 +6812,9 @@ components:
                   - is_distribution_enabled
                   - allow_ota_reservation_cancellation
                   - allow_ota_reservation_reconciliation
+                  - smart_policies_enabled_channels
+                  - include_breakfast_pricing
+                  - report_no_show_to_booking
                 example: example_setting_key
               message:
                 description: 'The reason why the update failed.'
@@ -5391,6 +6963,21 @@ components:
       items:
         $ref: '#/components/schemas/DoorLockKeyResponseSchema'
     DoorLockKeyFailedToGenerateResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    DoorLockKeyFailedToInvalidateResponseSchema:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
+    DoorLockKeyInvalidationTimeoutResponseSchema:
+      description: "INT-4076: separate schema for the \"no partner response yet\" case so the FE\naxios transient-retry interceptor treats it as a retryable network transient\n(504 is in TRANSIENT_STATUS_CODES) and re-issues the DELETE — effectively\nextending the wait while the partner is still working. Distinct from\nDoorLockKeyFailedToInvalidateResponseSchema (422), which is the terminal\n\"partner reported failure\" response that the FE surfaces to the user\nwithout retrying."
       required:
         - message
       properties:
@@ -6175,6 +7762,381 @@ components:
         data:
           $ref: '#/components/schemas/EventResponseSchema'
       type: object
+    DeleteGratuityRequestSchema:
+      required:
+        - gratuityId
+      properties:
+        gratuityId:
+          description: 'The public gratuityId of the gratuity to void (as returned at post time). Voids that single gratuity and its tax children.'
+          type: string
+      type: object
+    GratuitySchema:
+      description: 'A single tip entry. Recipient is optional; absent recipient is allowed.'
+      required:
+        - amount
+      properties:
+        amount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Gratuity amount in the property currency. Must be > 0; corrections require void + repost (negative amounts rejected).'
+        taxes:
+          description: 'Optional tax rows applied to this gratuity. Each tax follows the item-tax pattern; an unknown taxId returns TAX_ID_NOT_FOUND.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxSchema'
+        note:
+          description: 'Free-text label displayed on the folio line item.'
+          type: string
+          example: 'Tip for Maria'
+          nullable: true
+        customTransactionCode:
+          description: 'Override the property default Custom Transaction Code for this posting.'
+          type: string
+          example: GRT-VIP
+          nullable: true
+        generalLedgerCustomCode:
+          description: 'Override the property default GL custom code for this posting.'
+          type: string
+          example: GL-2410
+          nullable: true
+        subReservationId:
+          description: 'Sub-reservation identifier. If provided, this gratuity entry is routed to the specified sub-reservation within the parent reservation (request-level reservationId). Has no effect when the request-level target is houseAccountId or groupCode.'
+          type: string
+          example: SUB123
+          nullable: true
+        recipient:
+          oneOf:
+            -
+              $ref: '#/components/schemas/RecipientSchema'
+          nullable: true
+          description: 'Recipient attribution. All sub-fields optional; absent recipient is allowed.'
+        gratuityId:
+          description: 'Optional partner-supplied public handle for this gratuity (accept-or-generate). When omitted, Cloudbeds generates one and returns it. Must be a non-empty string containing only letters, digits, and . _ ~ -, unique among active (non-voided) gratuities on the property; reusable after this gratuity is voided. Used to address the gratuity for void (DELETE /folio/v1/gratuities/{gratuityId}).'
+          type: string
+          maxLength: 255
+          pattern: '^[A-Za-z0-9._~-]+$'
+          example: partner-grat-7a3f
+          nullable: true
+      type: object
+    PostCheckGratuityRequestSchema:
+      description: "Request body for the nested create endpoint `POST /folio/v1/checks/{checkId}/gratuities`.\n\nLinkage is expressed by the URL: `checkId` is the **path parameter** (documented on the\ncontroller operation, bound by name — NOT a body field), so the body carries only the\ngratuity entries. Retry-safety is the required Idempotency-Key header (referenceId retired).\nIf a client also sends `checkId` in the JSON body, the URL segment wins —\nApiControllerArgumentsResolver merges path params last, so the body value is silently overridden.\nThe gratuities inherit the linked check's folio target and checkNumber; POS context stays an\nattribute of the check (it is not copied onto the gratuity). Contrast the standalone\n`POST /folio/v1/gratuities` request body."
+      required:
+        - gratuities
+      properties:
+        gratuities:
+          description: 'Gratuity entries to post to the check. At least one entry required. Each entry becomes its own folio line item and its own Accounting Service transaction.'
+          type: array
+          items:
+            $ref: '#/components/schemas/GratuitySchema'
+      type: object
+    PostGratuityRequestSchema:
+      description: 'Request body for the standalone postGratuity endpoint (a tip with no check). Exactly one of reservationId / houseAccountId / groupCode must be provided. Sub-reservation routing is per-gratuity via GratuitySchema.subReservationId. To link tips to a check, use POST /folio/v1/checks/{checkId}/gratuities instead — checkId / checkNumber / POS context are check attributes and are not accepted here.'
+      required:
+        - gratuities
+      properties:
+        reservationId:
+          description: 'Reservation identifier. Required if houseAccountId and groupCode are not provided.'
+          type: string
+          example: RES123456
+          nullable: true
+        houseAccountId:
+          description: 'House account identifier. Required if reservationId and groupCode are not provided.'
+          type: string
+          example: '123456'
+          nullable: true
+        groupCode:
+          description: 'Group code. Required if reservationId and houseAccountId are not provided.'
+          type: string
+          example: GRP2025
+          nullable: true
+        folioId:
+          description: 'Folio identifier within the chosen account target. Numeric string (the underlying folio_id is a 64-bit unsigned integer). Optional — when omitted, the default folio for the target is used.'
+          type: string
+          example: '12345'
+          nullable: true
+        gratuities:
+          description: 'Gratuity entries to post. At least one entry required. Each entry becomes its own folio line item and its own Accounting Service transaction.'
+          type: array
+          items:
+            $ref: '#/components/schemas/GratuitySchema'
+      type: object
+      oneOf:
+        -
+          required:
+            - reservationId
+        -
+          required:
+            - houseAccountId
+        -
+          required:
+            - groupCode
+    RecipientSchema:
+      description: 'Recipient attribution for a gratuity. All three fields are optional and independent. When more than one is provided, resolution priority is: userId > email > name.'
+      properties:
+        userId:
+          description: 'Cloudbeds user ID; must reference a valid user on the property or RECIPIENT_USER_NOT_FOUND is returned.'
+          type: string
+          example: usr_4821
+          nullable: true
+        email:
+          description: 'Recipient email; resolved to a user record if userId not provided.'
+          type: string
+          example: maria.santos@cloudbeds.com
+          nullable: true
+        name:
+          description: 'Free-text recipient name; always stored as a display string regardless of whether a user record is resolved.'
+          type: string
+          example: 'Maria Santos'
+          nullable: true
+      type: object
+    GratuityErrorCodeEnumSchema:
+      description: 'Machine-readable error code returned in BadRequest / Conflict / NotFound responses for postGratuity. Aligned with the structured error approach used by STS Gen2 and the Accounting API.'
+      type: string
+      enum:
+        - ACCOUNT_NOT_FOUND
+        - FOLIO_NOT_FOUND
+        - TAX_ID_NOT_FOUND
+        - RECIPIENT_USER_NOT_FOUND
+        - SUBRESERVATION_NOT_FOUND
+        - CHECK_NOT_FOUND
+        - DUPLICATE_REFERENCE
+        - IDEMPOTENCY_KEY_REUSED
+        - GRATUITY_NOT_FOUND
+        - GRATUITY_VOID_UNAVAILABLE
+    PostGratuityResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PostedGratuityResponseSchema'
+      type: object
+    PostedGratuityResponseSchema:
+      description: 'Result of a postGratuity call. gratuityIds are the Cloudbeds-assigned public handles of the posted gratuities — one per gratuities[] entry — each addressable for void via DELETE /folio/v1/gratuities/{gratuityId}.'
+      required:
+        - gratuityIds
+      properties:
+        gratuityIds:
+          description: 'Public handles of the posted gratuities, one per gratuities[] entry. Each is addressable for void via DELETE /folio/v1/gratuities/{gratuityId}.'
+          type: array
+          items:
+            type: string
+          example:
+            - '9911283'
+            - '9911284'
+        notice:
+          description: 'Set when the request was identified as a duplicate via referenceId. When present, no new posting was created and the original response is returned.'
+          type: string
+          example: 'Duplicate referenceId — returning original posting.'
+          nullable: true
+      type: object
+    AvailabilitySearchRequestSchema:
+      required:
+        - propertyIds
+        - startDate
+        - endDate
+      properties:
+        propertyIds:
+          description: 'Property IDs to check availability for (max 20)'
+          type: array
+          items:
+            type: integer
+          example:
+            - 101
+            - 102
+            - 103
+        startDate:
+          description: 'Check-in date (YYYY-MM-DD)'
+          type: string
+          example: '2026-04-04'
+        endDate:
+          description: 'Check-out date (YYYY-MM-DD)'
+          type: string
+          example: '2026-04-06'
+        adults:
+          description: 'Number of adults'
+          type: integer
+          example: 2
+        children:
+          description: 'Number of children'
+          type: integer
+          example: 0
+      type: object
+    PropertySearchRequestSchema:
+      properties:
+        city:
+          description: 'City name to search for (partial match)'
+          type: string
+          example: 'San Diego'
+          nullable: true
+        latitude:
+          description: 'Latitude for geo-based search'
+          type: number
+          format: float
+          example: 32.7157
+          nullable: true
+        longitude:
+          description: 'Longitude for geo-based search'
+          type: number
+          format: float
+          example: -117.1611
+          nullable: true
+        radiusKm:
+          description: 'Search radius in kilometers (requires latitude/longitude)'
+          type: number
+          format: float
+          example: 25
+          nullable: true
+        limit:
+          description: 'Maximum number of results (max 20)'
+          type: integer
+          example: 20
+        offset:
+          description: 'Number of results to skip'
+          type: integer
+          example: 0
+      type: object
+    AvailabilitySearchResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          description: 'Properties with available room types'
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyAvailabilityResponseSchema'
+      type: object
+    PropertyAvailabilityResponseSchema:
+      required:
+        - propertyId
+        - propertyName
+        - currencyCode
+        - roomTypes
+      properties:
+        propertyId:
+          type: integer
+          example: 276
+        propertyName:
+          type: string
+          example: 'Seaside Inn San Diego'
+        currencyCode:
+          type: string
+          example: USD
+        roomTypes:
+          description: 'Available room types with rates'
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomTypeAvailabilityResponseSchema'
+      type: object
+    PropertySearchResponseSchema:
+      required:
+        - data
+        - total
+        - limit
+        - offset
+      properties:
+        data:
+          description: 'List of matching properties'
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertySummaryResponseSchema'
+        total:
+          description: 'Total number of matching properties'
+          type: integer
+          example: 42
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+      type: object
+    PropertySummaryResponseSchema:
+      required:
+        - propertyId
+        - propertyName
+        - propertyType
+        - city
+        - state
+        - country
+        - latitude
+        - longitude
+        - currencyCode
+        - timezone
+      properties:
+        propertyId:
+          type: integer
+          example: 276
+        propertyName:
+          type: string
+          example: 'Seaside Inn San Diego'
+        propertyType:
+          type: string
+          example: Hotel
+        city:
+          type: string
+          example: 'San Diego'
+        state:
+          type: string
+          example: CA
+        country:
+          type: string
+          example: US
+        latitude:
+          type: number
+          format: float
+          example: 32.7157
+        longitude:
+          type: number
+          format: float
+          example: -117.1611
+        currencyCode:
+          type: string
+          example: USD
+        timezone:
+          type: string
+          example: America/Los_Angeles
+        distanceKm:
+          description: 'Distance from search coordinates in km'
+          type: number
+          format: float
+          example: 3.45
+          nullable: true
+      type: object
+    RoomTypeAvailabilityResponseSchema:
+      required:
+        - roomTypeId
+        - roomTypeName
+        - maxGuests
+        - roomsAvailable
+        - minRate
+        - maxRate
+      properties:
+        roomTypeId:
+          type: integer
+          example: 713
+        roomTypeName:
+          type: string
+          example: 'Deluxe King Room'
+        maxGuests:
+          type: integer
+          example: 2
+        roomsAvailable:
+          description: 'Minimum rooms available across all dates'
+          type: integer
+          example: 3
+        minRate:
+          description: 'Lowest nightly rate across the date range'
+          type: number
+          format: float
+          example: 149.99
+        maxRate:
+          description: 'Highest nightly rate across the date range'
+          type: number
+          format: float
+          example: 199.99
+      type: object
     InspectionItemSchema:
       required:
         - updatedDate
@@ -6407,6 +8369,16 @@ components:
         createdAt:
           type: string
         errors:
+          type: string
+          nullable: true
+        userId:
+          description: 'ID of the user who created the import task.'
+          type: string
+        updatedAt:
+          description: 'When the task last changed, RFC3339.'
+          type: string
+        parentId:
+          description: 'Parent task ID when this task re-imports failed records of another task.'
           type: string
           nullable: true
       type: object
@@ -7259,6 +9231,62 @@ components:
         canDisable:
           type: boolean
       type: object
+    ExecuteScheduledPaymentRequestSchema:
+      required:
+        - id
+        - propertyId
+    ExecuteScheduledPaymentDataSchema:
+      description: 'Payload of a successful execute-scheduled-payment outcome.'
+      required:
+        - paymentStatus
+        - alreadyProcessed
+      properties:
+        paymentStatus:
+          description: 'The persisted payment status after dispatch (successful | failed | canceled | scheduled). Null only when the dispatch was not attempted (e.g. notYetDue with no prior status).'
+          type: string
+          example: successful
+          nullable: true
+        alreadyProcessed:
+          description: 'True when the persisted payment was already in a terminal state and the dispatch was a no-op idempotent retry.'
+          type: boolean
+          example: false
+        errorMessage:
+          description: 'Human-readable gateway error detail when paymentStatus="failed"; null otherwise.'
+          type: string
+          nullable: true
+      type: object
+    ExecuteScheduledPaymentResponseSchema:
+      description: 'Response envelope for a successful execute-scheduled-payment outcome.'
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ExecuteScheduledPaymentDataSchema'
+      type: object
+    PosContextSchema:
+      description: 'POS source metadata for the request. restaurantName / revenueCenter / mealPeriod / staffReference describe the POS session that produced the request as a whole; they apply uniformly to every item (postCheck) or gratuity entry (postGratuity) in the same POST.'
+      properties:
+        restaurantName:
+          description: 'Restaurant or outlet name.'
+          type: string
+          example: 'Sunset Grill'
+          nullable: true
+        revenueCenter:
+          description: 'Revenue center identifier.'
+          type: string
+          example: BAR
+          nullable: true
+        mealPeriod:
+          description: 'Meal period (e.g., breakfast, lunch, dinner).'
+          type: string
+          example: dinner
+          nullable: true
+        staffReference:
+          description: 'Free-text reference to a staff member or terminal in the source POS.'
+          type: string
+          example: server-014
+          nullable: true
+      type: object
     SystemRequestSchema: {  }
     SystemFeatureResponseSchema:
       description: 'System feature information'
@@ -7318,7 +9346,7 @@ components:
         roomTypeId:
           description: 'The room type ID assigned to this rate plan.'
           type: integer
-          example: true
+          example: 123
         name:
           description: 'Name in multiple languages.'
           type: object
@@ -7447,13 +9475,13 @@ components:
           description: 'Room type ID.'
           type: string
           example: '82828'
-        minOverlap:
-          description: 'Minimum overlap.'
+        minLos:
+          description: 'Minimum length of stay.'
           type: integer
           example: 1
           nullable: true
-        maxOverlap:
-          description: 'Maximum overlap.'
+        maxLos:
+          description: 'Maximum length of stay.'
           type: integer
           example: 10
           nullable: true
@@ -7539,6 +9567,31 @@ components:
             additionalProperties:
               type: number
               format: float
+        cutOff:
+          description: 'Cut-off: minimum number of days in advance a booking must be made. 0 = no restriction.'
+          type: integer
+          example: 3
+          nullable: true
+        lastMinuteBooking:
+          description: 'Last-minute booking: maximum number of days before arrival a booking may be made. 0 = no restriction.'
+          type: integer
+          example: 1
+          nullable: true
+        closedToArrival:
+          description: 'Closed to arrival: when true, guests cannot start a stay on dates within this interval.'
+          type: boolean
+          example: false
+          nullable: true
+        closedToDeparture:
+          description: 'Closed to departure: when true, guests cannot end a stay on dates within this interval.'
+          type: boolean
+          example: false
+          nullable: true
+        limitToNumberOfRooms:
+          description: 'Saleable Accommodations: caps how many rooms of the room type this rate may sell. Null, absent or 0 means no limit — the rate may sell the room type''s full capacity. A value above the room type''s capacity is accepted and stored as sent.'
+          type: integer
+          example: 5
+          nullable: true
       type: object
     RatePlanSingleRequestSchema:
       required:
@@ -7643,7 +9696,7 @@ components:
             $ref: '#/components/schemas/RatePlanIntervalRequestSchema'
           nullable: true
         addons:
-          description: 'List of addons for the rate plan.'
+          description: 'List of addons for the rate plan. Omitted or null leaves the current addons unchanged; an empty array removes all of them.'
           type: array
           items:
             $ref: '#/components/schemas/RatePlanAddonRequestSchema'
@@ -7657,6 +9710,88 @@ components:
           description: 'Policy ID associated with the rate plan.'
           type: integer
           example: 321
+          nullable: true
+      type: object
+    RatePlanAvailabilityListRequestSchema:
+      required:
+        - ratePlanId
+        - startDate
+        - endDate
+      properties:
+        ratePlanId:
+          description: 'Rate Plan ID (the rate plan package id).'
+          type: integer
+          example: 12345
+        roomTypeId:
+          description: 'Optional Room Type ID filter; omit to return all room types of the rate plan.'
+          type: integer
+          example: 67890
+          nullable: true
+        startDate:
+          description: 'Start date (YYYY-MM-DD).'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-01'
+        endDate:
+          description: 'End date (YYYY-MM-DD), inclusive. The range may span at most 366 days.'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-31'
+      type: object
+    RatePlanAvailabilityPutRequestSchema:
+      required:
+        - data
+      properties:
+        data:
+          description: 'Stop-sell updates per rate plan / room type.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanStopSellUpdateSchema'
+        testRequest:
+          description: 'Mark as test request (honored in non-production only).'
+          type: boolean
+          example: false
+      type: object
+    RatePlanStopSellUpdateSchema:
+      required:
+        - ratePlanId
+        - roomTypeId
+        - intervals
+      properties:
+        ratePlanId:
+          description: 'Rate Plan ID (the rate plan package id).'
+          type: integer
+          example: 12345
+        roomTypeId:
+          description: 'Room Type ID.'
+          type: integer
+          example: 67890
+        intervals:
+          description: 'Date intervals to set stop-sell for.'
+          type: array
+          items:
+            $ref: '#/components/schemas/StopSellIntervalSchema'
+      type: object
+    StopSellIntervalSchema:
+      required:
+        - startDate
+        - endDate
+        - stopSell
+      properties:
+        startDate:
+          description: 'Interval start date (YYYY-MM-DD).'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-01'
+        endDate:
+          description: 'Interval end date (YYYY-MM-DD), inclusive.'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-07'
+        stopSell:
+          description: 'Whether the rate plan is closed for sale (stop-sell) on these dates.'
+          type: boolean
+          example: true
           nullable: true
       type: object
     RatePlanAddonResponseSchema:
@@ -7674,7 +9809,12 @@ components:
           example: '4674899'
           nullable: true
         settings:
+          description: 'The addon settings.'
           type: string
+          enum:
+            - package_inclusive
+            - show_as_combined
+            - show_as_separate
           example: package_inclusive
           nullable: true
       type: object
@@ -7708,16 +9848,21 @@ components:
           format: date-time
           example: '2025-07-10'
           nullable: true
-        minOverlap:
+        minLos:
           type: integer
           example: 1
           nullable: true
-        maxOverlap:
+        maxLos:
           type: integer
           example: 0
           nullable: true
         days:
-          type: object
+          description: 'Base price per day-of-week, indexed 0=Sunday … 6=Saturday. A day with no base price is null.'
+          type: array
+          items:
+            type: number
+            format: float
+            nullable: true
           example:
             - 60
             - 50
@@ -7728,30 +9873,15 @@ components:
             - 65.99
           nullable: true
         adultDays:
-          description: 'Extra adults pricing (0=Sunday, 1=Monday, etc.).'
+          description: 'Extra adults pricing. Outer key = day-of-week (0=Sunday … 6=Saturday); inner key = extra-guest count; value = additional price for that guest. Note: when fees are set on a contiguous run of days starting at day 0 (e.g. all 7 days), the payload serializes as a JSON array of per-day objects rather than the day-of-week-keyed object shown here.'
           type: object
           example:
-            -
+            '1':
+              '3': 20
+              '4': 20
+            '5':
               '3': 35
               '4': 35
-            -
-              '3': 20
-              '4': 20
-            -
-              '3': 20
-              '4': 20
-            -
-              '3': 20
-              '4': 20
-            -
-              '3': 20
-              '4': 20
-            -
-              '3': 35
-              '4': 35
-            -
-              '3': 40
-              '4': 40
           nullable: true
           additionalProperties:
             type: object
@@ -7759,36 +9889,46 @@ components:
               type: number
               format: float
         childDays:
-          description: 'Extra children pricing (0=Sunday, 1=Monday, etc.).'
+          description: 'Extra children pricing. Outer key = day-of-week (0=Sunday … 6=Saturday); inner key = extra-guest count; value = additional price for that guest. Note: when fees are set on a contiguous run of days starting at day 0 (e.g. all 7 days), the payload serializes as a JSON array of per-day objects rather than the day-of-week-keyed object shown here.'
           type: object
           example:
-            -
+            '1':
+              '1': 5
+              '2': 10
+            '5':
               '1': 10
               '2': 15
-            -
-              '1': 5
-              '2': 10
-            -
-              '1': 5
-              '2': 10
-            -
-              '1': 5
-              '2': 10
-            -
-              '1': 5
-              '2': 10
-            -
-              '1': 10
-              '2': 15
-            -
-              '1': 12
-              '2': 18
           nullable: true
           additionalProperties:
             type: object
             additionalProperties:
               type: number
               format: float
+        cutOff:
+          description: 'Cut-off: minimum number of days in advance a booking must be made. 0 = no restriction.'
+          type: integer
+          example: 3
+          nullable: true
+        lastMinuteBooking:
+          description: 'Last-minute booking: maximum number of days before arrival a booking may be made. 0 = no restriction.'
+          type: integer
+          example: 1
+          nullable: true
+        closedToArrival:
+          description: 'Closed to arrival: when true, guests cannot start a stay on dates within this interval.'
+          type: boolean
+          example: false
+          nullable: true
+        closedToDeparture:
+          description: 'Closed to departure: when true, guests cannot end a stay on dates within this interval.'
+          type: boolean
+          example: false
+          nullable: true
+        limitToNumberOfRooms:
+          description: 'Saleable Accommodations: caps how many rooms of the room type this rate may sell. Null means no limit — the rate may sell the room type''s full capacity.'
+          type: integer
+          example: 5
+          nullable: true
       type: object
     RatePlanListResponseSchema:
       required:
@@ -7810,6 +9950,10 @@ components:
       properties:
         id:
           type: string
+        propertyId:
+          type: string
+          example: '9876'
+          nullable: true
         isActive:
           type: boolean
           example: true
@@ -7889,15 +10033,64 @@ components:
         createdAt:
           type: string
           format: date-time
-          example: '2023-10-01 12:00:00'
+          example: '2023-10-01T12:00:00+00:00'
+          nullable: true
         updatedAt:
           type: string
           format: date-time
-          example: '2023-10-01 12:00:00'
-        policyId:
-          type: integer
-          example: 9888000
+          example: '2023-10-01T12:00:00+00:00'
           nullable: true
+        policyId:
+          type: string
+          example: '9888000'
+          nullable: true
+        segmentId:
+          type: string
+          example: '789'
+          nullable: true
+      type: object
+    RatePlanAvailabilityDayResponseSchema:
+      required:
+        - date
+        - ratePlanId
+        - roomTypeId
+        - stopSell
+      properties:
+        date:
+          description: 'Date (YYYY-MM-DD).'
+          type: string
+          example: '2030-01-01'
+        ratePlanId:
+          description: 'Rate Plan ID (the rate plan package id).'
+          type: integer
+          example: 12345
+        roomTypeId:
+          description: 'Room Type ID.'
+          type: integer
+          example: 67890
+        stopSell:
+          description: 'Whether the rate plan is closed for sale (stop-sell) on this date.'
+          type: boolean
+          example: true
+      type: object
+    RatePlanAvailabilityListResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          description: 'Per-date stop-sell values for the rate plan / room type(s).'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanAvailabilityDayResponseSchema'
+      type: object
+    StopSellJobAcceptedResponseSchema:
+      required:
+        - jobReferenceId
+      properties:
+        jobReferenceId:
+          description: 'Reference ID for tracking via getAsyncApiJob.'
+          type: integer
+          example: 1234
       type: object
     ReservationCommissionRequestSchema:
       required:
@@ -8030,11 +10223,11 @@ components:
           minimum: 0
           example: 0
         arrangements:
-          description: 'List of bed arrangements in this area. BEDROOM areas must have exactly 1 arrangement. LIVING_ROOM areas can have 0 or 1 arrangement.'
+          description: 'List of bed arrangements in this area. BEDROOM and SLEEPING_AREA require exactly 1 default arrangement (isDefault=true); LIVING_ROOM can have 0 to 2. An optional second arrangement with isDefault=false represents the alternative sleeping arrangement.'
           type: array
           items:
             $ref: '#/components/schemas/ArrangementItemSchema'
-          maxItems: 1
+          maxItems: 2
           minItems: 0
       type: object
     ArrangementItemSchema:
@@ -8048,8 +10241,9 @@ components:
           type: boolean
           example: true
         position:
-          description: 'Position/order of this arrangement'
+          description: 'Position/order of this arrangement. Must be 0 for the default arrangement and 1 for the alternative.'
           type: integer
+          maximum: 1
           minimum: 0
           example: 0
         beds:
@@ -8058,6 +10252,36 @@ components:
           items:
             $ref: '#/components/schemas/BedItemSchema'
           minItems: 1
+      type: object
+    BathroomItemSchema:
+      required:
+        - type
+        - location
+      properties:
+        type:
+          description: 'Bathroom type.'
+          type: string
+          enum:
+            - FULL
+            - HALF
+            - OUTDOOR_FULL
+            - OUTDOOR_HALF
+          example: FULL
+        location:
+          description: 'Bathroom location.'
+          type: string
+          enum:
+            - IN_UNIT
+            - EXTERNAL
+          example: IN_UNIT
+        privacy:
+          description: 'Bathroom privacy. Required for private accommodations, must be omitted for shared accommodations.'
+          type: string
+          enum:
+            - PRIVATE
+            - SHARED
+          example: PRIVATE
+          nullable: true
       type: object
     BedItemSchema:
       required:
@@ -8089,6 +10313,98 @@ components:
           type: integer
           example: 12345
       type: object
+    GetRoomTypeBathroomsRequestSchema:
+      required:
+        - roomTypeId
+      properties:
+        roomTypeId:
+          description: 'Room type ID'
+          type: integer
+          example: 12345
+      type: object
+    GetUnitRequestSchema: {  }
+    GetUnitsRequestSchema: {  }
+    OutOfServiceRequestSchema:
+      required:
+        - fromDate
+        - toDate
+        - reason
+        - roomId
+      properties:
+        fromDate:
+          description: 'RFC3339 Date to start the out of service period'
+          type: string
+          example: '2025-04-25T00:00:00-06:00'
+        toDate:
+          description: 'RFC3339 Date to end the out of service period'
+          type: string
+          example: '2025-04-26T00:00:00-06:00'
+        reason:
+          description: 'Wny is the room out of service?'
+          type: string
+          example: 'Flooding in the room.'
+      type: object
+    PatchUnitRequestSchema:
+      properties:
+        connectingUnitIds:
+          description: 'List of connecting unit IDs. Send empty array to clear all connections. Omit to leave unchanged.'
+          type: array
+          items:
+            type: string
+            example: 12345-0
+          nullable: true
+        name:
+          description: 'Unit name. Must be non-empty when provided.'
+          type: string
+          example: 'Room 101'
+          nullable: true
+        description:
+          description: 'Unit description (empty string to clear).'
+          type: string
+          example: 'King bed, ocean view'
+          nullable: true
+        images:
+          description: 'Unit images. Send empty array to clear. FE is responsible for uploading the assets and passing back the resulting image objects.'
+          type: array
+          items:
+            type: object
+          nullable: true
+        nameLangs:
+          description: 'Per-language map of the unit name (keys are IETF language codes, e.g. "en", "pt-br", "es-es"). Send the full map the property supports — missing keys will be persisted as empty strings on read.'
+          type: object
+          example:
+            en: 'Room 101'
+            pt-br: 'Quarto 101'
+            pt-pt: ''
+            es: ''
+            es-es: ''
+          nullable: true
+          additionalProperties:
+            type: string
+        descriptionLangs:
+          description: 'Per-language map of the unit description (keys are IETF language codes). Same shape as `nameLangs`.'
+          type: object
+          example:
+            en: 'King bed, ocean view'
+            pt-br: ''
+            es: ''
+          nullable: true
+          additionalProperties:
+            type: string
+        doorlockId:
+          description: 'Door lock integration identifier (null to clear).'
+          type: string
+          example: DL-8842
+          nullable: true
+      type: object
+    PlaceRoomsOutOfServiceRequest:
+      properties:
+        items:
+          description: 'List of rooms to be placed out of service.'
+          type: array
+          items:
+            $ref: '#/components/schemas/OutOfServiceRequestSchema'
+      type: object
     PutRoomTypeAreasRequestSchema:
       required:
         - layoutTypeCode
@@ -8107,6 +10423,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AreaItemSchema'
+      type: object
+    PutRoomTypeBathroomsRequestSchema:
+      required:
+        - bathrooms
+      properties:
+        bathrooms:
+          description: 'List of bathrooms for this room type. Replaces the entire bathroom configuration. Pass an empty array to clear all bathrooms.'
+          type: array
+          items:
+            $ref: '#/components/schemas/BathroomItemSchema'
+          maxItems: 50
       type: object
     AreaItemResponseSchema:
       description: 'Room type area in response'
@@ -8130,7 +10457,7 @@ components:
           minimum: 0
           example: 0
         arrangements:
-          description: 'Bed arrangements in this area'
+          description: 'Bed arrangements in this area. An arrangement with isDefault=false is the alternative sleeping arrangement.'
           type: array
           items:
             $ref: '#/components/schemas/ArrangementItemResponseSchema'
@@ -8161,6 +10488,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BedItemResponseSchema'
+      type: object
+    BathroomItemResponseSchema:
+      description: 'Room type bathroom in response'
+      required:
+        - id
+        - type
+        - location
+        - position
+      properties:
+        id:
+          description: 'Bathroom ID'
+          type: integer
+          example: 789
+        type:
+          description: 'Bathroom type'
+          type: string
+          enum:
+            - FULL
+            - HALF
+            - OUTDOOR_FULL
+            - OUTDOOR_HALF
+          example: FULL
+        location:
+          description: 'Bathroom location'
+          type: string
+          enum:
+            - IN_UNIT
+            - EXTERNAL
+          example: IN_UNIT
+        position:
+          description: 'Display position (0-indexed)'
+          type: integer
+          minimum: 0
+          example: 0
+        privacy:
+          description: 'Bathroom privacy. Set only for private accommodations; null for shared accommodations.'
+          type: string
+          enum:
+            - PRIVATE
+            - SHARED
+          example: PRIVATE
+          nullable: true
       type: object
     BedItemResponseSchema:
       description: 'Bed item in response'
@@ -8215,6 +10584,59 @@ components:
           items:
             $ref: '#/components/schemas/AreaItemResponseSchema'
       type: object
+    GetRoomTypeBathroomsResponseSchema:
+      description: 'Response for GET /rooms/v1/{roomTypeId}/bathrooms'
+      required:
+        - bathrooms
+      properties:
+        bathrooms:
+          description: 'Bathrooms in the room type (ordered by position)'
+          type: array
+          items:
+            $ref: '#/components/schemas/BathroomItemResponseSchema'
+      type: object
+    GetUnitsResponseSchema:
+      description: 'Response for GET /rooms/v1/units'
+      required:
+        - units
+      properties:
+        units:
+          description: 'List of units for the property'
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitItemResponseSchema'
+      type: object
+    OutOfServiceResponseItemSchema:
+      required:
+        - event_id
+        - code
+      properties:
+        event_id:
+          description: 'The event id of the request'
+          type: string
+        message:
+          description: 'Response message'
+          type: string
+        code:
+          description: 'The HTTP status code of the response'
+          type: integer
+          example: 201
+      type: object
+    OutOfServiceResponseSchema:
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutOfServiceResponseItemSchema'
+      type: object
+    PatchUnitResponseSchema:
+      description: 'Response for PATCH /rooms/v1/units/{unitId}'
+      properties:
+        unit:
+          $ref: '#/components/schemas/UnitItemResponseSchema'
+      type: object
     PutRoomTypeAreasResponseSchema:
       description: 'Response for PUT /rooms/v1/{roomTypeId}/areas'
       required:
@@ -8231,6 +10653,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AreaItemResponseSchema'
+      type: object
+    PutRoomTypeBathroomsResponseSchema:
+      description: 'Response for PUT /rooms/v1/{roomTypeId}/bathrooms'
+      required:
+        - bathrooms
+      properties:
+        bathrooms:
+          description: 'Bathrooms in the room type after update'
+          type: array
+          items:
+            $ref: '#/components/schemas/BathroomItemResponseSchema'
       type: object
     RoomLabelItemSchema:
       required:
@@ -8259,6 +10692,74 @@ components:
             - SHARED
             - PRIVATE_SHARED
           example: PRIVATE
+      type: object
+    UnitItemResponseSchema:
+      description: 'A single unit (room) within an accommodation type'
+      required:
+        - id
+        - propertyId
+        - roomTypeId
+        - name
+        - description
+        - images
+        - connectingUnitIds
+        - nameLangs
+        - descriptionLangs
+        - doorlockId
+      properties:
+        id:
+          description: 'Unit ID'
+          type: string
+          example: 12345-0
+        propertyId:
+          description: 'Property ID'
+          type: integer
+          example: 12345
+        roomTypeId:
+          description: 'Room type (accommodation) ID'
+          type: integer
+          example: 67890
+        name:
+          description: 'Unit name'
+          type: string
+          example: 'Room 101'
+        connectingUnitIds:
+          description: 'IDs of connecting units'
+          type: array
+          items:
+            type: string
+            example: 12345-1
+        description:
+          description: 'Unit description'
+          type: string
+          example: 'King bed, ocean view'
+        images:
+          description: 'Unit images (JSON objects as stored on the unit).'
+          type: array
+          items:
+            type: object
+        nameLangs:
+          description: 'Per-language unit name map (IETF language codes → localized strings).'
+          type: object
+          example:
+            en: 'Room 101'
+            pt-br: 'Quarto 101'
+            es: ''
+          additionalProperties:
+            type: string
+        descriptionLangs:
+          description: 'Per-language unit description map (IETF language codes → localized strings).'
+          type: object
+          example:
+            en: 'King bed, ocean view'
+            es: ''
+          additionalProperties:
+            type: string
+        doorlockId:
+          description: 'Door lock integration identifier.'
+          type: string
+          example: DL-8842
+          nullable: true
       type: object
     CreatePolicyExceptionRequestSchema:
       required:
@@ -8299,6 +10800,15 @@ components:
           type: string
           example: '5001'
       type: object
+    DisableSmartPolicyRequestSchema:
+      required:
+        - reservationId
+      properties:
+        reservationId:
+          description: 'Reservation ID.'
+          type: string
+          example: '900001'
+      type: object
     EligibleRatesRequestSchema:
       required:
         - startDate
@@ -8333,6 +10843,34 @@ components:
               example: '123'
               nullable: true
           type: object
+    GetBookingPolicyInformationRequestSchema:
+      required:
+        - reservationId
+      properties:
+        reservationId:
+          description: 'Reservation identifier.'
+          type: string
+          example: '1234567890'
+        languageCode:
+          description: 'Language code for the rendered policy text (e.g. "fr", "en-US"). Defaults to the property''s language when omitted.'
+          type: string
+          example: en-US
+          nullable: true
+      type: object
+    GetPaymentScheduleRequestSchema:
+      required:
+        - reservationId
+      properties:
+        reservationId:
+          description: 'Reservation ID.'
+          type: string
+          example: '900001'
+        skipPaymentProcessorCheck:
+          description: 'Skip the payment processor check and return the full theoretical schedule even when the property has no active processor.'
+          type: boolean
+          default: false
+          example: false
+      type: object
     GetPolicyExceptionRequestSchema:
       required:
         - exceptionId
@@ -8341,6 +10879,15 @@ components:
           description: 'Policy exception ID.'
           type: string
           example: '5001'
+      type: object
+    GetSmartPolicyPaymentsRequestSchema:
+      required:
+        - reservationId
+      properties:
+        reservationId:
+          description: 'Reservation ID.'
+          type: string
+          example: '900001'
       type: object
     ListPolicyExceptionsRequestSchema:
       allOf:
@@ -8444,6 +10991,79 @@ components:
           example: 456
           nullable: true
       type: object
+    PreviewAdjustmentInputSchema:
+      required:
+        - target
+        - token
+        - amount
+      properties:
+        target:
+          description: 'The type of adjustment to preview.'
+          type: string
+          enum:
+            - TAX
+            - FEE
+            - RATE
+            - ROOM_REVENUE
+        token:
+          description: 'Folio adjustment id token, exactly as the save receives it (e.g. ''tax_42'', ''fee_7'', ''rate'', ''roomRevenue_manual'').'
+          type: string
+          example: tax_42
+        amount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/SmartPolicyMoneyInputSchema'
+          nullable: true
+          description: 'Adjustment amount (positive magnitude); the charge is REDUCED by this.'
+        bookingRoomId:
+          description: 'Booking room id the adjustment targets (rate / room-revenue).'
+          type: string
+          example: '555'
+          nullable: true
+        rateSourceId:
+          description: 'Rate source id — required for RATE adjustments to resolve the applicable taxes/fees.'
+          type: string
+          example: '777'
+          nullable: true
+        isRootSource:
+          description: 'Whether the rate source is a root source (RATE adjustments).'
+          type: boolean
+          nullable: true
+        isHotelCollectBooking:
+          description: 'Whether the booking is hotel-collect (RATE adjustments).'
+          type: boolean
+          nullable: true
+      type: object
+    PreviewAdjustmentRequestSchema:
+      required:
+        - reservationId
+        - adjustment
+      properties:
+        reservationId:
+          description: 'Reservation ID to preview the adjustment for.'
+          type: string
+          example: '12345'
+        adjustment:
+          oneOf:
+            -
+              $ref: '#/components/schemas/PreviewAdjustmentInputSchema'
+          nullable: true
+      type: object
+    SmartPolicyMoneyInputSchema:
+      description: "Money input as per the REST API Modeling Specification: amount in the smallest representable units\nof the currency, paired with an ISO 4217 currency code."
+      required:
+        - amount
+        - currencyCode
+      properties:
+        amount:
+          description: 'Amount in the smallest representable units of the currency (e.g., cents for USD).'
+          type: string
+          example: '500'
+        currencyCode:
+          description: 'ISO 4217 currency code.'
+          type: string
+          example: EUR
+      type: object
     UpdatePolicyExceptionRequestSchema:
       required:
         - exceptionId
@@ -8479,6 +11099,44 @@ components:
           type: boolean
           example: true
           nullable: true
+      type: object
+    BookingPolicyInformationResponseSchema:
+      required:
+        - policyText
+        - scheduledPayments
+        - policyTextSource
+      properties:
+        policyText:
+          oneOf:
+            -
+              $ref: '#/components/schemas/PolicyTextSchema'
+          nullable: true
+          description: 'Rendered policy text for the reservation: smart policy text when the reservation is governed by one, otherwise the property''s legacy cancellation policy text (only cancellationText is populated in that case). Null when neither is available — consumers must hide the policy section in that case rather than render an empty one.'
+        scheduledPayments:
+          description: 'Upcoming scheduled payments (deposit and installments), pre-formatted for display. Empty for canceled and no-show reservations.'
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduledPaymentDisplayItemSchema'
+        policyTextSource:
+          description: 'Where policyText came from: "smart" when rendered from the reservation''s smart policy, "legacy" when it is the property''s legacy cancellation policy text. Null when policyText is null.'
+          type: string
+          enum:
+            - smart
+            - legacy
+          example: smart
+          nullable: true
+      type: object
+    DisableSmartPolicyResponseSchema:
+      required:
+        - matched
+        - modified
+      properties:
+        matched:
+          description: 'Count of booking room-policy rows found for the reservation.'
+          type: integer
+        modified:
+          description: 'Count of rows whose state actually flipped. 0 with a non-zero "matched" means Smart Policy was already off for the reservation (the call is idempotent).'
+          type: integer
       type: object
     EligibleRateConflictSchema:
       required:
@@ -8550,6 +11208,59 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EligibleRateItemSchema'
+      type: object
+    PaymentScheduleResponseSchema:
+      required:
+        - payments
+        - degraded
+      properties:
+        payments:
+          description: 'Scheduled payments (deposit and installments) for the reservation.'
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduledPaymentItemSchema'
+        degraded:
+          description: 'True when the schedule calculation failed and the result is degraded (partial or unavailable), as opposed to a legitimately empty schedule. Consumers must treat a degraded empty result differently from a genuine "no payments owed".'
+          type: boolean
+      type: object
+    PolicyCancellationTypeSchema:
+      required:
+        - text
+        - type
+      properties:
+        text:
+          description: 'Human-readable cancellation type label.'
+          type: string
+          example: 'Fully refundable until Nov 8, 2026'
+        type:
+          description: 'Machine-readable cancellation type.'
+          type: string
+          enum:
+            - FULLY_REFUNDABLE
+            - PARTIALLY_REFUNDABLE
+            - NON_REFUNDABLE
+          example: FULLY_REFUNDABLE
+        fullyRefundableUntilDaysBeforeCheckIn:
+          description: 'Days before check-in midnight until which the reservation is fully refundable (floored, legacy field); null when not applicable.'
+          type: integer
+          example: 3
+          nullable: true
+        fullyRefundableUntilDaysBeforeDate:
+          description: 'ISO date (YYYY-MM-DD) of the refund deadline (legacy, day-rounded); null when not applicable.'
+          type: string
+          example: '2026-11-08'
+          nullable: true
+        fullyRefundableUntilDateTime:
+          description: 'Exact ISO 8601 datetime of the refund deadline; null when not applicable.'
+          type: string
+          format: date-time
+          example: '2026-11-08T15:00:00+00:00'
+          nullable: true
+        fullyRefundableUntilMinutesBeforeCheckIn:
+          description: 'Minutes before check-in date midnight (not check-in time) of the refund deadline; null when not applicable.'
+          type: integer
+          example: 4320
+          nullable: true
       type: object
     PolicyExceptionIntervalResponseSchema:
       properties:
@@ -8659,6 +11370,303 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PolicyExceptionRateResponseSchema'
+      type: object
+    PolicySummaryRowSchema:
+      required:
+        - timingLabel
+        - actionCopy
+      properties:
+        timingLabel:
+          description: 'When the row applies, as display copy.'
+          type: string
+          example: 'Until Nov 8, 2026'
+        actionCopy:
+          description: 'What happens at that time, as display copy.'
+          type: string
+          example: 'Free cancellation'
+        detail:
+          description: 'Additional detail for the row; null when there is none.'
+          type: string
+          example: 'Full refund of the deposit.'
+          nullable: true
+        anchor:
+          description: 'Machine-readable anchor the timing is relative to; null when not applicable.'
+          type: string
+          example: CHECK_IN
+          nullable: true
+        anchorOffsetMinutes:
+          description: 'Offset from the anchor in minutes; null when not applicable.'
+          type: integer
+          example: -1440
+          nullable: true
+        dateTime:
+          description: 'Resolved ISO 8601 datetime for the row; null when not resolvable.'
+          type: string
+          format: date-time
+          example: '2026-11-08T00:00:00+00:00'
+          nullable: true
+      type: object
+    PolicyTextSchema:
+      required:
+        - id
+        - name
+        - rootId
+        - guaranteeText
+        - cancellationText
+        - noShowText
+        - additionalPolicyText
+      properties:
+        id:
+          description: 'Smart policy ID; null when the text comes from the legacy policy fallback.'
+          type: string
+          example: '42310212898960'
+          nullable: true
+        name:
+          description: 'Smart policy name; null when the text comes from the legacy policy fallback.'
+          type: string
+          example: 'Standard 3-day policy'
+          nullable: true
+        rootId:
+          description: 'Root ID of the smart policy version chain; null when the text comes from the legacy policy fallback.'
+          type: string
+          example: '42310212898960'
+          nullable: true
+        guaranteeText:
+          description: 'Human-readable guarantee / payment policy text; empty when the text comes from the legacy policy fallback (which only provides cancellation text).'
+          type: string
+          example: 'A deposit of 20% is collected at the time of booking.'
+        cancellationText:
+          description: 'Human-readable cancellation policy text.'
+          type: string
+          example: 'Free cancellation until 3 days before check-in; the deposit is forfeited afterwards.'
+        noShowText:
+          description: 'Human-readable no-show policy text; empty when the policy has none.'
+          type: string
+          example: 'No-shows are charged the full reservation amount.'
+        additionalPolicyText:
+          description: 'Additional free-form policy text configured by the property; empty when none.'
+          type: string
+          example: ''
+        cancellationType:
+          oneOf:
+            -
+              $ref: '#/components/schemas/PolicyCancellationTypeSchema'
+          nullable: true
+          description: 'Cancellation refundability classification; null when not determinable.'
+        paymentSummaryRows:
+          description: 'Payment milestone rows for timeline display; null when not available.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicySummaryRowSchema'
+          nullable: true
+        cancellationSummaryRows:
+          description: 'Cancellation milestone rows for timeline display; null when not available.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicySummaryRowSchema'
+          nullable: true
+        noShowSummaryRows:
+          description: 'No-show milestone rows for timeline display; null when not available.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicySummaryRowSchema'
+          nullable: true
+      type: object
+    PreviewAdjustmentResponseSchema:
+      properties:
+        resultType:
+          description: 'The outcome of the adjustment preview.'
+          type: string
+          enum:
+            - SCHEDULED_PAYMENT_REDUCED
+            - SCHEDULED_PAYMENT_CANCELLED
+            - REFUND_REQUIRED
+            - NO_SCHEDULE_CHANGE
+            - NO_SMART_POLICY
+          example: SCHEDULED_PAYMENT_REDUCED
+        newReservationTotal:
+          $ref: '#/components/schemas/MoneySchema'
+        alreadyPaid:
+          $ref: '#/components/schemas/MoneySchema'
+        refundRequired:
+          $ref: '#/components/schemas/MoneySchema'
+        scheduledPayments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreviewScheduledPaymentSchema'
+      type: object
+    PreviewScheduledPaymentSchema:
+      properties:
+        id:
+          type: string
+          example: '1001'
+        originalAmount:
+          $ref: '#/components/schemas/MoneySchema'
+        newAmount:
+          $ref: '#/components/schemas/MoneySchema'
+        status:
+          description: 'Status of the scheduled payment after the adjustment.'
+          type: string
+          enum:
+            - REDUCED
+            - CANCELLED
+            - UNCHANGED
+          example: REDUCED
+      type: object
+    ScheduledPaymentDisplayItemSchema:
+      required:
+        - formattedDate
+        - formattedAmountWithIsoCode
+        - formattedAmountWithSymbol
+        - type
+      properties:
+        formattedDate:
+          description: 'Payment collection date, formatted for display in the property''s locale.'
+          type: string
+          example: 'Nov 10, 2026'
+        formattedAmountWithIsoCode:
+          description: 'Payment amount formatted with the ISO 4217 currency code.'
+          type: string
+          example: 'USD 100.00'
+        formattedAmountWithSymbol:
+          description: 'Payment amount formatted with the currency symbol.'
+          type: string
+          example: $100.00
+        type:
+          description: 'Scheduled payment type.'
+          type: string
+          example: deposit
+      type: object
+    ScheduledPaymentItemSchema:
+      required:
+        - actionIds
+        - timestamp
+        - amount
+        - currency
+        - orderId
+        - isInitialDeposit
+      properties:
+        actionIds:
+          description: 'Identifiers of the actions covered by this scheduled payment.'
+          type: array
+          items:
+            type: string
+          example:
+            - '19'
+            - '20'
+        timestamp:
+          description: 'When the payment is scheduled to be collected; null when not yet determined.'
+          type: string
+          format: date-time
+          example: '2024-11-10T00:00:00.000Z'
+          nullable: true
+        amount:
+          description: 'Payment amount in minor units.'
+          type: integer
+          example: 4000
+        currency:
+          description: 'ISO 4217 currency code.'
+          type: string
+          example: EUR
+        orderId:
+          description: 'Order identifier the payment belongs to.'
+          type: string
+          example: '0'
+        isInitialDeposit:
+          description: 'Whether this payment is the initial deposit.'
+          type: boolean
+          example: false
+      type: object
+    SmartPolicyPaymentItemSchema:
+      required:
+        - paymentId
+        - amount
+        - cardType
+        - cardLast4
+        - createdAt
+        - scheduledFor
+        - transactionType
+      properties:
+        paymentId:
+          description: 'Payment ID.'
+          type: string
+          example: '542543'
+        amount:
+          $ref: '#/components/schemas/MoneySchema'
+        cardType:
+          description: 'Card brand when the payment is card-backed.'
+          type: string
+          example: master
+          nullable: true
+        cardLast4:
+          description: 'Last 4 digits of the card when the payment is card-backed.'
+          type: string
+          example: '4675'
+          nullable: true
+        createdAt:
+          description: 'Payment creation datetime in the property''s local time (Y-m-d H:i:s).'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$'
+          example: '2026-06-07 10:09:54'
+          nullable: true
+        scheduledFor:
+          description: 'When the payment is or was scheduled to be collected, property-local (Y-m-d H:i:s).'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$'
+          example: '2026-06-12 00:00:00'
+          nullable: true
+        transactionType:
+          description: 'Transaction type (Purchase, Authorize, or Capture).'
+          type: string
+          example: Purchase
+      type: object
+    SmartPolicyPaymentsResponseSchema:
+      required:
+        - scheduled
+        - processed
+        - canceledScheduled
+        - totalScheduled
+        - totalProcessed
+        - totalCanceledScheduled
+        - smartPolicyEnabled
+      properties:
+        scheduled:
+          description: 'Smart Policy payments still scheduled for automatic execution, including future authorization holds.'
+          type: array
+          items:
+            $ref: '#/components/schemas/SmartPolicyPaymentItemSchema'
+        processed:
+          description: 'Smart Policy payments already executed: successful purchases and captures, plus active authorization holds.'
+          type: array
+          items:
+            $ref: '#/components/schemas/SmartPolicyPaymentItemSchema'
+        canceledScheduled:
+          description: 'Formerly scheduled Smart Policy payments that were canceled (e.g. by turning Smart Policy off).'
+          type: array
+          items:
+            $ref: '#/components/schemas/SmartPolicyPaymentItemSchema'
+        totalScheduled:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Sum of the scheduled payments, excluding authorization holds; null when the reservation has no Smart Policy payments.'
+        totalProcessed:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Sum of the processed (collected) payments, excluding authorization holds; null when the reservation has no Smart Policy payments.'
+        totalCanceledScheduled:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Sum of the canceled formerly-scheduled payments, excluding authorization holds; null when the reservation has no Smart Policy payments.'
+        smartPolicyEnabled:
+          description: 'Whether Smart Policy automation is currently on for the reservation: true while at least one of its rooms still has the policy active, false once it was turned off (or the reservation has no policy rows).'
+          type: boolean
+          example: true
       type: object
     AddonSchema:
       required:
@@ -8896,6 +11904,28 @@ components:
           type: string
           example: '1000'
       type: object
+    FeeSchema:
+      description: 'A fee row applied to a parent object (today: a check line item). Same model as itemTaxes — fees are referenced by ID from the property''s configured fees catalog, not by free-text name. Multiple fee rows per parent are supported, and each fee can carry its own `taxes[]` for tax-on-fee.'
+      required:
+        - feeId
+        - feeValue
+      properties:
+        feeId:
+          description: 'Fee identifier — the partner-owned `external_id` configured on the fee under the property''s fee settings (a 3rd-party reference the property has associated with one of its Cloudbeds fees). Must resolve to an active fee on the property; unknown or inactive identifiers are rejected with FEE_ID_NOT_FOUND. The internal Cloudbeds numeric fee id is not accepted as input — it is unstable across property-side fee edits.'
+          type: string
+          example: fee_resort_daily
+        feeValue:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Fee amount applied to this item, in the property currency.'
+        taxes:
+          description: 'Taxes applied to this fee (tax-on-fee). Each taxId must match an active tax configured on the property; unknown / inactive ids are rejected with TAX_ID_NOT_FOUND. Schema reused from the Gratuity domain.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxSchema'
+      type: object
     LengthOfStayRangeSchema:
       required:
         - minimumNights
@@ -9074,17 +12104,43 @@ components:
             - inclusive
             - exclusive
           example: exclusive
+        appliedTo:
+          description: 'Application targets — where the tax/fee gets applied. A tax with `appliedTo=["rate","fee"]` is applied both to the base rate AND to each parent of type "fee". Defaults are derived from `category` + `parents` when omitted: a fee → `["rate"]`; a tax with no parent → `["rate"]`; a tax with a `fee` parent → `["fee"]`; a tax with a `tax` parent → `["tax"]`.'
+          type: array
+          items:
+            type: string
+            enum:
+              - product
+              - rate
+              - payment
+              - fee
+              - source
+              - sub_source
+              - room_revenue
+              - custom_item
+              - tax
+          example:
+            - rate
+          nullable: true
+        parents:
+          description: 'Compound parents (tax-on-fee, tax-on-tax). A tax may reference multiple parents.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxFeeParentSchema'
+          nullable: true
         parentId:
-          description: 'References another item ID for tax-on-fee or tax-on-tax'
+          description: 'Deprecated — use `parents` instead. Single parent ID for tax-on-fee or tax-on-tax. Kept for backward compatibility; when set (and `parents` is omitted) it is mapped to a single-element `parents` list.'
           type: string
           nullable: true
+          deprecated: true
         parentKind:
-          description: 'Type of parent'
+          description: 'Deprecated — use `parents` instead. Kind of the legacy `parentId` parent.'
           type: string
           enum:
             - tax
             - fee
           nullable: true
+          deprecated: true
         roomTypeIds:
           description: 'Room type IDs this tax/fee applies to. Empty means all room types.'
           type: array
@@ -9097,6 +12153,41 @@ components:
               $ref: '#/components/schemas/TypeSettingsSchema'
           nullable: true
           description: 'Additional type settings (length-of-stay rules, date ranges, per-person amounts, rate-based tiers).'
+      type: object
+    TaxFeeParentSchema:
+      description: "Compound parent reference — points to another tax (tax-on-tax) or fee (tax-on-fee)\nin the same request. A tax row may carry multiple parents (e.g. taxed on both a\nparent fee AND a parent tax); see `TaxFeeConfigSchema::$parents`."
+      required:
+        - id
+        - kind
+      properties:
+        id:
+          description: 'ID of the parent tax or fee (must match an `id` in the same request).'
+          type: string
+          example: '101'
+        kind:
+          description: 'Whether the parent is a tax or a fee.'
+          type: string
+          enum:
+            - tax
+            - fee
+          example: fee
+      type: object
+    TaxSchema:
+      description: 'A tax row applied to a gratuity, an item, or a service charge. Multiple tax rows per parent object are supported.'
+      required:
+        - taxId
+        - taxValue
+      properties:
+        taxId:
+          description: 'Tax identifier — the partner-owned `external_id` configured on the tax under the property''s tax settings (a 3rd-party reference the property has associated with one of its Cloudbeds taxes). Must resolve to an active tax on the property; unknown or inactive identifiers are rejected with TAX_ID_NOT_FOUND. The internal Cloudbeds numeric tax id is not accepted as input — it is unstable across property-side tax edits.'
+          type: string
+          example: tax_state_va_8
+        taxValue:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneyInputSchema'
+          nullable: true
+          description: 'Tax amount applied to the gratuity (in property currency).'
       type: object
     TypeSettingsSchema:
       description: "Additional type settings for tax/fee calculation.\nAll properties are optional — only provide what applies to the specific tax/fee."
@@ -9295,17 +12386,29 @@ components:
             - inclusive
             - exclusive
           example: exclusive
-        parentId:
-          description: 'Parent ID (echoed, if present)'
+        parents:
+          description: 'Compound parents (tax-on-fee, tax-on-tax). Empty when the row is not a compound tax.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxFeeParentResponseSchema'
+      type: object
+    TaxFeeParentResponseSchema:
+      description: "Compound parent reference echoed back on each tax/fee line item — counterpart of the\nrequest-side `TaxFeeParentSchema`."
+      required:
+        - id
+        - kind
+      properties:
+        id:
+          description: 'ID of the parent tax or fee.'
           type: string
-          nullable: true
-        parentKind:
-          description: 'Parent type (echoed)'
+          example: '101'
+        kind:
+          description: 'Whether the parent is a tax or a fee.'
           type: string
           enum:
             - tax
             - fee
-          nullable: true
+          example: fee
       type: object
   parameters:
     roomId:
@@ -9359,11 +12462,17 @@ tags:
     name: Applications
     description: Applications
   -
+    name: Checks
+    description: Checks
+  -
     name: 'Door Locks'
     description: 'Door Locks'
   -
     name: Events
     description: Events
+  -
+    name: Gratuities
+    description: Gratuities
   -
     name: Housekeeping
     description: Housekeeping
@@ -9379,6 +12488,12 @@ tags:
   -
     name: Property
     description: Property
+  -
+    name: 'Rate Plans'
+    description: 'Rate Plans'
+  -
+    name: 'Smart Policies'
+    description: 'Smart Policies'
   -
     name: 'Smart Policy Exceptions'
     description: 'Smart Policy Exceptions'
