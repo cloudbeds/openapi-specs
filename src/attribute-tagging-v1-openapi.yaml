@@ -641,7 +641,7 @@ paths:
 
             Notes:
 
-            - Bulk queries support up to 500 entities per request
+            - Bulk queries support up to 1000 entities per request
 
             - For single entity queries, use `entityId` and `entityType` parameters instead
         - schema:
@@ -1229,6 +1229,605 @@ paths:
                     - attribute
                   additionalProperties: false
         "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+  /attribute-tagging/v1/tags/bulk:
+    post:
+      summary: Attach attributes to multiple entities (bulk)
+      tags:
+        - Tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entities:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      ids:
+                        minItems: 1
+                        type: array
+                        items:
+                          type: string
+                          pattern: ^\d+$
+                      type:
+                        type: string
+                        enum:
+                          - guest_profile
+                          - reservation
+                      propertyId:
+                        type: string
+                        pattern: ^\d+$
+                        description: Property the tags in this group belong to. Carried per group rather than taken from the `x-property-id` header so one request can span several properties; each group is authorized independently against the caller property ids.
+                    required:
+                      - ids
+                      - type
+                      - propertyId
+                    additionalProperties: false
+                  description: "Entities to tag, grouped by type and property: a list of `{ ids, type, propertyId }` groups. Each group binds its ids to one type and one property, so a group's ids are only tagged as that type. The total number of ids across all groups must not exceed 500, and entities x attributeIds must not exceed 5000 (both enforced in the handler)."
+                attributeIds:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: string
+                    pattern: ^\d+$
+                  description: Attributes applied to every entity in every group.
+              required:
+                - entities
+                - attributeIds
+              additionalProperties: false
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-property-id
+          required: true
+          description: Property ID(s) - comma-separated list
+      responses:
+        "201":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        entityId:
+                          type: string
+                          pattern: ^\d+$
+                        entityType:
+                          type: string
+                          enum:
+                            - guest_profile
+                            - reservation
+                        propertyId:
+                          type: string
+                          pattern: ^\d+$
+                        status:
+                          type: string
+                          enum:
+                            - ok
+                            - failed
+                        created:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                          description: Tags this call wrote for the entity. Zero means it already carried every requested attribute.
+                        error:
+                          type: string
+                      required:
+                        - entityId
+                        - entityType
+                        - propertyId
+                        - status
+                        - created
+                      additionalProperties: false
+                    description: One entry per distinct entity target, in first-mentioned order, so partial failures can be retried individually. A target named twice collapses to one entry.
+                  tags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          pattern: ^\d+$
+                        entityId:
+                          type: string
+                          pattern: ^\d+$
+                        entityType:
+                          type: string
+                          enum:
+                            - guest_profile
+                            - reservation
+                        propertyId:
+                          type: string
+                          pattern: ^\d+$
+                        attributeId:
+                          type: string
+                          pattern: ^\d+$
+                        attribute:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              pattern: ^\d+$
+                            label:
+                              type: string
+                              minLength: 1
+                            description:
+                              nullable: true
+                              type: string
+                            entityTypes:
+                              type: array
+                              items:
+                                type: string
+                                enum:
+                                  - guest_profile
+                                  - reservation
+                            isEnabled:
+                              type: boolean
+                          required:
+                            - id
+                            - label
+                            - description
+                            - entityTypes
+                            - isEnabled
+                          additionalProperties: false
+                      required:
+                        - id
+                        - entityId
+                        - entityType
+                        - propertyId
+                        - attributeId
+                        - attribute
+                      additionalProperties: false
+                    description: Tags created by this call. Excludes tags that already existed.
+                required:
+                  - results
+                  - tags
+                additionalProperties: false
+        "207":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        entityId:
+                          type: string
+                          pattern: ^\d+$
+                        entityType:
+                          type: string
+                          enum:
+                            - guest_profile
+                            - reservation
+                        propertyId:
+                          type: string
+                          pattern: ^\d+$
+                        status:
+                          type: string
+                          enum:
+                            - ok
+                            - failed
+                        created:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                          description: Tags this call wrote for the entity. Zero means it already carried every requested attribute.
+                        error:
+                          type: string
+                      required:
+                        - entityId
+                        - entityType
+                        - propertyId
+                        - status
+                        - created
+                      additionalProperties: false
+                    description: One entry per distinct entity target, in first-mentioned order, so partial failures can be retried individually. A target named twice collapses to one entry.
+                  tags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          pattern: ^\d+$
+                        entityId:
+                          type: string
+                          pattern: ^\d+$
+                        entityType:
+                          type: string
+                          enum:
+                            - guest_profile
+                            - reservation
+                        propertyId:
+                          type: string
+                          pattern: ^\d+$
+                        attributeId:
+                          type: string
+                          pattern: ^\d+$
+                        attribute:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              pattern: ^\d+$
+                            label:
+                              type: string
+                              minLength: 1
+                            description:
+                              nullable: true
+                              type: string
+                            entityTypes:
+                              type: array
+                              items:
+                                type: string
+                                enum:
+                                  - guest_profile
+                                  - reservation
+                            isEnabled:
+                              type: boolean
+                          required:
+                            - id
+                            - label
+                            - description
+                            - entityTypes
+                            - isEnabled
+                          additionalProperties: false
+                      required:
+                        - id
+                        - entityId
+                        - entityType
+                        - propertyId
+                        - attributeId
+                        - attribute
+                      additionalProperties: false
+                    description: Tags created by this call. Excludes tags that already existed.
+                required:
+                  - results
+                  - tags
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "403":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+    delete:
+      summary: Remove attributes from multiple entities (bulk)
+      tags:
+        - Tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entities:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      ids:
+                        minItems: 1
+                        type: array
+                        items:
+                          type: string
+                          pattern: ^\d+$
+                      type:
+                        type: string
+                        enum:
+                          - guest_profile
+                          - reservation
+                      propertyId:
+                        type: string
+                        pattern: ^\d+$
+                        description: Property the tags in this group belong to. Carried per group rather than taken from the `x-property-id` header so one request can span several properties; each group is authorized independently against the caller property ids.
+                    required:
+                      - ids
+                      - type
+                      - propertyId
+                    additionalProperties: false
+                  description: Entities to untag, grouped by type and property, in the same shape the bulk attach takes. The total number of ids across all groups must not exceed 500, and entities x attributeIds must not exceed 5000 (both enforced in the handler).
+                attributeIds:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: string
+                    pattern: ^\d+$
+                  description: Attributes removed from every entity in every group. An entity that does not carry a listed attribute is left alone rather than reported as an error, so repeating the request is safe.
+              required:
+                - entities
+                - attributeIds
+              additionalProperties: false
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-property-id
+          required: true
+          description: Property ID(s) - comma-separated list
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        entityId:
+                          type: string
+                        entityType:
+                          type: string
+                          enum:
+                            - guest_profile
+                            - reservation
+                        propertyId:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                            - ok
+                          description: Always "ok" — an entity that did not carry a listed attribute is a no-op.
+                        removed:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                          description: Tags actually removed from this entity. `0` means it carried none of them.
+                      required:
+                        - entityId
+                        - entityType
+                        - propertyId
+                        - status
+                        - removed
+                      additionalProperties: false
+                    description: One entry per distinct entity target, in first-mentioned order, carrying what was removed from each. A target named twice collapses to one entry.
+                  removed:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                    description: Total tags removed across every entity in the request.
+                required:
+                  - results
+                  - removed
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "403":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "404":
           description: Default Response
           content:
             application/json:
