@@ -2279,6 +2279,62 @@ paths:
                   message:
                     type: string
       security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/customization/logo:
+    post:
+      tags: [Fiscal Connection Config]
+      summary: Upload the branding logo for a connection
+      description: |
+        Uploads the logo the fiscalization provider renders on this connection's documents. This is
+        not the document-config logo behind /configs/logo, which feeds the locally rendered PDF
+        templates from a different S3 path.
+      operationId: uploadConnectionLogo
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Logo image file, PNG or JPEG
+      responses:
+        '200':
+          description: Logo uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetLogoResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
+    delete:
+      tags: [Fiscal Connection Config]
+      summary: Delete the branding logo for a connection
+      operationId: deleteConnectionLogo
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '204':
+          description: Logo deleted
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
   /fiscal-document/v1/fiscalization/connections/{connectionId}/reports/{reportId}:
     get:
       tags:
