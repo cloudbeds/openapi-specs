@@ -1506,32 +1506,6 @@ paths:
               description: Used to indicate if the content should be displayed inline or as an attachment.
               schema:
                 type: string
-  "/fiscal-document/v1/fiscalization/registration":
-    get:
-      summary: Get fiscalization registration for a property
-      description: Returns the fiscalization registration (supplier/party info) for the given property.
-      operationId: getFiscalizationRegistration
-      deprecated: true
-      tags:
-        - Fiscalization
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: X-Property-ID
-          in: header
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FiscalizationRegistrationResponse'
-        '404':
-          $ref: "#/components/responses/404"
   "/fiscal-document/v1/property/features":
     get:
       summary: Get enabled features for the current user and property
@@ -1688,32 +1662,6 @@ paths:
           description: Invalid country code
         '404':
           description: Rules not found for country
-      security:
-        - bearerAuth: []
-  /fiscal-document/v1/fiscalization/consent:
-    get:
-      tags:
-        - Fiscalization
-      summary: Get consent status for a property
-      description: Returns whether the property has consented to fiscalization
-      operationId: getFiscalizationConsent
-      parameters:
-        - name: X-Property-ID
-          in: header
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: Property ID
-      responses:
-        '200':
-          description: Consent status retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FiscalizationConsentResponse'
-        '404':
-          description: No consent found
       security:
         - bearerAuth: []
   /fiscal-document/v1/fiscalization/reports/{reportId}:
@@ -2179,6 +2127,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FiscalConnection'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/series/activate:
+    put:
+      tags: [Fiscal Connection Config]
+      summary: Activate a series on a connection
+      description: Activates the given series and deactivates the connection's other series of the same document kind.
+      operationId: activateFiscalizationSeries
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivateSeriesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationSeriesResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/connections/{connectionId}/series/deactivate:
+    put:
+      tags: [Fiscal Connection Config]
+      summary: Deactivate a series on a connection
+      description: Deactivates the given series. A document kind left with no active series will fail to issue documents until another series is activated.
+      operationId: deactivateFiscalizationSeries
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: connectionId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivateSeriesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalizationSeriesResponse'
+        '400':
+          $ref: '#/components/responses/400'
         '404':
           $ref: '#/components/responses/404'
       security: [{bearerAuth: []}]
@@ -4111,6 +4119,13 @@ components:
           type: string
           description: >-
             The invoice total in the property's base currency, shown as a reference alongside the converted total when an invoice currency was requested.
+        transactionCount:
+          type: integer
+          description: >-
+            Number of transactions the current selection resolves to. Lets the caller warn before submitting a selection that would be rejected for exceeding maxTransactions.
+        maxTransactions:
+          type: integer
+          description: Maximum number of transactions allowed on a single fiscal document.
     TransactionsSummaryRequest:
       type: object
       required: [sourceId, sourceKind]
@@ -5786,21 +5801,6 @@ components:
         error:
           type: string
           description: Error if registration failed
-    FiscalizationConsentResponse:
-      type: object
-      required:
-        - consented
-      properties:
-        consented:
-          type: boolean
-          description: Whether the property has provided consent
-        consentedAt:
-          type: string
-          format: date-time
-          description: When consent was provided
-        consentedBy:
-          type: string
-          description: Who provided consent
     FiscalizationTaxRulesResponse:
       type: object
       required:
@@ -6065,6 +6065,18 @@ components:
             type: string
           description: Invoice classes (e.g. A/B/T) the property may choose between when issuing an invoice; empty when there is no choice to surface.
           example: ["A", "B", "T"]
+    ActivateSeriesRequest:
+      type: object
+      required:
+        - seriesCode
+      properties:
+        seriesCode:
+          type: string
+          description: The series code to activate or deactivate (e.g., "FT CB-2026")
+        documentKind:
+          type: string
+          description: Document kind the series belongs to. Required only when the same code backs series of more than one kind on the connection, which is legal.
+          example: INVOICE
     FiscalizationSeriesResponse:
       type: object
       properties:
