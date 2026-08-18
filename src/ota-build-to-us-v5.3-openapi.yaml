@@ -809,7 +809,7 @@ paths:
                             version:
                               type: string
                               description: |
-                                Most recent version number of the booking, if the OTA wants to support retrieval of different versions of bookings. Not commonly implemented.
+                                Most recent version number of the booking, if the OTA wants to support retrieval of different versions of bookings. Not commonly implemented. Passed back unchanged as `version` on `AckBooking`, so a monotonic value here lets you tell which retrieval of the booking is being acknowledged.
                             use_pci_url:
                               type: boolean
                               description: |
@@ -973,6 +973,23 @@ paths:
         *IMPORTANT*: Please contact us to enable this capability for your channel. It
         is NOT enabled by default.
 
+        One `AckBooking` is sent per booking, after the booking has been imported and
+        handed to the property's PMS. Bookings are not acknowledged in the order they
+        were delivered — cancellations are processed ahead of new and modified
+        bookings — so do not infer any ordering from the sequence of calls. Use
+        `acknowledgement_id` or `version` to identify which delivery is being
+        acknowledged:
+
+        * For bookings you pushed to us with the `BookingCreate` callback, we return
+          `acknowledgement_id`, one of the `acknowledgement_ids` we returned in that
+          callback's response.
+        * For bookings we pulled with `GetBookingList`, we return `version`, the value
+          you supplied for that booking in the `GetBookingList` response.
+
+        A booking that is delivered again — a modification, or a redelivery after a
+        failed import — is acknowledged again, with the identifier belonging to that
+        delivery.
+
         If the booking cannot be acknowledged the error code should be provided. Here
         are possible error codes:
 
@@ -982,7 +999,7 @@ paths:
           application/json:
             examples:
               AckBooking:
-                summary: AckBooking
+                summary: Booking delivered via the BookingCreate callback
                 value:
                   verb: AckBooking
                   ota_property_id: lake_view_hotel
@@ -993,6 +1010,23 @@ paths:
                   ota_cid: ota
                   shared_secret: s3cr3ts4uc3
                   booking_id: H7736-29385551
+                  acknowledgement_id: 115856384
+                  version: null
+                  myallocator_id: 5f8d0a1b2c3d4e5f6a7b8c9d0
+              AckBookingPulled:
+                summary: Booking retrieved with GetBookingList
+                value:
+                  verb: AckBooking
+                  ota_property_id: lake_view_hotel
+                  ota_property_password: very-secret-password
+                  ota_property_sub_id: '10034818'
+                  mya_property_id: 25678
+                  guid: 6C08B96E-450D-4E6A-9933-7D0305730305
+                  ota_cid: ota
+                  shared_secret: s3cr3ts4uc3
+                  booking_id: H7736-29385551
+                  version: '2'
+                  myallocator_id: 5f8d0a1b2c3d4e5f6a7b8c9d0
             schema:
               allOf:
                 - $ref: '#/components/schemas/auth'
@@ -1006,6 +1040,23 @@ paths:
                       type: string
                       description: |
                         OTA booking ID of the booking to be acknowledged.
+                    acknowledgement_id:
+                      type: integer
+                      minimum: 1
+                      description: |
+                        Identifies which `BookingCreate` delivery is being acknowledged. One of the `acknowledgement_ids` returned in the response to that callback. Only present for bookings delivered through `BookingCreate`; omitted for bookings we retrieved with `GetBookingList`.
+                    version:
+                      type:
+                        - string
+                        - 'null'
+                      description: |
+                        The `version` you returned for this booking in the `GetBookingList` response, passed back unchanged. `null` if you did not supply one, or if the booking reached us through the `BookingCreate` callback rather than being pulled.
+                    myallocator_id:
+                      type:
+                        - string
+                        - 'null'
+                      description: |
+                        Cloudbeds' own booking ID for the imported booking. `null` when the booking was acknowledged without being imported — for example a booking whose departure date has already passed, which is acknowledged so that it is not delivered again.
               required:
                 - verb
                 - booking_id
@@ -1020,7 +1071,7 @@ paths:
                   value:
                     success: false
                     errors:
-                      - id: 4001
+                      - id: 4004
                         msg: Booking has already been acknowledged
                 Success:
                   summary: Success
@@ -3138,6 +3189,11 @@ paths:
         availability numbers not having been (or having been incorrectly / not in time) delivered to a channel, the room
         is not overbooked and therefore helps avoid both host and guest frustration when such an over-booking has to be canceled by a host
         due to physical inability to accomodate.
+
+        Identify the property with `ota_property_sub_id` if your OTA supports
+        multiple properties under one login (see `GetSubProperties`), otherwise
+        with `ota_property_id`. Exactly one of the two applies to your channel,
+        and sending only the other one is rejected with error `1187`.
       servers:
         - url: https://api.myallocator.com/callback/ota/{ota}/v202203
           variables:
@@ -3159,12 +3215,28 @@ paths:
                   end_date: '2027-01-02'
                   unit_type: room
                   number_of_units: 1
+              CheckAvailabilitySubProperty:
+                summary: CheckAvailability (multiple properties under one login)
+                value:
+                  shared_secret: s3cr3ts4uc3
+                  ota_property_id: reservations@example.com
+                  ota_property_sub_id: '998201'
+                  ota_room_id: '12345'
+                  ota_rateplan_id: '11'
+                  start_date: '2027-01-01'
+                  end_date: '2027-01-02'
+                  unit_type: room
+                  number_of_units: 1
             schema:
               type: object
               properties:
                 ota_property_id:
                   description: Username, login or property ID on the OTA
                   type: string
+                ota_property_sub_id:
+                  type: string
+                  description: |
+                    Property ID on the OTA, if OTA supports multiple properties under one `ota_property_id`/`ota_property_password` combination. See `GetSubProperties` for more details.
                 ota_room_id:
                   type: string
                   description: Room ID on the OTA
@@ -3193,7 +3265,6 @@ paths:
                   type: string
               required:
                 - shared_secret
-                - ota_property_id
                 - ota_room_id
                 - ota_rateplan_id
                 - start_date
@@ -3275,6 +3346,11 @@ paths:
         has the same shape as the rows Cloudbeds sends via `ARIUpdate`, so an OTA
         can reuse the same inventory-row processor.
 
+        Identify the property with `ota_property_sub_id` if your OTA supports
+        multiple properties under one login (see `GetSubProperties`), otherwise
+        with `ota_property_id`. Exactly one of the two applies to your channel,
+        and sending only the other one is rejected with error `1187`.
+
         A requested room with no enabled channel mapping is omitted from
         `room_ari` and reported under `warnings`. Likewise, a resolved
         property that is not available for the channel is skipped and
@@ -3302,6 +3378,16 @@ paths:
                     '61366':
                       start_date: '2027-02-01'
                       end_date: '2027-02-28'
+              GetARISubProperty:
+                summary: GetARI (multiple properties under one login)
+                value:
+                  shared_secret: s3cr3ts4uc3
+                  ota_property_id: reservations@example.com
+                  ota_property_sub_id: '998201'
+                  rooms:
+                    '61365':
+                      start_date: '2027-01-01'
+                      end_date: '2027-01-31'
             schema:
               type: object
               properties:
@@ -3311,6 +3397,10 @@ paths:
                 ota_property_id:
                   description: Username, login or property ID on the OTA
                   type: string
+                ota_property_sub_id:
+                  type: string
+                  description: |
+                    Property ID on the OTA, if OTA supports multiple properties under one `ota_property_id`/`ota_property_password` combination. See `GetSubProperties` for more details.
                 rooms:
                   description: |
                     Object keyed by `ota_room_id`. Each value is the date range for which ARI should be returned for that room. `end_date` is inclusive.
@@ -3332,7 +3422,6 @@ paths:
                   minProperties: 1
               required:
                 - shared_secret
-                - ota_property_id
                 - rooms
         required: true
       responses:
@@ -3684,6 +3773,8 @@ paths:
                   summary: Success
                   value:
                     Success: true
+                    acknowledgement_ids:
+                      - 115856384
                 Failure:
                   summary: Failure
                   value:
@@ -3708,6 +3799,15 @@ paths:
                         enum:
                           - true
                         description: Always `true` on success.
+                      acknowledgement_ids:
+                        type: array
+                        description: |
+                          One ID per property the booking was queued for, which you will receive back as `acknowledgement_id` on the matching `AckBooking` call once the booking has been imported. Relevant only if your channel has `AckBooking` enabled.
+
+                          An `ota_property_id` can resolve to more than one Cloudbeds property, in which case the booking is queued — and later acknowledged — once per property, so expect one `AckBooking` per ID. The array is empty if the booking could not be queued for any property.
+                        items:
+                          type: integer
+                          minimum: 1
                     required:
                       - Success
                   - $ref: '#/components/schemas/response_callback_error'
