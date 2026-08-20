@@ -20,7 +20,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -58,7 +61,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -108,7 +114,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -158,7 +167,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -193,7 +205,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -238,7 +253,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -288,7 +306,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -352,7 +373,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -392,7 +416,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -435,7 +462,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -479,7 +509,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -525,7 +558,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -577,7 +613,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -605,6 +644,49 @@
         }
       }
     },
+    "/accounting/v1.0/accounts-receivable-ledgers/group-profile/{groupProfileId}/balance-transfer": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "$ref": "#/components/parameters/groupProfileId"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
+              "read:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Accounts Receivable Ledger"
+        ],
+        "operationId": "getAccountsReceivableLedgerGroupProfileBalanceTransfers",
+        "summary": "Get AR balance transfers for a group profile",
+        "description": "Retrieve all balance transfers made from a group profile to accounts receivable (AR) ledgers, ordered newest first. A group profile can have multiple transfers: one per folio, and repeated transfers from the same folio after its balance due becomes non-zero again. Each item includes the group-side transfer transaction id and amount (negative), the folio the balance was transferred from, and the target AR ledger id.\n",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountsReceivableLedgerGroupProfileBalanceTransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
     "/accounting/v1.0/custom-general-ledger-codes": {
       "get": {
         "parameters": [
@@ -617,7 +699,10 @@
         "description": "Retrieve all custom general ledger (GL) codes configured for a property. GL codes let you map Cloudbeds transaction categories to your own chart-of-accounts structure for reporting and export to external accounting systems.\n",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -665,7 +750,91 @@
         "operationId": "putCustomGeneralLedgerCodes",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Custom General Ledger Codes"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/custom-general-ledger-codes/mode": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "operationId": "getGlCodeResolutionMode",
+        "summary": "Get GL code resolution mode",
+        "description": "Return whether the property uses the Advanced GL code resolution mode. When `advanceMode` is `false`, the property uses the Standard mode where payments, deposit releases, and AR-side payments post to their base item-mapping GL codes without conditional substitution or single-account overrides.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
+              "read:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Custom General Ledger Codes"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlCodeResolutionModeModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update GL code resolution mode",
+        "description": "Switch the property between Standard and Advanced GL code resolution modes. Advanced honors conditional codes on payments to DEPOSITS accounts and routes payment-paying-AR rows through the AR single-account override; Standard posts to the base item-mapping GL codes.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlCodeResolutionModeModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "operationId": "putGlCodeResolutionMode",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -695,7 +864,10 @@
         "description": "Retrieve all custom transaction code mappings for a property. Custom transaction codes let you assign your own codes to each Cloudbeds internal transaction type (e.g., room rate, tax, payment method). You must call the initialize endpoint before codes can be retrieved for the first time.\n",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -743,7 +915,10 @@
         "operationId": "putCustomTransactionCodes",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -774,7 +949,10 @@
         "operationId": "initializeCustomTransactionCodes",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -795,7 +973,7 @@
     "/accounting/v1.0/transactions": {
       "post": {
         "summary": "Search posted transactions",
-        "description": "Search and retrieve posted transactions for a property. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. You can combine multiple filters with AND/OR logic, paginate results, and sort by various fields.\n\n**Supported filter fields:**\n  - `account_category`\n  - `chart_of_account_type`\n  - `created_at` (alias for `transaction_datetime`)\n  - `customer_id`\n  - `custom_code`\n  - `external_relation_id`\n  - `external_relation_kind`\n  - `folio_id`\n  - `id`\n  - `internal_code`\n  - `origin_id`\n  - `parent_id`\n  - `routed_from`\n  - `source_id`\n  - `source_identifier`\n  - `source_kind`\n  - `transaction_datetime`\n  - `trial_balance_id`\n  - `service_date`\n\n\n**Supported sort fields:**\n  - `created_at` (alias for `transaction_datetime`)\n  - `id`\n  - `internal_code`\n  - `source_id`\n  - `transaction_datetime`\n  - `service_date`\n\n\n**Required filter constraints:** The API has certain constraints for filters so that the system is able to efficiently query the data. Every request must include at least one of the following base filters:\n  - `id` with operator `equals` or `in`\n  - `source_id` together with `source_kind`\n  - `source_identifier` together with `source_kind`\n  - `external_relation_id` together with `external_relation_kind`\n  - `transaction_datetime`\n  - `service_date`\n  - `trial_balance_id`\n\n\n**Additional filter rules:**\n  - Filters cannot be empty.\n  - `source_id` requires `source_kind` to be present in the same request.\n  - `source_identifier` requires `source_kind` to be present in the same request.\n  - `external_relation_id` and `external_relation_kind` must always be used together.\n  - `trial_balance_id` only supports the `equals` operator and cannot appear more than once.\n  - When using a single filter condition (without `and`/`or`), only `id`, `transaction_datetime`,\n    or `service_date` are allowed, and the operator must be `equals` or `in`.\n\n\n**Example — single filter condition (no AND/OR needed):**\n```\n  {\n    \"filters\": {\n      \"field\": \"id\",\n      \"operator\": \"in\",\n      \"value\": [101, 102, 103]\n    }\n  }\n```\n\n```\n  {\n    \"filters\": {\n      \"field\": \"service_date\",\n      \"operator\": \"equals\",\n      \"value\": \"2024-01-01\"\n    }\n  }\n```\n\n**Example — composite filter condition:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2024-01-01T00:00:00Z\"\n        },\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"less_than\",\n          \"value\": \"2024-02-01T00:00:00Z\"\n        }\n      ]\n    }\n  }\n```\n\n**Example — composite filter condition with sorting and pagination:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11T08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n```\n",
+        "description": "Search and retrieve posted transactions for a property. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. You can combine multiple filters with AND/OR logic, paginate results, and sort by various fields.\n\n**Supported filter fields:**\n  - `account_category`\n  - `chart_of_account_type`\n  - `created_at` (alias for `transaction_datetime`)\n  - `customer_id`\n  - `custom_code`\n  - `external_relation_id`\n  - `external_relation_kind`\n  - `folio_id`\n  - `id`\n  - `internal_code`\n  - `origin_id`\n  - `parent_id`\n  - `routed_from`\n  - `source_id`\n  - `source_identifier`\n  - `source_kind`\n  - `transaction_datetime`\n  - `trial_balance_id`\n  - `service_date`\n  - `business_date`\n\n\n**Supported sort fields:**\n  - `created_at` (alias for `transaction_datetime`)\n  - `id`\n  - `internal_code`\n  - `source_id`\n  - `transaction_datetime`\n  - `service_date`\n  - `business_date`\n\n\n**Required filter constraints:** The API has certain constraints for filters so that the system is able to efficiently query the data. Every request must include at least one of the following base filters:\n  - `id` with operator `equals` or `in`\n  - `source_id` together with `source_kind`\n  - `source_identifier` together with `source_kind`\n  - `external_relation_id` together with `external_relation_kind`\n  - `transaction_datetime`\n  - `service_date`\n  - `business_date`\n  - `trial_balance_id`\n\n\n**Additional filter rules:**\n  - Filters cannot be empty.\n  - `source_id` requires `source_kind` to be present in the same request.\n  - `source_identifier` requires `source_kind` to be present in the same request.\n  - `external_relation_id` and `external_relation_kind` must always be used together.\n  - `trial_balance_id` only supports the `equals` operator and cannot appear more than once.\n  - When using a single filter condition (without `and`/`or`), only `id`, `transaction_datetime`,\n    `service_date`, or `business_date` are allowed, and the operator must be `equals` or `in`.\n\n\n**Example — single filter condition (no AND/OR needed):**\n```\n  {\n    \"filters\": {\n      \"field\": \"id\",\n      \"operator\": \"in\",\n      \"value\": [101, 102, 103]\n    }\n  }\n```\n\n```\n  {\n    \"filters\": {\n      \"field\": \"service_date\",\n      \"operator\": \"equals\",\n      \"value\": \"2024-01-01\"\n    }\n  }\n```\n\n**Example — composite filter condition:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2024-01-01T00:00:00Z\"\n        },\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"less_than\",\n          \"value\": \"2024-02-01T00:00:00Z\"\n        }\n      ]\n    }\n  }\n```\n\n**Example — composite filter condition with sorting and pagination:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11T08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n```\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -814,7 +992,10 @@
         "operationId": "listTransactions",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -851,7 +1032,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -912,7 +1096,10 @@
         "operationId": "createFolio",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -982,7 +1169,10 @@
         "operationId": "updateFolio",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -1021,12 +1211,25 @@
               "format": "int64"
             },
             "description": "Folio ID"
+          },
+          {
+            "name": "propagateDownstream",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "When true and the folio source kind is CONFIG, remove the corresponding child folios from active reservations and groups using this configuration (re-homing their transactions first).\n"
           }
         ],
         "operationId": "deleteFolio",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -1072,7 +1275,10 @@
         "operationId": "moveTransactions",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -1115,7 +1321,10 @@
         "operationId": "routeTransactions",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -1158,7 +1367,10 @@
         "operationId": "unrouteTransactions",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -1179,10 +1391,103 @@
         }
       }
     },
+    "/accounting/v1.0/folios/transactions/channel-commission": {
+      "post": {
+        "summary": "Post a manual channel commission",
+        "description": "Manually post a channel commission line on a reservation folio. This covers the edge case where a reservation that should have been channel-delivered was created manually in the PMS, so no commission line was posted automatically. The commission is posted under the same transaction code as channel-delivered commission (so it rolls up identically in cost-of-acquisition reporting) but is flagged as manually sourced, which allows multiple manual commissions per reservation and makes the line voidable from the folio. Processing is asynchronous; the returned event id can be used to track completion.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostChannelCommissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "operationId": "postChannelCommission",
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncEventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
+    "/accounting/v1.0/folios/transactions/channel-commission/{transactionId}": {
+      "delete": {
+        "summary": "Void a manual channel commission",
+        "description": "Void a manually-posted channel commission line. The transaction must be a manual channel commission (the dedicated external relation); channel-delivered commissions cannot be voided through this endpoint. Processing is asynchronous; the returned event id can be used to track completion.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/propertyIdHeader"
+          },
+          {
+            "$ref": "#/components/parameters/transactionId"
+          }
+        ],
+        "operationId": "voidChannelCommission",
+        "security": [
+          {
+            "bearerAuth": [
+              "write:payment"
+            ]
+          }
+        ],
+        "tags": [
+          "Folios"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsyncEventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
     "/accounting/v1.0/pending-transactions": {
       "post": {
         "summary": "Search pending transactions",
-        "description": "Search and retrieve pending (not yet posted) transactions for a property. Pending transactions represent charges, payments, or adjustments that have been created but not yet finalized. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. The filter and sort options are the same as for posted transactions.\n\n**Supported filter fields:**\n  - `account_category`\n  - `chart_of_account_type`\n  - `created_at` (alias for `transaction_datetime`)\n  - `customer_id`\n  - `custom_code`\n  - `external_relation_id`\n  - `external_relation_kind`\n  - `folio_id`\n  - `id`\n  - `internal_code`\n  - `origin_id`\n  - `parent_id`\n  - `routed_from`\n  - `source_id`\n  - `source_identifier`\n  - `source_kind`\n  - `transaction_datetime`\n  - `trial_balance_id`\n  - `service_date`\n\n\n**Supported sort fields:**\n  - `created_at` (alias for `transaction_datetime`)\n  - `id`\n  - `internal_code`\n  - `source_id`\n  - `transaction_datetime`\n  - `service_date`\n\n\n**Required filter constraints:** The API has certain constraints for filters so that the system is able to efficiently query the data. Every request must include at least one of the following base filters:\n  - `id` with operator `equals` or `in`\n  - `source_id` together with `source_kind`\n  - `source_identifier` together with `source_kind`\n  - `external_relation_id` together with `external_relation_kind`\n  - `transaction_datetime`\n  - `service_date`\n  - `trial_balance_id`\n\n\n**Additional filter rules:**\n  - Filters cannot be empty.\n  - `source_id` requires `source_kind` to be present in the same request.\n  - `source_identifier` requires `source_kind` to be present in the same request.\n  - `external_relation_id` and `external_relation_kind` must always be used together.\n  - `trial_balance_id` only supports the `equals` operator and cannot appear more than once.\n  - When using a single filter condition (without `and`/`or`), only `id`, `transaction_datetime`,\n    or `service_date` are allowed, and the operator must be `equals` or `in`.\n\n\n**Example — single filter condition (no AND/OR needed):**\n```\n  {\n    \"filters\": {\n      \"field\": \"id\",\n      \"operator\": \"in\",\n      \"value\": [101, 102, 103]\n    }\n  }\n```\n\n```\n  {\n    \"filters\": {\n      \"field\": \"service_date\",\n      \"operator\": \"equals\",\n      \"value\": \"2024-01-01\"\n    }\n  }\n```\n\n**Example — composite filter condition:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2024-01-01T00:00:00Z\"\n        },\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"less_than\",\n          \"value\": \"2024-02-01T00:00:00Z\"\n        }\n      ]\n    }\n  }\n```\n\n**Example — composite filter condition with sorting and pagination:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11T08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n```\n",
+        "description": "Search and retrieve pending (not yet posted) transactions for a property. Pending transactions represent charges, payments, or adjustments that have been created but not yet finalized. This endpoint uses POST (instead of GET) to support complex filter criteria in the request body. The filter and sort options are the same as for posted transactions.\n\n**Routing behavior:** pending transactions keep their original source; when a transaction is routed to another source (for example a group profile), the routing target is stored separately. Filters on `source_kind`, `source_id`, and `source_identifier` (with `equals` or `in` operators) match the transaction's original **or** routed-to source, so querying a group profile returns both its direct pending charges and pending charges routed into it from reservations. `folio_id` filters (with `equals` or `in` operators) likewise match the folio the transaction occupies on either side of the routing. Returned transactions always show their original source in `sourceKind` / `sourceId` / `sourceIdentifier`.\n\n**Supported filter fields:**\n  - `account_category`\n  - `chart_of_account_type`\n  - `created_at` (alias for `transaction_datetime`)\n  - `customer_id`\n  - `custom_code`\n  - `external_relation_id`\n  - `external_relation_kind`\n  - `folio_id`\n  - `id`\n  - `internal_code`\n  - `origin_id`\n  - `parent_id`\n  - `source_id`\n  - `source_identifier`\n  - `source_kind`\n  - `transaction_datetime`\n  - `trial_balance_id`\n  - `service_date`\n\n\n**Supported sort fields:**\n  - `created_at` (alias for `transaction_datetime`)\n  - `id`\n  - `internal_code`\n  - `source_id`\n  - `transaction_datetime`\n  - `service_date`\n\n\n**Required filter constraints:** The API has certain constraints for filters so that the system is able to efficiently query the data. Every request must include at least one of the following base filters:\n  - `id` with operator `equals` or `in`\n  - `source_id` together with `source_kind`\n  - `source_identifier` together with `source_kind`\n  - `external_relation_id` together with `external_relation_kind`\n  - `transaction_datetime`\n  - `service_date`\n  - `trial_balance_id`\n\n\n**Additional filter rules:**\n  - Filters cannot be empty.\n  - `source_id` requires `source_kind` to be present in the same request.\n  - `source_identifier` requires `source_kind` to be present in the same request.\n  - `external_relation_id` and `external_relation_kind` must always be used together.\n  - `trial_balance_id` only supports the `equals` operator and cannot appear more than once.\n  - When using a single filter condition (without `and`/`or`), only `id`, `transaction_datetime`,\n    or `service_date` are allowed, and the operator must be `equals` or `in`.\n\n\n**Example — single filter condition (no AND/OR needed):**\n```\n  {\n    \"filters\": {\n      \"field\": \"id\",\n      \"operator\": \"in\",\n      \"value\": [101, 102, 103]\n    }\n  }\n```\n\n```\n  {\n    \"filters\": {\n      \"field\": \"service_date\",\n      \"operator\": \"equals\",\n      \"value\": \"2024-01-01\"\n    }\n  }\n```\n\n**Example — composite filter condition:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2024-01-01T00:00:00Z\"\n        },\n        {\n          \"field\": \"transaction_datetime\",\n          \"operator\": \"less_than\",\n          \"value\": \"2024-02-01T00:00:00Z\"\n        }\n      ]\n    }\n  }\n```\n\n**Example — composite filter condition with sorting and pagination:**\n```\n  {\n    \"filters\": {\n      \"and\": [\n        {\n          \"operator\": \"greater_than_or_equal\",\n          \"value\": \"2019-01-11T08:59:00Z\",\n          \"field\": \"transaction_datetime\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"123\",\n          \"field\": \"source_id\"\n        },\n        {\n          \"operator\": \"equals\",\n          \"value\": \"RESERVATION\",\n          \"field\": \"source_kind\"\n        },\n        {\n          \"or\": [\n            {\n              \"operator\": \"in\",\n              \"value\": [\"1\", \"2\", \"3\"],\n              \"field\": \"customer_id\"\n            },\n            {\n              \"operator\": \"equals\",\n              \"value\": \"9000\",\n              \"field\": \"internal_code\"\n            }\n          ]\n        }\n      ]\n    },\n    \"pageToken\": null,\n    \"limit\": 10,\n    \"sort\": [\n      {\n        \"field\": \"transaction_datetime\",\n        \"direction\": \"asc\"\n      }\n    ]\n  }\n```\n",
         "parameters": [
           {
             "$ref": "#/components/parameters/propertyIdHeader"
@@ -1201,7 +1506,10 @@
         "operationId": "listPendingTransactions",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1248,7 +1556,10 @@
         "operationId": "listFolioTransactions",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1288,7 +1599,10 @@
         "operationId": "getFoliosSummary",
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1331,7 +1645,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1365,7 +1682,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1399,7 +1719,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1431,7 +1754,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -1496,7 +1822,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1551,7 +1880,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1599,7 +1931,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1628,7 +1963,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1665,7 +2003,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -1712,6 +2053,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "oauth2": []
           }
         ],
         "tags": [
@@ -1759,6 +2103,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "oauth2": []
           }
         ],
         "tags": [
@@ -1803,7 +2150,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -1860,7 +2210,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -1929,6 +2282,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "oauth2": []
           }
         ],
         "tags": [
@@ -1973,7 +2329,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "write:payment"
             ]
           }
@@ -2022,6 +2381,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "oauth2": []
           }
         ],
         "tags": [
@@ -2057,6 +2419,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "oauth2": []
           }
         ],
         "tags": [
@@ -2140,7 +2505,10 @@
         ],
         "security": [
           {
-            "bearerAuth": [
+            "bearerAuth": []
+          },
+          {
+            "oauth2": [
               "read:payment"
             ]
           }
@@ -2182,6 +2550,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "oauth2": []
           }
         ],
         "tags": [
@@ -2225,6 +2596,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "oauth2": []
           }
         ],
         "tags": [
@@ -2276,6 +2650,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "oauth2": []
           }
         ],
         "tags": [
@@ -2308,6 +2685,11 @@
   "components": {
     "securitySchemes": {
       "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "oauth2": {
         "type": "oauth2",
         "flows": {
           "implicit": {
@@ -2669,6 +3051,16 @@
           "format": "int64"
         },
         "description": "Reservation ID"
+      },
+      "transactionId": {
+        "name": "transactionId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "description": "Transaction ID"
       },
       "groupProfileId": {
         "name": "groupProfileId",
@@ -3053,16 +3445,13 @@
       },
       "CustomTransactionCodesUpdateModel": {
         "type": "object",
-        "required": [
-          "code"
-        ],
         "properties": {
           "id": {
             "type": "string"
           },
           "code": {
             "type": "string",
-            "minLength": 1
+            "description": "Optional custom code override. May be left empty when the caller only wants to map a General Ledger account to the transaction type."
           },
           "customGeneralLedgerCodeId": {
             "type": "string"
@@ -3077,6 +3466,18 @@
             "items": {
               "$ref": "#/components/schemas/CustomGeneralLedgerCodeModel"
             }
+          }
+        }
+      },
+      "GlCodeResolutionModeModel": {
+        "type": "object",
+        "required": [
+          "advanceMode"
+        ],
+        "properties": {
+          "advanceMode": {
+            "type": "boolean",
+            "description": "When true, the property uses Advanced GL code resolution (conditional codes on DEPOSITS-account payments, AR override on payment-paying-AR rows). When false, Standard mode applies.\n"
           }
         }
       },
@@ -3162,7 +3563,7 @@
       },
       "MoveTransactionsRequest": {
         "type": "object",
-        "description": "Request to move transactions to a target folio. At least one of `transactions` or `transactionTypes` must be provided and non-empty.\n",
+        "description": "Request to move transactions to a target folio. At least one of `transactions` or `transactionTypes` must be provided and non-empty. When `sourceFolioId` is provided, only transactions currently in that folio are affected.\n",
         "required": [
           "sourceKind",
           "sourceId",
@@ -3181,6 +3582,11 @@
             "type": "integer",
             "format": "int64",
             "description": "Target folio ID where transactions will be moved"
+          },
+          "sourceFolioId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Optional. Scopes the operation to the transactions the folio list endpoint returns for this folio (deposit-account transactions are excluded; pending transactions count in their routed-to folio; applies to both `transactions` and `transactionTypes` selection). The folio must belong to the request's source (for route: to the reservation). When omitted, transactions are matched across all folios of the source.\n"
           },
           "transactions": {
             "type": "array",
@@ -3203,7 +3609,7 @@
       },
       "RouteTransactionsRequest": {
         "type": "object",
-        "description": "Request to route reservation transactions to a group profile folio. At least one of `transactions` or `transactionTypes` must be provided and non-empty. Route operation binds reservation transactions to a group profile.\n",
+        "description": "Request to route reservation transactions to a group profile folio. At least one of `transactions` or `transactionTypes` must be provided and non-empty. Route operation binds reservation transactions to a group profile. When `sourceFolioId` is provided, only transactions currently in that folio are affected.\n",
         "required": [
           "reservationId",
           "groupProfileId",
@@ -3224,6 +3630,11 @@
             "type": "integer",
             "format": "int64",
             "description": "Target folio ID where transactions will be assigned"
+          },
+          "sourceFolioId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Optional. Scopes the operation to the transactions the folio list endpoint returns for this folio (deposit-account transactions are excluded; pending transactions count in their routed-to folio; applies to both `transactions` and `transactionTypes` selection). The folio must belong to the request's source (for route: to the reservation). When omitted, transactions are matched across all folios of the source.\n"
           },
           "transactions": {
             "type": "array",
@@ -3259,6 +3670,53 @@
               "format": "int64"
             },
             "description": "List of transaction IDs to unroute from the group profile."
+          }
+        }
+      },
+      "PostChannelCommissionRequest": {
+        "type": "object",
+        "description": "Request to manually post a channel commission line on a reservation folio.\n",
+        "required": [
+          "reservationId",
+          "guestId",
+          "channelCode",
+          "amount"
+        ],
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Reservation ID the commission is posted against."
+          },
+          "guestId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Guest (customer) ID associated with the commission."
+          },
+          "channelCode": {
+            "type": "string",
+            "description": "Channel code the commission belongs to (e.g. the Hostelworld channel code)."
+          },
+          "transactionDatetime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Posting date/time. When omitted (or not in the future) the line is posted immediately; when set to a future date/time the line stays pending until then.\n"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Commission amount in decimal form (e.g. 50.00)."
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional free-text notes for the commission line."
+          },
+          "folioId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "description": "Target folio the commission is assigned to. When omitted the line lands on the reservation's default folio.\n"
           }
         }
       },
@@ -3304,7 +3762,11 @@
           "BOOKABLE_RESOURCE",
           "CHANNEL_COMMISSION",
           "CITY_LEDGER",
-          "GRATUITY"
+          "GRATUITY",
+          "CHECK_ITEM",
+          "CHECK_SERVICE_CHARGE",
+          "CHECK_DISCOUNT",
+          "CHANNEL_COMMISSION_MANUAL"
         ],
         "description": "Kind of the external relation"
       },
@@ -3580,7 +4042,11 @@
               "PAYMENT_FEE",
               "BOOKABLE_RESOURCE",
               "CHANNEL_COMMISSION",
-              "GRATUITY"
+              "GRATUITY",
+              "CHECK_ITEM",
+              "CHECK_SERVICE_CHARGE",
+              "CHECK_DISCOUNT",
+              "CHANNEL_COMMISSION_MANUAL"
             ],
             "description": "Kind of the external relation id, for example if transaction is a payment it will contain PAYMENT."
           },
@@ -3626,6 +4092,12 @@
             "type": "string",
             "example": "2017-07-21",
             "description": "Date when the posted transaction was created (property time).",
+            "format": "date"
+          },
+          "businessDate": {
+            "type": "string",
+            "example": "2026-06-21",
+            "description": "Business date the posted transaction belongs to (property time), aligned to night audit.",
             "format": "date"
           },
           "createdAt": {
@@ -3976,6 +4448,38 @@
           },
           "accountsReceivableId": {
             "type": "string"
+          }
+        }
+      },
+      "AccountsReceivableLedgerGroupProfileBalanceTransferResponse": {
+        "type": "object",
+        "properties": {
+          "transfers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupProfileBalanceTransferModel"
+            }
+          }
+        }
+      },
+      "GroupProfileBalanceTransferModel": {
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Posted transaction id (group-profile side, negative amount)"
+              },
+              "amount": {
+                "type": "number"
+              }
+            }
+          },
+          "accountsReceivableId": {
+            "type": "string",
+            "description": "Target AR ledger id"
           }
         }
       },
@@ -4402,6 +4906,7 @@
           "SPACE",
           "CHANNEL_COMMISSION",
           "GRATUITY",
+          "SERVICE_CHARGE",
           "N_A"
         ]
       },
@@ -4704,7 +5209,10 @@
               "CHANNEL_COMMISSION_V",
               "GRATUITY",
               "GRATUITY_A",
-              "GRATUITY_V"
+              "GRATUITY_V",
+              "SERVICE_CHARGE",
+              "SERVICE_CHARGE_A",
+              "SERVICE_CHARGE_V"
             ]
           },
           "amount": {
@@ -5172,6 +5680,8 @@
           "GROUP_PRODUCTS",
           "GROUP_PRODUCT_CATEGORY",
           "GROUP_CUSTOM_ITEMS",
+          "GROUP_CUSTOM_ITEM_SOURCE",
+          "GROUP_CUSTOM_ITEM_CATEGORY",
           "GROUP_ADDONS",
           "GROUP_TAXES",
           "GROUP_FEES",
@@ -5556,7 +6066,9 @@
               "adjustment",
               "space",
               "channel_commission",
-              "gratuity"
+              "gratuity",
+              "service_charge",
+              "check_discount"
             ],
             "description": "UI-facing transaction type. Derived from internalTransactionCode: if code suffix is \"A\" → \"adjustment\", otherwise mapped from internalCodeGroup. Maps 1:1 to MFD ReservationTransactionType except roomRevenue is split into 3.\n"
           },
@@ -5606,6 +6118,11 @@
           "subSourceIdentifier": {
             "type": "string",
             "description": "Booking room identifier"
+          },
+          "subSourceArchived": {
+            "type": "boolean",
+            "default": false,
+            "description": "True when the booking room this transaction belongs to was removed from its reservation. The transaction survives the removal and keeps its identifier, so clients mark it rather than hide it. Room name is blank for these rows, because the replica that retains removed rooms carries no name. Clients compose the marker themselves — mirrors sub_source_archived on the gRPC transaction messages.\n"
           },
           "sourceIdentifier": {
             "type": "string",
@@ -5661,6 +6178,11 @@
           },
           "reservationName": {
             "type": "string"
+          },
+          "guestName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Current full name of the transaction's customer (customerId), resolved fresh from guest-service on read. Null when the row has no customerId or the guest cannot be resolved; consumers fall back to reservationName.\n"
           },
           "roomName": {
             "type": "string",
@@ -5731,9 +6253,8 @@
             "format": "int64"
           },
           "allocatedAmount": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Amount allocated in smallest currency unit"
+            "type": "number",
+            "description": "Amount allocated, in decimal form (e.g. 158.79, not 15879), scaled by the currencyScale of the payment transaction.\n"
           },
           "transactionId": {
             "type": "string",
@@ -5744,9 +6265,8 @@
             "description": "Description of the allocated transaction"
           },
           "totalToAllocate": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Total amount of the allocated transaction in smallest currency unit"
+            "type": "number",
+            "description": "Total amount of the allocated transaction, in decimal form (e.g. 158.79, not 15879), scaled by the currencyScale of the payment transaction.\n"
           }
         }
       },
@@ -5802,12 +6322,12 @@
           "totalDebit": {
             "type": "number",
             "format": "double",
-            "description": "Sum of all debit amounts in smallest currency unit"
+            "description": "Net charges: signed sum of charge rows (room, items, taxes, fees, cancellation, no-show, gratuity), net of adjustments. May be negative. totalDebit - totalCredit equals the net balance of the rows in scope (differs from balanceDue by pending settlement, which balanceDue ignores).\n"
           },
           "totalCredit": {
             "type": "number",
             "format": "double",
-            "description": "Sum of all credit amounts in smallest currency unit"
+            "description": "Net settlement: payments minus refunds/voids, plus AR transfers and channel commissions (AR transfers count as charges for ACCOUNTS_RECEIVABLE_LEDGER sources), including upcoming payments (positive) and upcoming refunds (negative). May be negative.\n"
           },
           "currency": {
             "type": "string",
@@ -5833,17 +6353,19 @@
           },
           "totalDebit": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Net charges: signed sum of charge rows (room, items, taxes, fees, cancellation, no-show, gratuity), net of adjustments. May be negative. totalDebit - totalCredit equals the net balance of the rows in scope (differs from balanceDue by pending settlement, which balanceDue ignores).\n"
           },
           "totalCredit": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Net settlement: payments minus refunds/voids, plus AR transfers and channel commissions (AR transfers count as charges for ACCOUNTS_RECEIVABLE_LEDGER sources), including upcoming payments (positive) and upcoming refunds (negative). May be negative.\n"
           }
         }
       },
       "ForeignCurrencyTotals": {
         "type": "object",
-        "description": "Multi-currency totals across all matching transactions (all pages).",
+        "description": "Tender-currency breakdown of totals.totalCredit across all matching transactions (all pages). Foreign-tendered payments are reported in foreign units; the property-currency entry covers property-tendered payments, payments whose payment-service lookup could not resolve, AR transfers, and channel commissions. Entries are net (payments minus refunds/voids), negative when refunds exceed payments, omitted when the net is zero. Only present when at least one foreign-currency payment exists.\n",
         "properties": {
           "debit": {
             "type": "object",
@@ -5851,7 +6373,7 @@
               "type": "number",
               "format": "double"
             },
-            "description": "Map of currency code to total debit amount (e.g. {\"RON\": 724.82, \"EUR\": 5})"
+            "description": "Always empty; refunds are netted into credit. Retained for response-shape compatibility."
           },
           "credit": {
             "type": "object",
@@ -5859,7 +6381,7 @@
               "type": "number",
               "format": "double"
             },
-            "description": "Map of currency code to total credit amount"
+            "description": "Map of tender currency code to net amount (e.g. {\"RON\": 724.82, \"EUR\": 5})"
           }
         }
       },
