@@ -5132,19 +5132,19 @@ components:
                     RateAfterTax:
                       type: number
                       description: |
-                        Gross price for this day (what the guest pays), including taxes.
+                        Gross price for this day (what the guest pays), including all taxes.
                     RateBeforeTax:
                       type: number
                       description: |
-                        Gross price for this day (what the guest pays), excluding taxes.
+                        Gross price for this day (what the guest pays), excluding taxes applied on top of the rate (exclusive taxes); taxes embedded in the rate (inclusive taxes) remain included.
                     NetRateAfterTax:
                       type: number
                       description: |
-                        Net price for this day (what the property receives, after channel commission), including taxes.
+                        Net price for this day (what the property receives, after channel commission), including all taxes.
                     NetRateBeforeTax:
                       type: number
                       description: |
-                        Net price for this day (what the property receives, after channel commission), excluding taxes.
+                        Net price for this day (what the property receives, after channel commission), excluding taxes applied on top of the rate (exclusive taxes); taxes embedded in the rate (inclusive taxes) remain included.
                     Currency:
                       type: string
                       pattern: ^[A-Z]{3}$
