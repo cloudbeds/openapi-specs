@@ -2446,6 +2446,18 @@ components:
                                     - fixed
                                     - percent
                                 nullable: true
+                            segmentId:
+                                description: 'Market segment ID (null if none assigned)'
+                                type: string
+                                nullable: true
+                            segmentCode:
+                                description: 'Market segment code (null if none assigned)'
+                                type: string
+                                nullable: true
+                            segmentName:
+                                description: 'Market segment name (null if none assigned)'
+                                type: string
+                                nullable: true
                             taxDocumentType:
                                 description: 'Tax document type'
                                 type: string
@@ -2955,6 +2967,9 @@ components:
                             description: 'Company name'
                             type: string
                             nullable: true
+                        guestNationality:
+                            description: 'Guest nationality (citizenship), ISO 3166-1 alpha-2. Empty string when none is stored.'
+                            type: string
                         isAnonymized:
                             description: 'Flag indicating the guest data was removed upon request'
                             type: boolean
@@ -3090,6 +3105,10 @@ components:
                                 nullable: true
                             companyName:
                                 description: 'Company name'
+                                type: string
+                                nullable: true
+                            guestNationality:
+                                description: 'Guest nationality, ISO 3166-1 alpha-2. Requires `includeGuestInfo=true`.'
                                 type: string
                                 nullable: true
                             guestOptIn:
@@ -3273,6 +3292,9 @@ components:
                                 description: 'Company name'
                                 type: string
                                 nullable: true
+                            guestNationality:
+                                description: 'Guest nationality (citizenship), ISO 3166-1 alpha-2. Empty string when none is stored.'
+                                type: string
                             isAnonymized:
                                 description: 'Flag indicating the guest data was removed upon request'
                                 type: boolean
@@ -3440,6 +3462,9 @@ components:
                                 description: 'Company name'
                                 type: string
                                 nullable: true
+                            guestNationality:
+                                description: 'Guest nationality (citizenship), ISO 3166-1 alpha-2. Empty string when none is stored.'
+                                type: string
                             isAnonymized:
                                 description: 'Flag indicating the guest data was removed upon request'
                                 type: boolean
@@ -3670,6 +3695,10 @@ components:
                     description: 'ISO-Code for Country (2 characters)'
                     type: string
                     nullable: true
+                guestNationality:
+                    description: 'Guest nationality (citizenship). ISO-Code for Country (2 characters)'
+                    type: string
+                    nullable: true
                 guestState:
                     description: ''
                     type: string
@@ -3838,6 +3867,10 @@ components:
                 guestCountry:
                     description: 'ISO-Code for Country (2 characters)'
                     type: string
+                guestNationality:
+                    description: 'Guest nationality (citizenship). ISO-Code for Country (2 characters)'
+                    type: string
+                    nullable: true
                 guestState:
                     description: ''
                     type: string
@@ -4209,6 +4242,9 @@ components:
                             type: string
                         companyLegalName:
                             description: 'Legal company name'
+                            type: string
+                        propertyBookingUrl:
+                            description: 'Full booking-engine base URL for the property, or null if not set'
                             type: string
         PostFileRequest:
             type: object
@@ -4794,6 +4830,14 @@ components:
                 endpointUrl:
                     description: 'Endpoint URL'
                     type: string
+                authHeaderName:
+                    description: 'HTTP header sent with every delivery, i.e. `Authorization`. Use instead of credentials in `endpointUrl`. Requires `authHeaderValue`.'
+                    type: string
+                    nullable: true
+                authHeaderValue:
+                    description: 'Value for `authHeaderName`, i.e. `Basic dXNlcjpwYXNz`. Never returned by getWebhooks. Re-post to rotate. Requires `authHeaderName`.'
+                    type: string
+                    nullable: true
         PostWebhookResponse:
             type: object
             properties:
@@ -4882,6 +4926,15 @@ components:
                                 properties:
                                     endpoint:
                                         description: 'The endpoint'
+                                        type: string
+                                        nullable: true
+                                nullable: true
+                            authHeader:
+                                description: 'Present only when the subscription was registered with an auth header.'
+                                type: object
+                                properties:
+                                    name:
+                                        description: 'Header name. The value is never returned.'
                                         type: string
                                         nullable: true
                                 nullable: true
@@ -5500,16 +5553,16 @@ components:
                                 type: string
                                 nullable: true
                             itemTaxes:
-                                description: 'list of taxes applied to item'
+                                description: 'List of taxes applied to the item. Taxes posted here are recorded as free-text labels rather than as taxes configured for the property, so they carry no VAT classification: endpoints that nest VAT taxes under their parent charge return them as separate top-level transactions instead. The item and its taxes stay linked through the parent transaction of the resulting folio records.'
                                 type: array
                                 items:
                                     type: object
                                     properties:
                                         taxName:
-                                            description: 'tax name'
+                                            description: 'Tax name, matched as free text. The first use of a name creates an inactive, rate-less tax record for the property, and each new spelling creates another one; names are not matched against the taxes configured for the property.'
                                             type: string
                                         taxValue:
-                                            description: 'tax value'
+                                            description: 'Tax amount, stored exactly as sent - Cloudbeds does not recalculate it. When the item price is tax-inclusive, send the tax extracted from the gross price rather than the rate applied on top of it.'
                                             type: number
                                 nullable: true
                             itemFees:
@@ -5644,16 +5697,16 @@ components:
                                 type: string
                                 nullable: true
                             itemTaxes:
-                                description: 'list of taxes applied to item'
+                                description: 'List of taxes applied to the item. Taxes posted here are recorded as free-text labels rather than as taxes configured for the property, so they carry no VAT classification: endpoints that nest VAT taxes under their parent charge return them as separate top-level transactions instead. The item and its taxes stay linked through the parent transaction of the resulting folio records.'
                                 type: array
                                 items:
                                     type: object
                                     properties:
                                         taxName:
-                                            description: 'tax name'
+                                            description: 'Tax name, matched as free text. The first use of a name creates an inactive, rate-less tax record for the property, and each new spelling creates another one; names are not matched against the taxes configured for the property.'
                                             type: string
                                         taxValue:
-                                            description: 'tax value'
+                                            description: 'Tax amount, stored exactly as sent - Cloudbeds does not recalculate it. When the item price is tax-inclusive, send the tax extracted from the gross price rather than the rate applied on top of it.'
                                             type: number
                                 nullable: true
                             itemFees:
@@ -6045,6 +6098,10 @@ components:
                                         method:
                                             description: 'The HTTP method to use when redirecting the user'
                                             type: string
+                        paymentMethodId:
+                            description: 'Identifier of the card charged, for reuse. Null when the payment used no card, e.g. an alternate payment method. It becomes resolvable a few seconds after the charge, and stops resolving once the card is purged.'
+                            type: string
+                            nullable: true
         PostCardRequest:
             type: object
             properties:
@@ -6055,11 +6112,11 @@ components:
                     description: ''
                     type: string
                 cardToken:
-                    description: 'cardToken provided by Stripe JS, not recommended, not required if paymentMethodId is provided'
+                    description: 'A card token provided by StripeJS (`tok_` prefixed) or /vault/v1/tokens/card (uuid formatted). Not required if paymentMethodId is provided.'
                     type: string
                     nullable: true
                 paymentMethodId:
-                    description: 'Payment Method ID provided by the payments SDK'
+                    description: 'Payment Method ID provided by the Payment Element SDK (begins with cbpm_). Not required if cardToken is provided.'
                     type: string
                     nullable: true
                 returnUrl:
@@ -6102,6 +6159,9 @@ components:
                                 - сunion
                         redirectUrl:
                             description: 'null if no 3ds required'
+                            type: string
+                        paymentMethodId:
+                            description: 'Identifier of the stored card, for reuse on later requests; prefer it over **cardID**. It becomes resolvable a few seconds after the card is stored, and stops resolving once the card is purged.'
                             type: string
         GetRateResponse:
             type: object
@@ -6710,6 +6770,9 @@ components:
                                         description: ''
                                         type: string
                                         nullable: true
+                                    guestNationality:
+                                        description: 'Guest nationality (citizenship), ISO 3166-1 alpha-2. Empty string when none is stored.'
+                                        type: string
                                     assignedRoom:
                                         description: 'Returns true if guest has roomed assigned, false if not'
                                         type: boolean
@@ -7116,6 +7179,45 @@ components:
                         origin:
                             description: 'Reservation origin'
                             type: string
+                        dateCancelled:
+                            description: 'Timestamp the reservation was cancelled, in property-local time. Present only for cancelled reservations, and set for every cancellation.'
+                            type: string
+                            format: date-time
+                            nullable: true
+                        dateCancelledUTC:
+                            description: 'Timestamp the reservation was cancelled, in UTC. Present only for cancelled reservations. A reliable cancellation signal independent of dateModified.'
+                            type: string
+                            format: date-time
+                            nullable: true
+                        cancellation:
+                            description: 'Cancellation attribution (who and how). Present only for cancelled reservations where attribution was recorded; null otherwise. For the cancellation timestamp use dateCancelled / dateCancelledUTC, which are set for every cancellation.'
+                            type: object
+                            properties:
+                                source:
+                                    description: 'How the cancellation was received (e.g. user, ota, system)'
+                                    type: string
+                                    nullable: true
+                                canceled_by:
+                                    description: 'Name of the actor who canceled the reservation'
+                                    type: string
+                                    nullable: true
+                                canceled_by_id:
+                                    description: 'Identifier of the actor who canceled the reservation'
+                                    type: string
+                                    nullable: true
+                                canceled_by_type:
+                                    description: 'Type of actor who canceled the reservation (e.g. user, guest, customer, person_version)'
+                                    type: string
+                                    nullable: true
+                                origin:
+                                    description: 'Delivery channel the cancellation was received through (e.g. Dashboard, Booking.com)'
+                                    type: string
+                                    nullable: true
+                                by_employee:
+                                    description: 'Whether the actor who canceled the reservation is a Cloudbeds employee. Null when it cannot be determined.'
+                                    type: boolean
+                                    nullable: true
+                            nullable: true
                         mealPlans:
                             description: 'Reservation Meal Plans'
                             type: string
@@ -7163,6 +7265,10 @@ components:
                 guestCountry:
                     description: 'Valid ISO-Code for Country (2 characters)'
                     type: string
+                guestNationality:
+                    description: 'Guest nationality (citizenship). ISO-Code for Country (2 characters). Distinct from `guestCountry`, which is the address country.'
+                    type: string
+                    nullable: true
                 guestZip:
                     description: 'ZIP Code'
                     type: string
@@ -7679,6 +7785,9 @@ components:
                                             description: "Guest's company name"
                                             type: string
                                             nullable: true
+                                        guestNationality:
+                                            description: 'Guest nationality (citizenship), ISO 3166-1 alpha-2. Empty string when none is stored.'
+                                            type: string
                                         subReservationID:
                                             description: ''
                                             type: string
@@ -8179,6 +8288,9 @@ components:
                                             description: "Guest's company name"
                                             type: string
                                             nullable: true
+                                        guestNationality:
+                                            description: 'Guest nationality (citizenship), ISO 3166-1 alpha-2. Empty string when none is stored.'
+                                            type: string
                                         subReservationID:
                                             description: ''
                                             type: string
@@ -8683,7 +8795,7 @@ components:
                                 type: string
                                 nullable: true
                             adjustPrice:
-                                description: 'Whether to adjust pricing when changing room types. If false, preserves existing rates. Default is true.'
+                                description: 'Whether to re-price the room after the change (default true). When false, the existing price is preserved for ANY modification of the room (room-type change, guest-count change, or a same-length or shortened stay), not only room-type changes. Because the price is held as-is, increasing the guest count keeps the existing price and is NOT charged the extra-guest amount (per-guest taxes and fees may still recalculate for the new occupancy). A modification that has no existing rate to preserve - extending the stay, or shifting it onto dates the reservation did not previously cover - cannot be honored and is rejected.'
                                 type: boolean
                                 nullable: true
                                 default: true
@@ -8694,15 +8806,20 @@ components:
                     format: date-time
                     nullable: true
                 allotmentBlockCode:
-                    description: 'Allotment block code to link the reservation to. Send null to unlink. If provided along with eventCode, the allotment block must belong to the event.'
+                    description: 'Allotment block code to link the reservation to. If provided along with eventCode, the allotment block must belong to the event. To unlink, send the parameter with an empty value (`allotmentBlockCode=`); a form-urlencoded body cannot carry a real null, so sending the literal text "null" is treated as an ordinary block code rather than as an unlink. One unlink call clears both the allotment block and the event. Moving a reservation to a different block is unlink-then-link: sending a new code while the reservation is still linked is rejected.'
                     type: string
                     nullable: true
                 eventCode:
-                    description: 'Event (group profile) code to link the reservation to. Send null to unlink. When sent without allotmentBlockCode, links to the group profile only.'
+                    description: 'Event (group profile) code to link the reservation to. When sent without allotmentBlockCode, links to the group profile only. Unlinks the same way as allotmentBlockCode: send the parameter with an empty value (`eventCode=`).'
                     type: string
                     nullable: true
                 sendStatusChangeEmail:
                     description: 'Send email on reservation status change to property and guest.'
+                    type: boolean
+                    nullable: true
+                    default: false
+                canceledByGuest:
+                    description: "Marks the cancellation as initiated by the guest (self-service portal, CFAR, or a guest request relayed by the integration). Only valid together with status='canceled' — sending it with any other status returns success=false. The reservation's main guest is recorded as the cancellation actor; the caller cannot supply actor identity."
                     type: boolean
                     nullable: true
                     default: false
@@ -9634,6 +9751,14 @@ components:
                                         maxGuests:
                                             description: 'Number of guests that room allows'
                                             type: integer
+                                        maxAdults:
+                                            description: 'Max adults the room type permits; `null` if not configured (only maxGuests applies). Advisory; not enforced on shared room types.'
+                                            type: integer
+                                            nullable: true
+                                        maxChildren:
+                                            description: 'Max children the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types.'
+                                            type: integer
+                                            nullable: true
                                         isPrivate:
                                             description: 'If room is private (true) or shared (false)'
                                             type: boolean
@@ -9728,6 +9853,14 @@ components:
                                         maxGuests:
                                             description: 'Number of guests that room allows'
                                             type: integer
+                                        maxAdults:
+                                            description: 'Max adults the room type permits; `null` if not configured (only maxGuests applies). Advisory; not enforced on shared room types.'
+                                            type: integer
+                                            nullable: true
+                                        maxChildren:
+                                            description: 'Max children the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types.'
+                                            type: integer
+                                            nullable: true
                                         isPrivate:
                                             description: 'If room is private (true) or shared (false)'
                                             type: boolean
@@ -9882,6 +10015,10 @@ components:
                             childId:
                                 description: 'ID of the tax or fee that replaced current one'
                                 type: string
+                            externalId:
+                                description: "Partner-supplied 3rd-party identifier the property has associated with this Cloudbeds tax/fee. Used by partner-facing write endpoints (e.g. postCheck `taxId` / `feeId`) to address the tax/fee by the partner's own naming; `null` when no mapping is configured. Set via the property's tax/fee configuration UI."
+                                type: string
+                                nullable: true
                             createdAt:
                                 description: 'Date when tax or fee was created in the system'
                                 type: string
