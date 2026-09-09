@@ -1841,7 +1841,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostGratuityResponseSchema'
         '400':
-          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched taxId, unknown recipient userId, or an unresolvable folio target. See GratuityErrorCodeEnumSchema for structured error codes.'
+          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched tax externalId, unknown recipient userId, or an unresolvable folio target. See GratuityErrorCodeEnumSchema for structured error codes.'
           content:
             application/json:
               schema:
@@ -1915,7 +1915,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostGratuityResponseSchema'
         '400':
-          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched taxId, unknown recipient userId, or the resolved check carries no folio target. See GratuityErrorCodeEnumSchema.'
+          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched tax externalId, unknown recipient userId, or the resolved check carries no folio target. See GratuityErrorCodeEnumSchema.'
           content:
             application/json:
               schema:
@@ -3429,6 +3429,64 @@ paths:
         -
           default:
             - 'write:marketsegment'
+  /payments/v1/payments:
+    post:
+      tags:
+        - Payments
+      summary: 'Create a payment or authorization'
+      description: 'Creates a payment with the specified capture mode. Use ''auto'' for immediate charge, ''manual'' for authorization only.'
+      operationId: 'PaymentController::createPayment'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        description: 'Payment creation request'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequestSchema'
+      responses:
+        '201':
+          description: 'Payment created successfully'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentResponseSchema'
+        '400':
+          description: 'Bad request - invalid parameters or validation errors'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden - insufficient permissions'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found - inventory object not found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:payment'
   /property/v1/system:
     get:
       tags:
@@ -4349,16 +4407,15 @@ components:
         - feature.integrations.doorlock-await-invalidation-confirmation
         - feature.distribution.market-segmentation-enable-custom-group
         - feature.distribution.age-policy-new-system-enabled
-        - feature.distribution.age-policy-dual-write-enabled
         - feature.distribution.age-policy-validation-enabled
         - feature.distribution.age-policy-auto-rollback-enabled
         - feature.distribution.age-policy-centralized-service-layer
         - feature.distribution.accommodations_v2
-        - feature.distribution.accommodations-v2-alternative-arrangements
-        - feature.inventory.rate-plans
         - feature.inventory.derived-rate-plans-from-another-derived-rate-plans
         - feature.inventory.derived-rate-plan-inherit-restrictions
-        - feature.inventory.enable-rate-snapshots
+        - feature.inventory.derived-rate-plan-room-type-coverage
+        - feature.inventory.derived-parent-room-type-removal-guard
+        - feature.inventory.lock-rates-by-room-type
         - feature.prop-staff.property-feature-cache
     GetAddonsRequestSchema:
       allOf:
@@ -5972,11 +6029,11 @@ components:
         - code
       properties:
         amount:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
-          nullable: true
           description: 'Discount amount as a positive value in the property currency. Cloudbeds posts it as a negative folio line.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '5.00'
+          nullable: true
         name:
           description: 'Human-readable label displayed on the folio line.'
           type: string
@@ -5997,44 +6054,44 @@ components:
           nullable: true
       type: object
     CheckItemDetailsSchema:
-      description: 'Marker base for the polymorphic `details` block on a check item. Concrete shape is selected by the sibling `itemType` field — see CheckItemRequestSchema.details.'
+      description: 'Marker base for the polymorphic `details` block on a check item. Concrete shape is selected by the sibling `type` field — see CheckItemRequestSchema.details.'
       type: object
     CheckItemRequestSchema:
-      description: 'A single line on a POS check. Shared envelope fields — itemName, itemQuantity, itemPrice, itemAmount, itemTaxes, itemFees, itemNote, customTransactionCode, generalLedgerCustomCode — describe the line. itemQuantity is the unit count; itemPrice, when supplied, is the per-unit rate but is informational metadata only. The `details` block is polymorphic: its concrete shape is selected by the `itemType` discriminator. Today only PRODUCT is accepted, so `details` carries product-specific fields (sku, category, sub-reservation routing). Bookable-resource details will land alongside as a second `oneOf` branch when that flow is reintroduced. itemAmount is the financial source of truth — the server posts it verbatim without recomputing from itemPrice * itemQuantity.'
+      description: 'A single line on a POS check. Shared envelope fields — name, quantity, price, amount, taxes, fees, note, customTransactionCode, generalLedgerCustomCode — describe the line. quantity is the unit count; price, when supplied, is the per-unit rate but is informational metadata only. The `details` block is polymorphic: its concrete shape is selected by the `type` discriminator. Today only PRODUCT is accepted, so `details` carries product-specific fields (sku, category, sub-reservation routing). Bookable-resource details will land alongside as a second `oneOf` branch when that flow is reintroduced. amount is the financial source of truth — the server posts it verbatim without recomputing from price * quantity.'
       required:
-        - itemType
-        - itemName
-        - itemQuantity
-        - itemAmount
+        - type
+        - name
+        - quantity
+        - amount
         - details
       properties:
-        itemType:
+        type:
           description: 'Discriminator selecting the kind of line — see CheckItemTypeEnum.'
           type: string
           enum:
             - PRODUCT
           example: PRODUCT
-        itemName:
+        name:
           description: 'Human-readable line name displayed on the folio (dish or beverage name).'
           type: string
           example: Cheeseburger
-        itemQuantity:
-          description: 'Number of units. Informational metadata only — not used for accounting math (itemAmount is the line total, not itemPrice * itemQuantity).'
+        quantity:
+          description: 'Number of units. Informational metadata only — not used for accounting math (amount is the line total, not price * quantity).'
           type: integer
           example: 2
-        itemPrice:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
+        price:
+          description: 'Per-unit price. Optional informational metadata — recorded on the folio for display and reporting; not used for accounting math. amount is the financial source of truth for this line; when price is omitted, amount is used as the per-unit price on the folio row. Decimal string in major units of the property currency.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '20.00'
           nullable: true
-          description: 'Per-unit price in the property currency. Optional informational metadata — recorded on the folio for display and reporting; not used for accounting math. itemAmount is the financial source of truth for this line; when itemPrice is omitted, itemAmount is used as the per-unit price on the folio row.'
-        itemAmount:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
+        amount:
+          description: 'Total line amount — the financial source of truth for this line. The server posts this value to the folio without recomputing it from price * quantity. Decimal string in major units of the property currency.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '20.00'
           nullable: true
-          description: 'Total line amount in the property currency — the financial source of truth for this line. The server posts this value to the folio without recomputing it from itemPrice * itemQuantity.'
-        itemNote:
+        note:
           description: 'Optional free-text note for this line (modifier, allergen, special request).'
           type: string
           example: 'No onions'
@@ -6049,12 +6106,12 @@ components:
           type: string
           example: GL-4100
           nullable: true
-        itemTaxes:
-          description: 'Tax rows for this line, keyed by the property''s configured tax IDs. Cloudbeds maps each entry to an existing tax record on the property; unknown taxIds are rejected. Schema reused from the Gratuity domain.'
+        taxes:
+          description: 'Tax rows for this line, keyed by the property''s configured tax external ids. Cloudbeds maps each entry to an existing tax record on the property; unknown values are rejected.'
           type: array
           items:
             $ref: '#/components/schemas/TaxSchema'
-        itemFees:
+        fees:
           description: 'Fee amounts for this line, keyed by the property''s configured fee IDs.'
           type: array
           items:
@@ -6064,7 +6121,7 @@ components:
             -
               $ref: '#/components/schemas/ProductDetailsSchema'
           nullable: true
-          description: 'Type-specific block. Concrete shape is selected by the sibling `itemType` field — today PRODUCT → ProductDetailsSchema (sku, category, sub-reservation routing). Additional branches (e.g. bookable resource) will be added as further `oneOf` variants without renaming. A formal OpenAPI `discriminator` is not declared because the discriminator field lives on the parent schema, not inside each variant — out of spec for discriminator.propertyName. Server-side dispatch into the right variant is handled by CheckItemRequestSchemaDenormalizer.'
+          description: 'Type-specific block. Concrete shape is selected by the sibling `type` field — today PRODUCT → ProductDetailsSchema (sku, category, sub-reservation routing). Additional branches (e.g. bookable resource) will be added as further `oneOf` variants without renaming. A formal OpenAPI `discriminator` is not declared because the discriminator field lives on the parent schema, not inside each variant — out of spec for discriminator.propertyName. Server-side dispatch into the right variant is handled by CheckItemRequestSchemaDenormalizer.'
       type: object
     CheckItemTypeEnum:
       description: 'Line item kind — also the discriminator that selects the concrete shape of the `details` block on the same item. Currently only PRODUCT is accepted (ordinary POS items: food / beverage / retail), and `details` is a ProductDetailsSchema. BOOKABLE_RESOURCE will be reintroduced once the bookable-resource service exposes the synchronous create-reservation RPC postCheck needs to route those lines.'
@@ -6081,18 +6138,18 @@ components:
           type: string
           example: cash
         amount:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
-          nullable: true
           description: 'Payment amount in the property currency.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '24.30'
+          nullable: true
         cardType:
           description: 'Card type, when paymentType is a card. Optional.'
           type: string
           example: visa
           nullable: true
-        notes:
-          description: 'Optional payment notes'
+        note:
+          description: 'Optional payment note'
           type: string
           example: 'Paid at checkout'
           nullable: true
@@ -6103,11 +6160,11 @@ components:
         - amount
       properties:
         amount:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
-          nullable: true
           description: 'Service charge amount in the property currency.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '5.40'
+          nullable: true
         taxes:
           description: 'Tax rows applied to the service charge. Each row references a property-configured tax by ID. Schema reused from the Gratuity domain.'
           type: array
@@ -6130,46 +6187,46 @@ components:
           nullable: true
       type: object
     CheckTotalsSchema:
-      description: 'Partner-supplied check totals broken out by component. Used for two purposes: (1) totals-only postings — when items[] is empty, itemsSubtotal carries the items subtotal and the server posts a single synthetic items folio line; inline serviceCharge / discounts[] continue to write their own rows; (2) cross-validation — when items[] is also supplied, each total field cross-validates against the corresponding server-computed sum (items / SC / gratuity / discount / tax / fees). Mismatches surface as INVALID_TOTAL_MISMATCH with the failing component identified. totalTax / totalFees are cross-cutting aggregates: in items mode they cross-validate the sum across the whole check; in totals-only mode the partner amount routes to the per-property "Default POS tax" / "Default POS fee" catch-all catalog records (lazy-created), keeping the ledger invariant that every tax_id / fee_id reference resolves to a real row.'
+      description: 'Partner-supplied check totals broken out by component. Used for two purposes: (1) totals-only postings — when items[] is empty, totalItems carries the items subtotal and the server posts a single synthetic items folio line; inline serviceCharge / discounts[] continue to write their own rows; (2) cross-validation — when items[] is also supplied, each total field cross-validates against the corresponding server-computed sum (items / SC / gratuity / discount / tax / fees). Mismatches surface as INVALID_TOTAL_MISMATCH with the failing component identified. totalTax / totalFee are cross-cutting aggregates: in items mode they cross-validate the sum across the whole check; in totals-only mode the partner amount routes to the per-property "Default POS tax" / "Default POS fee" catch-all catalog records (lazy-created), keeping the ledger invariant that every tax_id / fee_id reference resolves to a real row.'
       required:
-        - itemsSubtotal
+        - totalItems
       properties:
-        itemsSubtotal:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
+        totalItems:
+          description: 'Items subtotal — sum of items[].amount + items[].taxes + items[].fees. When items[] is supplied alongside, this value must equal the server-computed items subtotal within 1 minor unit per currency. When items[] is empty, this is the gross figure the synthetic pos_check_total folio line carries. Not a grand-total — service charge, gratuity, and discount totals are reported in their own fields below.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '24.30'
           nullable: true
-          description: 'Items subtotal — sum of items[].itemAmount + items[].itemTaxes + items[].itemFees. When items[] is supplied alongside, this value must equal the server-computed items subtotal within 1 minor unit per currency. When items[] is empty, this is the gross figure the synthetic pos_check_total folio line carries. Not a grand-total — service charge, gratuity, and discount totals are reported in their own fields below.'
         totalServiceCharge:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
-          nullable: true
           description: 'Service-charge subtotal — serviceCharge.amount + sum(serviceCharge.taxes). Optional; cross-validates against the inline serviceCharge data ONLY when both are supplied. In totals-only mode without inline serviceCharge, this value is the partner-declared SC aggregate (validation deferred to the persistence layer).'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '24.30'
+          nullable: true
         totalGratuity:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
-          nullable: true
           description: 'Gratuity subtotal — sum(gratuities[].amount + gratuities[].taxes). Optional; accepted on the wire but server-side validation is deferred until the embedded-gratuity domain handling lands (today gratuities are accepted but not mapped to the domain payload).'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '24.30'
+          nullable: true
         totalDiscount:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
-          nullable: true
           description: 'Discount subtotal — sum(discounts[].amount), partner-supplied as a positive value. Optional; cross-validates against the inline discounts[] ONLY when both are supplied. In totals-only mode without inline discounts, this value is the partner-declared discount aggregate.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '24.30'
+          nullable: true
         totalTax:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
+          description: 'Total tax across the check — sum of every tax line (items[].taxes, items[].fees[].taxes, serviceCharge.taxes, gratuities[].taxes). Optional. When items[] is supplied, the partner value cross-validates against the server-computed sum (INVALID_TOTAL_MISMATCH on drift). In totals-only mode (items[] empty), the partner value is persisted as a single tax line on the synthetic POS-sale item, linked to the property''s lazily-created "Default POS tax" catalog record. Zero or omitted skips the synthesis.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '24.30'
           nullable: true
-          description: 'Total tax across the check — sum of every tax line (items[].itemTaxes, items[].itemFees[].taxes, serviceCharge.taxes, gratuities[].taxes). Optional. When items[] is supplied, the partner value cross-validates against the server-computed sum (INVALID_TOTAL_MISMATCH on drift). In totals-only mode (items[] empty), the partner value is persisted as a single tax line on the synthetic POS-sale item, linked to the property''s lazily-created "Default POS tax" catalog record. Zero or omitted skips the synthesis.'
-        totalFees:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
+        totalFee:
+          description: 'Total fees across the check — sum of items[].fees[].amount. Fees only attach to items in the postCheck data model, so the sum is items-scoped. Optional. Same items-mode cross-validation and totals-only synthesis semantics as totalTax, routed through the property''s "Default POS fee" catalog record. Zero or omitted skips the synthesis.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '24.30'
           nullable: true
-          description: 'Total fees across the check — sum of items[].itemFees[].feeValue. Fees only attach to items in the postCheck data model, so the sum is items-scoped. Optional. Same items-mode cross-validation and totals-only synthesis semantics as totalTax, routed through the property''s "Default POS fee" catalog record. Zero or omitted skips the synthesis.'
       type: object
     DeleteCheckRequestSchema:
       required:
@@ -6180,7 +6237,7 @@ components:
           type: string
       type: object
     PostCheckRequestSchema:
-      description: 'Posts a completed POS check (e.g., F&B) to a guest folio, house account, or group profile. Replaces postCustomItem with first-class folio transactions enriched with hospitality POS context (check identity, revenue center, meal period, gratuity, service charge). All items, itemTaxes, itemFees, gratuities, service charge, discounts, and payments in this request belong to the single check identified by checkNumber/checkId. Multi-check batching is not supported — issue a separate postCheck call per check.'
+      description: 'Posts a completed POS check (e.g., F&B) to a guest folio, house account, or group profile. Replaces postCustomItem with first-class folio transactions enriched with hospitality POS context (check identity, revenue center, meal period, gratuity, service charge). All items, taxes, fees, gratuities, service charge, discounts, and payments in this request belong to the single check identified by checkNumber/checkId. Multi-check batching is not supported — issue a separate postCheck call per check.'
       properties:
         checkNumber:
           description: 'Partner-assigned check number visible on the customer receipt (e.g., POS terminal display number). Stored on each posted folio line and visible in the folio UI. Optional — when omitted, the server mints a Cloudbeds reference (cb-<id>) and returns it in the response so the partner can echo it back.'
@@ -6248,9 +6305,9 @@ components:
             -
               $ref: '#/components/schemas/CheckTotalsSchema'
           nullable: true
-          description: 'Optional partner-supplied totals. Required when items[] is empty (totals-only posting). When supplied alongside items[], the server validates itemsSubtotal against the computed sum and rejects with INVALID_TOTAL_MISMATCH if they disagree (tolerance: 1 minor unit per currency).'
+          description: 'Optional partner-supplied totals. Required when items[] is empty (totals-only posting). When supplied alongside items[], the server validates totalItems against the computed sum and rejects with INVALID_TOTAL_MISMATCH if they disagree (tolerance: 1 minor unit per currency).'
         items:
-          description: 'Line items on the check. Each line is posted as a regular folio item, not a Custom Item. At least one of items[] or totals must be supplied — when items[] is empty, totals is required, and the server posts a single folio line carrying totals.itemsSubtotal.'
+          description: 'Line items on the check. Each line is posted as a regular folio item, not a Custom Item. At least one of items[] or totals must be supplied — when items[] is empty, totals is required, and the server posts a single folio line carrying totals.totalItems.'
           type: array
           items:
             $ref: '#/components/schemas/CheckItemRequestSchema'
@@ -6271,11 +6328,11 @@ components:
           items:
             $ref: '#/components/schemas/CheckDiscountRequestSchema'
         payments:
-          description: 'Optional payments to register against the check at posting time. If provided, itemPaid is ignored.'
+          description: 'Optional payments to register against the check at posting time. If provided, payFullBalance is ignored.'
           type: array
           items:
             $ref: '#/components/schemas/CheckPaymentRequestSchema'
-        itemPaid:
+        payFullBalance:
           description: 'If true, a cash payment is automatically registered for the full check total (items + taxes + fees + gratuity + service charge - discounts). Ignored when payments[] is provided.'
           type: boolean
           example: false
@@ -6291,21 +6348,21 @@ components:
           required:
             - groupCode
     ProductDetailsSchema:
-      description: 'Product-only fields for a check item whose itemType is PRODUCT. itemSku is required — it is the catalog dedup key. Category and sub-reservation override remain optional.'
+      description: 'Product-only fields for a check item whose type is PRODUCT. sku is required — it is the catalog dedup key. Category and sub-reservation override remain optional.'
       required:
-        - itemSku
+        - sku
       type: object
       allOf:
         -
           $ref: '#/components/schemas/CheckItemDetailsSchema'
         -
           properties:
-            itemSku:
+            sku:
               description: 'Partner-supplied SKU for the item. Required — used as the catalog dedup key and recorded on the folio line for cross-reference.'
               type: string
               example: SKU-CHEESE-001
               nullable: true
-            itemCategoryName:
+            categoryName:
               description: 'Category name as classified by the POS (e.g., ''Food'', ''Beverage'', ''Alcohol''). Used for reporting and item classification.'
               type: string
               example: Food
@@ -6325,12 +6382,12 @@ components:
         - DUPLICATE_REFERENCE
         - IDEMPOTENCY_KEY_REUSED
         - DUPLICATE_CHECK_ID
-        - TAX_ID_NOT_FOUND
-        - FEE_ID_NOT_FOUND
+        - TAX_NOT_FOUND
+        - FEE_NOT_FOUND
         - PRODUCT_NAME_CONFLICT
         - INVALID_TOTAL_MISMATCH
         - MISSING_ITEMS_OR_TOTALS
-        - INVALID_CURRENCY_MISMATCH
+        - INVALID_AMOUNT
         - INVALID_TARGET
         - SUBRESERVATION_NOT_FOUND
         - CHECK_NOT_FOUND
@@ -6548,6 +6605,45 @@ components:
             $ref: '#/components/schemas/SortFieldSchema'
       type: object
       example: "[\n        {\n            \"field\": \"checkin_date\",\n            \"direction\": \"desc\"\n        },\n        {\n            \"field\": \"checkout_date\"\n        }\n    ]"
+    FeeSchema:
+      description: 'A fee row applied to a parent object (today: a check line item). Same model as `taxes` — fees are referenced by external id from the property''s configured fees catalog, not by free-text name. Multiple fee rows per parent are supported, and each fee can carry its own `taxes[]` for tax-on-fee.'
+      required:
+        - externalId
+        - amount
+      properties:
+        externalId:
+          description: 'The partner-owned `external_id` configured on the fee under the property''s fee settings (a 3rd-party reference the property has associated with one of its Cloudbeds fees). Must resolve to an active fee on the property; unknown or inactive values are rejected with FEE_NOT_FOUND. The internal Cloudbeds numeric fee id is not accepted as input — it is unstable across property-side fee edits.'
+          type: string
+          example: fee_resort_daily
+        amount:
+          description: 'Fee amount applied to this item. Decimal string in major units of the property currency.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '2.50'
+          nullable: true
+        taxes:
+          description: 'Taxes applied to this fee (tax-on-fee). Each externalId must match an active tax configured on the property; unknown / inactive values are rejected with TAX_NOT_FOUND.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxSchema'
+      type: object
+    TaxSchema:
+      description: 'A tax row applied to a gratuity, an item, or a service charge. Multiple tax rows per parent object are supported.'
+      required:
+        - externalId
+        - amount
+      properties:
+        externalId:
+          description: 'The partner-owned `external_id` configured on the tax under the property''s tax settings (a 3rd-party reference the property has associated with one of its Cloudbeds taxes). Must resolve to an active tax on the property; unknown or inactive values are rejected with TAX_NOT_FOUND. The internal Cloudbeds numeric tax id is not accepted as input — it is unstable across property-side tax edits.'
+          type: string
+          example: tax_state_va_8
+        amount:
+          description: 'Tax amount applied to the parent object — item, fee, service charge or gratuity, whichever this row is nested under. Decimal string in major units of the property currency.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '1.60'
+          nullable: true
+      type: object
     AcceptedResponseSchema: {  }
     BadRequestErrorItemSchema:
       required:
@@ -6667,6 +6763,14 @@ components:
           example: RESOURCE_NOT_FOUND
           nullable: true
       type: object
+    InventoryObjectType:
+      description: 'The type of inventory object'
+      type: string
+      enum:
+        - reservation
+        - house_account
+        - group_profile
+        - accounts_receivable_ledger
     MyallocatorProxyRequestSchema:
       required:
         - endpoint
@@ -7103,6 +7207,11 @@ components:
           items:
             $ref: '#/components/schemas/DoorLockSettingsCommonRoomRequestSchema'
           default: []
+        awaitInvalidationConfirmation:
+          description: 'Wait for the door lock partner to confirm key invalidation before removing the key.'
+          type: boolean
+          default: false
+          example: false
       type: object
     DoorLockSettingsDeleteRequestSchema: {  }
     DoorLockSettingsEncoderRequestSchema:
@@ -7169,6 +7278,7 @@ components:
         - keyTypes
         - encoders
         - commonRooms
+        - awaitInvalidationConfirmation
       properties:
         keyTypes:
           description: $keyTypes
@@ -7185,6 +7295,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DoorLockSettingsCommonRoomResponseSchema'
+        awaitInvalidationConfirmation:
+          description: 'Wait for the door lock partner to confirm key invalidation before removing the key.'
+          type: boolean
       type: object
     EventCreateRequestSchema:
       description: 'Request body for creating a new event'
@@ -7776,13 +7889,13 @@ components:
         - amount
       properties:
         amount:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
-          nullable: true
           description: 'Gratuity amount in the property currency. Must be > 0; corrections require void + repost (negative amounts rejected).'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '8.00'
+          nullable: true
         taxes:
-          description: 'Optional tax rows applied to this gratuity. Each tax follows the item-tax pattern; an unknown taxId returns TAX_ID_NOT_FOUND.'
+          description: 'Optional tax rows applied to this gratuity. Each tax follows the item-tax pattern; an unknown externalId returns TAX_NOT_FOUND.'
           type: array
           items:
             $ref: '#/components/schemas/TaxSchema'
@@ -7897,12 +8010,14 @@ components:
       enum:
         - ACCOUNT_NOT_FOUND
         - FOLIO_NOT_FOUND
-        - TAX_ID_NOT_FOUND
+        - TAX_NOT_FOUND
+        - INVALID_AMOUNT
         - RECIPIENT_USER_NOT_FOUND
         - SUBRESERVATION_NOT_FOUND
         - CHECK_NOT_FOUND
         - DUPLICATE_REFERENCE
         - IDEMPOTENCY_KEY_REUSED
+        - DUPLICATE_GRATUITY_ID
         - GRATUITY_NOT_FOUND
         - GRATUITY_VOID_UNAVAILABLE
     PostGratuityResponseSchema:
@@ -9231,10 +9346,140 @@ components:
         canDisable:
           type: boolean
       type: object
+    CaptureModeSchema:
+      description: 'The capture mode for the payment'
+      type: string
+      enum:
+        - auto
+        - manual
+    CreatePaymentRequestSchema:
+      required:
+        - captureMode
+        - total
+        - inventoryObject
+        - paymentMethod
+        - redirectUrl
+      properties:
+        captureMode:
+          $ref: '#/components/schemas/CaptureModeSchema'
+        total:
+          $ref: '#/components/schemas/MoneySchema'
+        redirectUrl:
+          description: 'URL to redirect the user to after 3D Secure authentication or other payment actions'
+          type: string
+          example: 'https://example.com/payment/callback'
+        inventoryObject:
+          $ref: '#/components/schemas/InventoryObjectSchema'
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethodSchema'
+        description:
+          description: 'Optional payment description that appears in the folio.'
+          type: string
+          example: Deposit
+          nullable: true
+      type: object
     ExecuteScheduledPaymentRequestSchema:
       required:
         - id
         - propertyId
+    InventoryObjectSchema:
+      required:
+        - type
+        - id
+      properties:
+        type:
+          $ref: '#/components/schemas/InventoryObjectType'
+        id:
+          description: 'The ID of the inventory object'
+          type: string
+          example: '12345'
+      type: object
+    PaymentMethodSchema:
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/PaymentMethodTypeSchema'
+        sdkToken:
+          description: 'SDK token (cbpm1_*) generated by the Cloudbeds Payment SDK. Required when type is ''sdk_token''.'
+          type: string
+          example: cbpm1_abc123def456
+          nullable: true
+        paymentMethodId:
+          description: 'A stored payment method, as a UUID. Either a Cloudbeds permanent card token issued by POST /vault/v1/tokens/card, or the paymentMethodId returned in a previous response from this endpoint. Required when type is ''payment_method_id''.'
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+          nullable: true
+      type: object
+    PaymentMethodTypeSchema:
+      description: 'The type of payment method'
+      type: string
+      enum:
+        - sdk_token
+        - payment_method_id
+    CardDetailsResponseSchema:
+      required:
+        - last4
+        - brand
+      properties:
+        last4:
+          description: 'The last 4 digits of the card number'
+          type: string
+          example: '4242'
+        brand:
+          description: 'The card brand'
+          type: string
+          example: visa
+        paymentMethodId:
+          description: 'Identifier of the stored payment method, reusable as paymentMethod.paymentMethodId on a later request. Null when the payment did not store a card.'
+          type: string
+          format: uuid
+          example: 10000000-0000-0000-0000-000000000070
+          nullable: true
+      type: object
+    CreatePaymentResponseSchema:
+      properties:
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
+        paymentId:
+          description: 'The ID of the created payment'
+          type: string
+          example: '12345'
+        paymentMethodDetails:
+          oneOf:
+            -
+              $ref: '#/components/schemas/PaymentMethodDetailsResponseSchema'
+          nullable: true
+          description: 'Payment method details'
+        nextAction:
+          oneOf:
+            -
+              $ref: '#/components/schemas/NextActionResponseSchema'
+          nullable: true
+          description: 'Next action required, such as a redirect for 3D Secure'
+      type: object
+    NextActionType:
+      description: 'The type of next action required'
+      type: string
+      enum:
+        - redirect
+    PaymentMethodType:
+      description: 'The type of payment method used'
+      type: string
+      enum:
+        - card
+    PaymentStatus:
+      description: 'The payment status from the payment processor'
+      type: string
+      enum:
+        - successful
+        - failed
+        - pending
+        - canceled
+        - unconfirmed
+        - expired
+        - scheduled
     ExecuteScheduledPaymentDataSchema:
       description: 'Payload of a successful execute-scheduled-payment outcome.'
       required:
@@ -9262,6 +9507,41 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/ExecuteScheduledPaymentDataSchema'
+      type: object
+    NextActionResponseSchema:
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/NextActionType'
+        redirect:
+          oneOf:
+            -
+              $ref: '#/components/schemas/RedirectResponseSchema'
+          nullable: true
+          description: 'Redirect details when type is ''redirect'''
+      type: object
+    PaymentMethodDetailsResponseSchema:
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/PaymentMethodType'
+        card:
+          oneOf:
+            -
+              $ref: '#/components/schemas/CardDetailsResponseSchema'
+          nullable: true
+          description: 'Card details when the payment method is a card'
+      type: object
+    RedirectResponseSchema:
+      required:
+        - redirectUrl
+      properties:
+        redirectUrl:
+          description: 'The URL to redirect the user to for authentication'
+          type: string
+          example: 'https://payments.cloudbeds.com/3d_secure_2/authenticate'
       type: object
     PosContextSchema:
       description: 'POS source metadata for the request. restaurantName / revenueCenter / mealPeriod / staffReference describe the POS session that produced the request as a whole; they apply uniformly to every item (postCheck) or gratuity entry (postGratuity) in the same POST.'
@@ -10808,6 +11088,10 @@ components:
           description: 'Reservation ID.'
           type: string
           example: '900001'
+        trigger:
+          description: 'What caused the disable. "manual-action" marks a side-effect disable (SP-332: manual payment/refund/void/cancel) and skips the override_policy_payment_rules check; absent or "explicit" is the deliberate kill-switch and enforces it.'
+          type: string
+          example: manual-action
       type: object
     EligibleRatesRequestSchema:
       required:
@@ -11904,28 +12188,6 @@ components:
           type: string
           example: '1000'
       type: object
-    FeeSchema:
-      description: 'A fee row applied to a parent object (today: a check line item). Same model as itemTaxes — fees are referenced by ID from the property''s configured fees catalog, not by free-text name. Multiple fee rows per parent are supported, and each fee can carry its own `taxes[]` for tax-on-fee.'
-      required:
-        - feeId
-        - feeValue
-      properties:
-        feeId:
-          description: 'Fee identifier — the partner-owned `external_id` configured on the fee under the property''s fee settings (a 3rd-party reference the property has associated with one of its Cloudbeds fees). Must resolve to an active fee on the property; unknown or inactive identifiers are rejected with FEE_ID_NOT_FOUND. The internal Cloudbeds numeric fee id is not accepted as input — it is unstable across property-side fee edits.'
-          type: string
-          example: fee_resort_daily
-        feeValue:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
-          nullable: true
-          description: 'Fee amount applied to this item, in the property currency.'
-        taxes:
-          description: 'Taxes applied to this fee (tax-on-fee). Each taxId must match an active tax configured on the property; unknown / inactive ids are rejected with TAX_ID_NOT_FOUND. Schema reused from the Gratuity domain.'
-          type: array
-          items:
-            $ref: '#/components/schemas/TaxSchema'
-      type: object
     LengthOfStayRangeSchema:
       required:
         - minimumNights
@@ -12171,23 +12433,6 @@ components:
             - tax
             - fee
           example: fee
-      type: object
-    TaxSchema:
-      description: 'A tax row applied to a gratuity, an item, or a service charge. Multiple tax rows per parent object are supported.'
-      required:
-        - taxId
-        - taxValue
-      properties:
-        taxId:
-          description: 'Tax identifier — the partner-owned `external_id` configured on the tax under the property''s tax settings (a 3rd-party reference the property has associated with one of its Cloudbeds taxes). Must resolve to an active tax on the property; unknown or inactive identifiers are rejected with TAX_ID_NOT_FOUND. The internal Cloudbeds numeric tax id is not accepted as input — it is unstable across property-side tax edits.'
-          type: string
-          example: tax_state_va_8
-        taxValue:
-          oneOf:
-            -
-              $ref: '#/components/schemas/MoneyInputSchema'
-          nullable: true
-          description: 'Tax amount applied to the gratuity (in property currency).'
       type: object
     TypeSettingsSchema:
       description: "Additional type settings for tax/fee calculation.\nAll properties are optional — only provide what applies to the specific tax/fee."
@@ -12485,6 +12730,9 @@ tags:
   -
     name: 'Market Segmentation'
     description: 'Market Segmentation'
+  -
+    name: Payments
+    description: Payments
   -
     name: Property
     description: Property
