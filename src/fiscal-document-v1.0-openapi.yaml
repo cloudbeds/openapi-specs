@@ -213,7 +213,8 @@ paths:
             minItems: 1
         - name: nestTaxes
           in: query
-          description: When true, tax transactions are nested inside their parent transaction's taxes field and removed from the top-level list.
+          description: >-
+            When true, VAT tax transactions are nested inside their parent transaction's taxes field and removed from the top-level list. Only taxes whose configuration is classified as VAT are nested; everything else (city and municipal taxes, fees, custom item taxes not classified as VAT) stays in the top-level list with no link back to its parent, so the parent-child relationship for those has to be read from the same endpoint called without nestTaxes. A VAT tax is only ever returned together with its parent transaction: where the parent is not in the response, the tax is omitted entirely rather than returned at the top level.
           required: false
           schema:
             type: boolean
@@ -641,7 +642,7 @@ paths:
         - name: nestTaxes
           in: query
           description: >-
-            When true, VAT tax transactions are nested inside their parent transaction's taxes field and removed from the top-level list; non-VAT taxes stay in the top-level list. A VAT tax whose parent transaction is not part of the document is omitted from the response entirely.
+            When true, VAT tax transactions are nested inside their parent transaction's taxes field and removed from the top-level list. Only taxes whose configuration is classified as VAT are nested; everything else (city and municipal taxes, fees, custom item taxes not classified as VAT) stays in the top-level list with no link back to its parent, so the parent-child relationship for those has to be read from the same endpoint called without nestTaxes. A VAT tax is only ever returned together with its parent transaction: where the parent is not part of the document, the tax is omitted from the response entirely rather than returned at the top level.
           required: false
           schema:
             type: boolean
@@ -1248,6 +1249,12 @@ paths:
           schema:
             type: integer
             format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VoidReceiptRequest"
       responses:
         '204':
           description: Receipt successfully voided
@@ -1778,41 +1785,6 @@ paths:
           description: Invalid country code
       security:
         - bearerAuth: []
-  /fiscal-document/v1/fiscalization/operators/rules:
-    get:
-      tags:
-        - Fiscalization
-      summary: Get fiscal operator rules for a country
-      description: |
-        Returns country-specific rules for the fiscal operator mapping (e.g. tax-ID format,
-        checksum, label). Countries that don't require operator-level fiscalization respond
-        with `operatorRequired: false`.
-      operationId: getFiscalizationOperatorRules
-      deprecated: true
-      parameters:
-        - name: X-Property-ID
-          in: header
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: country
-          in: query
-          required: true
-          schema:
-            type: string
-          description: ISO 3166-1 alpha-2 country code (e.g., HR)
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FiscalizationOperatorRulesResponse'
-        '400':
-          description: Invalid country code
-      security:
-        - bearerAuth: []
   /fiscal-document/v1/fiscalization/items/rules:
     get:
       tags:
@@ -2064,6 +2036,8 @@ paths:
       responses:
         '204':
           description: Disconnected
+        '400':
+          $ref: '#/components/responses/400'
       security: [{bearerAuth: []}]
   /fiscal-document/v1/fiscalization/connections/{connectionId}/activate:
     post:
@@ -2076,6 +2050,12 @@ paths:
           in: path
           required: true
           schema: {type: integer, format: int64}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FiscalConnectionActivateRequest'
       responses:
         '200':
           description: OK
@@ -2413,7 +2393,7 @@ paths:
           in: path
           required: true
           schema: {type: string}
-          description: "Section key: registration, certificate, authentication, series, taxCodes, paymentMethods, items, operators, customization"
+          description: "Section key: registration, certificate, externalAuthorization, authentication, series, taxCodes, paymentMethods, items, operators, customization"
       responses:
         '200':
           description: OK
@@ -2803,6 +2783,8 @@ components:
         taxId: {type: string}
         connectedAt: {type: string, format: date-time}
         pausedAt: {type: string, format: date-time}
+        authorization:
+          $ref: '#/components/schemas/FiscalConnectionAuthorization'
         provider:
           type: object
           required: [id, code, name]
@@ -2845,6 +2827,19 @@ components:
                 key: {type: string}
                 label: {type: string}
                 error: {type: string}
+    FiscalConnectionAuthorization:
+      type: object
+      description: >
+        Browser redirect for partner consent, present only for OAuth-handoff providers. The url is relative to the property's MFD origin — the FE prefixes window.location.origin before redirecting.
+
+      required: [url, expiresAt]
+      properties:
+        url: {type: string}
+        expiresAt: {type: string, format: date-time}
+    FiscalConnectionActivateRequest:
+      type: object
+      properties:
+        consentToken: {type: string}
     FiscalConnectionListResponse:
       type: object
       required: [connections]
@@ -3828,6 +3823,18 @@ components:
           type: integer
           format: int64
           description: The ID of the invoice to apply the receipt to.
+    VoidReceiptRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: |
+            Cancellation reason for the fiscal authority. Required on Mexico when voiding a
+            fiscalized payment receipt (CFDI tipo P), where it is the SAT motivo de cancelacion:
+            "02" (issued with errors, no substitute) or "03" (operation not carried out).
+            Defaults to "03" when omitted. Ignored by countries that do not fiscalize a receipt
+            void.
+          example: "03"
     AllocateReceiptPaymentRequest:
       type: object
       required: [receiptId, allocations]
@@ -3914,6 +3921,11 @@ components:
           type: string
         failReason:
           type: string
+        reason:
+          type: string
+          nullable: true
+          description: >-
+            Correction reason recorded when the document was created (credit notes and rectifying invoices). One of the slugs offered by the credit-note action's reason field, or free text on the Spanish rectify path. Null when no reason was given.
         method:
           $ref: "#/components/schemas/CreationMethod"
         createdAt:
@@ -4061,6 +4073,8 @@ components:
             $ref: '#/components/schemas/FiscalDocumentTransactionAllocation'
         taxes:
           type: array
+          description: >-
+            Child VAT taxes of this transaction. Populated only when nestTaxes=true; taxes not classified as VAT are never nested here and are returned as top-level transactions instead.
           items:
             $ref: '#/components/schemas/FiscalDocumentTransactionResponse'
         invoicedStatus:
@@ -4391,8 +4405,11 @@ components:
           type: number
           description: |
             Simplified-invoice monetary threshold in the property currency (INVOICE kind). Optional;
-            required when enabled and the threshold is editable. Ignored for countries with a
-            backend-enforced threshold or countries that don't support simplified invoices.
+            required when enabled and the threshold is editable. Silently ignored rather than
+            rejected where the country fixes the threshold itself (simplifiedThresholdEditable
+            false) or does not support simplified invoices at all, because in those cases there is
+            nothing to store. Must not exceed simplifiedThresholdMax when one is returned; a higher
+            value is rejected with 400.
         simplifiedThresholdAction:
           type: string
           description: |
@@ -4815,15 +4832,24 @@ components:
         simplifiedThresholdEditable:
           type: boolean
           description: |
-            Whether the simplified threshold can be changed. false = backend-enforced static value
-            (the returned threshold is the enforced default; render it read-only).
+            Whether the property may choose the simplified threshold. false means the country fixes
+            it in regulation, so the threshold returned below is that country-fixed value: render it
+            read-only and do not send one on save.
         simplifiedThreshold:
           type: number
           nullable: true
           description: |
             Effective simplified-invoice threshold in the property currency (INVOICE kind): the
-            enforced country value when present, otherwise the property-configured value. Null when
-            not configured.
+            country-fixed value where the country fixes one, otherwise the property-configured
+            value. Null when not configured.
+        simplifiedThresholdMax:
+          type: number
+          nullable: true
+          description: |
+            Statutory ceiling for the simplified-invoice threshold in the property currency (INVOICE
+            kind). The property may configure any amount up to this; a higher value is rejected on
+            save. Null when the country has no legal limit (e.g. Italy) or does not support simplified
+            invoices at all.
         simplifiedThresholdAction:
           type: string
           nullable: true
@@ -4980,6 +5006,7 @@ components:
         - DUPLICATE
         - XML
         - UNOFFICIAL_COPY
+        - CANCELLATION_ACK
     # ENUMS
     DocumentAction:
       type: string
