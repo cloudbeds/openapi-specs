@@ -60,6 +60,7 @@ paths:
             Default: `position` ascending — the order `PATCH /categories/reorder` persists
         - schema:
             type: string
+            pattern: ^\d+$
           in: header
           name: x-organization-id
           required: true
@@ -100,6 +101,12 @@ paths:
                       type: integer
                       minimum: -9007199254740991
                       maximum: 9007199254740991
+                    icon:
+                      nullable: true
+                      type: string
+                    color:
+                      nullable: true
+                      type: string
                     category:
                       description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
                       nullable: true
@@ -131,6 +138,8 @@ paths:
                     - isEnabled
                     - categoryId
                     - position
+                    - icon
+                    - color
                   additionalProperties: false
         "400":
           description: Default Response
@@ -219,9 +228,21 @@ paths:
                   type: string
                   pattern: ^\d+$
                 position:
+                  description: Explicit slot within the category. Omitted, the row is appended after the current maximum. Capped at 500000, well below the column's int4 ceiling, so no single write can exhaust the scope's append space.
                   type: integer
                   minimum: 0
-                  maximum: 2147483647
+                  maximum: 500000
+                icon:
+                  description: Icon name for this tag, from the Nebula icon set. Null defers to the icon on the category this attribute belongs to, then to the default tag glyph. Not validated against the icon set — an unknown name falls back the same way.
+                  nullable: true
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                color:
+                  description: Tag colour as a hex string, `#RGB` or `#RRGGBB`. Null defers to the colour on the category this attribute belongs to, then to a neutral tile. Stored verbatim, so compare against a preset case-insensitively.
+                  nullable: true
+                  type: string
+                  pattern: ^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
               required:
                 - label
                 - entityTypes
@@ -229,6 +250,7 @@ paths:
       parameters:
         - schema:
             type: string
+            pattern: ^\d+$
           in: header
           name: x-organization-id
           required: true
@@ -267,6 +289,12 @@ paths:
                     type: integer
                     minimum: -9007199254740991
                     maximum: 9007199254740991
+                  icon:
+                    nullable: true
+                    type: string
+                  color:
+                    nullable: true
+                    type: string
                   category:
                     description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
                     nullable: true
@@ -298,6 +326,8 @@ paths:
                   - isEnabled
                   - categoryId
                   - position
+                  - icon
+                  - color
                 additionalProperties: false
         "400":
           description: Default Response
@@ -443,9 +473,21 @@ paths:
                   type: string
                   pattern: ^\d+$
                 position:
+                  description: Explicit slot within the category. Omitted, the row is appended after the current maximum. Capped at 500000, well below the column's int4 ceiling, so no single write can exhaust the scope's append space.
                   type: integer
                   minimum: 0
-                  maximum: 2147483647
+                  maximum: 500000
+                icon:
+                  description: Icon name for this tag, from the Nebula icon set. Null defers to the icon on the category this attribute belongs to, then to the default tag glyph. Not validated against the icon set — an unknown name falls back the same way.
+                  nullable: true
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                color:
+                  description: Tag colour as a hex string, `#RGB` or `#RRGGBB`. Null defers to the colour on the category this attribute belongs to, then to a neutral tile. Stored verbatim, so compare against a preset case-insensitively.
+                  nullable: true
+                  type: string
+                  pattern: ^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
               additionalProperties: false
       parameters:
         - schema:
@@ -456,6 +498,7 @@ paths:
           required: true
         - schema:
             type: string
+            pattern: ^\d+$
           in: header
           name: x-organization-id
           required: true
@@ -494,6 +537,12 @@ paths:
                     type: integer
                     minimum: -9007199254740991
                     maximum: 9007199254740991
+                  icon:
+                    nullable: true
+                    type: string
+                  color:
+                    nullable: true
+                    type: string
                   category:
                     description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
                     nullable: true
@@ -525,6 +574,8 @@ paths:
                   - isEnabled
                   - categoryId
                   - position
+                  - icon
+                  - color
                 additionalProperties: false
         "400":
           description: Default Response
@@ -651,6 +702,7 @@ paths:
           required: true
         - schema:
             type: string
+            pattern: ^\d+$
           in: header
           name: x-organization-id
           required: true
@@ -750,6 +802,7 @@ paths:
       parameters:
         - schema:
             type: string
+            pattern: ^\d+$
           in: header
           name: x-organization-id
           required: true
@@ -770,6 +823,9 @@ paths:
                     organizationId:
                       type: string
                       pattern: ^\d+$
+                    key:
+                      nullable: true
+                      type: string
                     label:
                       type: string
                       minLength: 1
@@ -791,6 +847,7 @@ paths:
                   required:
                     - id
                     - organizationId
+                    - key
                     - label
                     - description
                     - icon
@@ -865,6 +922,9 @@ paths:
             schema:
               type: object
               properties:
+                key:
+                  type: string
+                  minLength: 1
                 label:
                   type: string
                   minLength: 1
@@ -872,14 +932,18 @@ paths:
                   type: string
                 icon:
                   type: string
+                  minLength: 1
+                  maxLength: 64
                 color:
                   type: string
+                  pattern: ^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
               required:
                 - label
               additionalProperties: false
       parameters:
         - schema:
             type: string
+            pattern: ^\d+$
           in: header
           name: x-organization-id
           required: true
@@ -898,6 +962,9 @@ paths:
                   organizationId:
                     type: string
                     pattern: ^\d+$
+                  key:
+                    nullable: true
+                    type: string
                   label:
                     type: string
                     minLength: 1
@@ -919,6 +986,7 @@ paths:
                 required:
                   - id
                   - organizationId
+                  - key
                   - label
                   - description
                   - icon
@@ -1034,7 +1102,7 @@ paths:
                       position:
                         type: integer
                         minimum: 0
-                        maximum: 2147483647
+                        maximum: 500000
                     required:
                       - id
                       - position
@@ -1057,7 +1125,7 @@ paths:
                       position:
                         type: integer
                         minimum: 0
-                        maximum: 2147483647
+                        maximum: 500000
                     required:
                       - id
                       - categoryId
@@ -1071,6 +1139,7 @@ paths:
       parameters:
         - schema:
             type: string
+            pattern: ^\d+$
           in: header
           name: x-organization-id
           required: true
@@ -1183,9 +1252,12 @@ paths:
                 icon:
                   nullable: true
                   type: string
+                  minLength: 1
+                  maxLength: 64
                 color:
                   nullable: true
                   type: string
+                  pattern: ^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
               additionalProperties: false
       parameters:
         - schema:
@@ -1196,6 +1268,7 @@ paths:
           required: true
         - schema:
             type: string
+            pattern: ^\d+$
           in: header
           name: x-organization-id
           required: true
@@ -1214,6 +1287,9 @@ paths:
                   organizationId:
                     type: string
                     pattern: ^\d+$
+                  key:
+                    nullable: true
+                    type: string
                   label:
                     type: string
                     minLength: 1
@@ -1235,6 +1311,7 @@ paths:
                 required:
                   - id
                   - organizationId
+                  - key
                   - label
                   - description
                   - icon
@@ -1368,6 +1445,7 @@ paths:
           required: true
         - schema:
             type: string
+            pattern: ^\d+$
           in: header
           name: x-organization-id
           required: true
@@ -1539,6 +1617,14 @@ paths:
             - For single entity queries, use `entityId` and `entityType` parameters instead
         - schema:
             type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: false
+          description: Organization ID
+        - schema:
+            type: string
+            pattern: ^\d+(,\d+)*$
           in: header
           name: x-property-id
           required: true
@@ -1599,6 +1685,12 @@ paths:
                           type: integer
                           minimum: -9007199254740991
                           maximum: 9007199254740991
+                        icon:
+                          nullable: true
+                          type: string
+                        color:
+                          nullable: true
+                          type: string
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
                           nullable: true
@@ -1630,6 +1722,8 @@ paths:
                         - isEnabled
                         - categoryId
                         - position
+                        - icon
+                        - color
                       additionalProperties: false
                   required:
                     - id
@@ -1727,6 +1821,14 @@ paths:
       parameters:
         - schema:
             type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: false
+          description: Organization ID
+        - schema:
+            type: string
+            pattern: ^\d+(,\d+)*$
           in: header
           name: x-property-id
           required: true
@@ -1787,6 +1889,12 @@ paths:
                           type: integer
                           minimum: -9007199254740991
                           maximum: 9007199254740991
+                        icon:
+                          nullable: true
+                          type: string
+                        color:
+                          nullable: true
+                          type: string
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
                           nullable: true
@@ -1818,6 +1926,8 @@ paths:
                         - isEnabled
                         - categoryId
                         - position
+                        - icon
+                        - color
                       additionalProperties: false
                   required:
                     - id
@@ -1989,6 +2099,14 @@ paths:
       parameters:
         - schema:
             type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: false
+          description: Organization ID
+        - schema:
+            type: string
+            pattern: ^\d+(,\d+)*$
           in: header
           name: x-property-id
           required: true
@@ -2120,6 +2238,14 @@ paths:
       parameters:
         - schema:
             type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: false
+          description: Organization ID
+        - schema:
+            type: string
+            pattern: ^\d+(,\d+)*$
           in: header
           name: x-property-id
           required: true
@@ -2180,6 +2306,12 @@ paths:
                           type: integer
                           minimum: -9007199254740991
                           maximum: 9007199254740991
+                        icon:
+                          nullable: true
+                          type: string
+                        color:
+                          nullable: true
+                          type: string
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
                           nullable: true
@@ -2211,6 +2343,8 @@ paths:
                         - isEnabled
                         - categoryId
                         - position
+                        - icon
+                        - color
                       additionalProperties: false
                   required:
                     - id
@@ -2329,6 +2463,14 @@ paths:
       parameters:
         - schema:
             type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: false
+          description: Organization ID
+        - schema:
+            type: string
+            pattern: ^\d+(,\d+)*$
           in: header
           name: x-property-id
           required: true
@@ -2428,6 +2570,12 @@ paths:
                               type: integer
                               minimum: -9007199254740991
                               maximum: 9007199254740991
+                            icon:
+                              nullable: true
+                              type: string
+                            color:
+                              nullable: true
+                              type: string
                             category:
                               description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
                               nullable: true
@@ -2459,6 +2607,8 @@ paths:
                             - isEnabled
                             - categoryId
                             - position
+                            - icon
+                            - color
                           additionalProperties: false
                       required:
                         - id
@@ -2567,6 +2717,12 @@ paths:
                               type: integer
                               minimum: -9007199254740991
                               maximum: 9007199254740991
+                            icon:
+                              nullable: true
+                              type: string
+                            color:
+                              nullable: true
+                              type: string
                             category:
                               description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
                               nullable: true
@@ -2598,6 +2754,8 @@ paths:
                             - isEnabled
                             - categoryId
                             - position
+                            - icon
+                            - color
                           additionalProperties: false
                       required:
                         - id
@@ -2776,6 +2934,14 @@ paths:
       parameters:
         - schema:
             type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: false
+          description: Organization ID
+        - schema:
+            type: string
+            pattern: ^\d+(,\d+)*$
           in: header
           name: x-property-id
           required: true
@@ -2955,6 +3121,14 @@ paths:
           required: true
         - schema:
             type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: false
+          description: Organization ID
+        - schema:
+            type: string
+            pattern: ^\d+(,\d+)*$
           in: header
           name: x-property-id
           required: true
