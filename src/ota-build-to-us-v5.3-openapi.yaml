@@ -3776,11 +3776,17 @@ paths:
                     acknowledgement_ids:
                       - 115856384
                 Failure:
-                  summary: Failure
+                  summary: Channel not set up for the property
                   value:
                     Success: false
                     ErrorCode: 1031
                     Error: Channel ota not enabled for property 998201, may not proceed.
+                ChannelDisabled:
+                  summary: Channel disabled for the property
+                  value:
+                    Success: false
+                    ErrorCode: 1034
+                    Error: Channel ota is disabled for property 998201, may not proceed.
                 CardDataNotEnabled:
                   summary: Card data not enabled for channel
                   value:
@@ -4383,7 +4389,10 @@ paths:
                               updated_at:
                                 type: string
                         group_block_auto_release:
-                          type: object
+                          type:
+                            - object
+                            - 'null'
+                          description: Release schedule for the block. Sent as null when the block has auto release switched off.
                           properties:
                             release_type:
                               type: string
@@ -4404,6 +4413,16 @@ paths:
                             properties:
                               ota_rate_id:
                                 type: string
+                              shoulder_days_before:
+                                type:
+                                  - integer
+                                  - 'null'
+                                description: Number of shoulder days before the block start date. Not included in the data intervals below. Sent as null when not set.
+                              shoulder_days_after:
+                                type:
+                                  - integer
+                                  - 'null'
+                                description: Number of shoulder days after the block end date. Not included in the data intervals below. Sent as null when not set.
                               data:
                                 type: array
                                 items:
@@ -4601,7 +4620,10 @@ paths:
                               updated_at:
                                 type: string
                         group_block_auto_release:
-                          type: object
+                          type:
+                            - object
+                            - 'null'
+                          description: Release schedule for the block. Sent as null when the block has auto release switched off.
                           properties:
                             release_type:
                               type: string
@@ -4622,6 +4644,16 @@ paths:
                             properties:
                               ota_rate_id:
                                 type: string
+                              shoulder_days_before:
+                                type:
+                                  - integer
+                                  - 'null'
+                                description: Number of shoulder days before the block start date. Not included in the data intervals below. Sent as null when not set.
+                              shoulder_days_after:
+                                type:
+                                  - integer
+                                  - 'null'
+                                description: Number of shoulder days after the block end date. Not included in the data intervals below. Sent as null when not set.
                               data:
                                 type: array
                                 items:
@@ -4709,6 +4741,7 @@ paths:
                   guid: 6C08B96E-450D-4E6A-9933-7D0305730305
                   ota_cid: ota
                   shared_secret: s3cr3ts4uc3
+                  group_code: g123331
                   group_block_code: b123332
             schema:
               allOf:
@@ -4719,10 +4752,17 @@ paths:
                       type: string
                       enum:
                         - DeleteGroupBlock
+                    group_code:
+                      type: string
+                      description: |-
+                        Code of the group the block belongs to. Always sent. Use it if your
+                        system scopes block codes per group; otherwise ignore it and match on
+                        group_block_code alone.
                     group_block_code:
                       type: string
               required:
                 - verb
+                - group_code
                 - group_block_code
         required: true
       responses:
