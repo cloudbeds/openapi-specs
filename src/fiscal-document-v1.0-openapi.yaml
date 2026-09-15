@@ -769,6 +769,89 @@ paths:
             application/json:
               schema:
                 type: object
+  "/fiscal-document/v1/fiscal-documents/email-subject":
+    get:
+      summary: Resolve the email subject for a fiscal document
+      description: |
+        Returns the subject the service would put on the email, so a UI can seed an editable Subject
+        field from the same resolution the send uses rather than reimplementing it.
+
+        Give `documentId` for a document that exists. The answer is then exactly what a send with no
+        subject override produces: a token the service holds no value for resolves to an empty
+        string, as it would in the delivered email.
+
+        Give `documentKind`, `sourceKind` and `sourceId` instead for a document about to be created.
+        A token whose value is only assigned at creation is then returned **verbatim**, for example
+        `Grand Hotel - Invoice #[Invoice Number]`. Send the string back, edited or not, on the create
+        request and the service fills those tokens in once the values exist.
+
+        Supplying the chosen recipient lets the guest's language win when the property has
+        "use guest language" enabled; without it the subject falls back to the property's language.
+      operationId: getFiscalDocumentEmailSubject
+      security:
+        - bearerAuth: []
+      tags:
+        - Fiscal Documents
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+        - name: documentId
+          in: query
+          required: false
+          description: >
+            An existing fiscal document. When given, the document parameters below are ignored - everything is derived from the document itself.
+
+          schema:
+            type: string
+            minLength: 1
+        - name: documentKind
+          in: query
+          required: false
+          description: Required when documentId is absent.
+          schema:
+            $ref: "#/components/schemas/FiscalDocumentKind"
+        - name: sourceKind
+          in: query
+          required: false
+          description: Required when documentId is absent.
+          schema:
+            $ref: "#/components/schemas/SourceKind"
+        - name: sourceId
+          in: query
+          required: false
+          description: Required when documentId is absent.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: recipientType
+          in: query
+          required: false
+          description: >
+            The chosen Bill-to recipient. Supply together with recipientId. Optional because a manually entered recipient has no stored record to point at; the subject then resolves in the property's language rather than the guest's.
+
+          schema:
+            $ref: "#/components/schemas/EmailSubjectRecipientType"
+        - name: recipientId
+          in: query
+          required: false
+          description: The chosen Bill-to recipient. Supply together with recipientType.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailSubjectResponse"
+        '400':
+          $ref: "#/components/responses/400"
+        '403':
+          $ref: "#/components/responses/403"
+        '404':
+          $ref: "#/components/responses/404"
   "/fiscal-document/v1/fiscal-documents/{id}/require-attention":
     patch:
       summary: Update require attention flag for a fiscal document
@@ -1481,6 +1564,53 @@ paths:
           description: Logo deleted successfully
         '404':
           $ref: "#/components/responses/404"
+        '403':
+          $ref: "#/components/responses/403"
+  "/fiscal-document/v1/configs/property-settings":
+    get:
+      summary: Get property-level document settings
+      operationId: getPropertySettings
+      description: Registry facts printed under the issuer on fiscal documents (e.g. Spain's tourism classification and registry code). Property-level, shared by every document kind.
+      security:
+        - bearerAuth: []
+      tags:
+        - Configs
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertySettingsResponse'
+        '403':
+          $ref: "#/components/responses/403"
+    patch:
+      summary: Update property-level document settings
+      operationId: updatePropertySettings
+      description: A concern object that is present replaces that concern as a whole (blank strings are stored as null); a concern that is absent is left untouched.
+      security:
+        - bearerAuth: []
+      tags:
+        - Configs
+      parameters:
+        - $ref: "#/components/parameters/propertyIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertySettingsUpdateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertySettingsResponse'
+        '400':
+          $ref: "#/components/responses/400"
         '403':
           $ref: "#/components/responses/403"
   "/fiscal-document/v1/configs/preview":
@@ -2462,6 +2592,45 @@ paths:
         '404':
           $ref: '#/components/responses/404'
       security: [{bearerAuth: []}]
+  /fiscal-document/v1/fiscalization/providers/{providerId}/{sectionKey}/options:
+    put:
+      tags: [Fiscal Connection Config]
+      summary: Replace the options a provider offers for one of its sections
+      description: >
+        Partner-facing. Replaces the selectable options this provider offers in one scope, so a hotelier can map Cloudbeds data onto the partner's own values in the Cloudbeds UI. Omit connectionId for a catalogue that is the same for every property; send it when the values differ per customer account. Values dropped from a later push are deactivated, not deleted, so mappings already made against them keep their label. Restricted to the OAuth client registered for the provider. X-PROPERTY-ID is required even for a provider-wide push and must identify a property covered by the token's consent. A supplied connectionId must belong to this provider and a property covered by the token's resources claim.
+
+      operationId: replaceProviderSectionOptions
+      parameters:
+        - $ref: '#/components/parameters/propertyIdHeader'
+        - name: providerId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: sectionKey
+          in: path
+          required: true
+          schema: {type: string}
+          description: "Section key: taxCodes, paymentMethods, items, operators, series"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderOptionsReplaceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderOptionsReplaceResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+      security: [{bearerAuth: []}]
   /fiscal-document/v1/fiscalization/connections/drafts:
     get:
       tags: [Fiscal Connection Config]
@@ -2643,6 +2812,60 @@ components:
   schemas:
     AnyValue:
       description: 'Can be any of supported OpenApi types.'
+    ProviderOptionsReplaceRequest:
+      type: object
+      required: [options]
+      properties:
+        connectionId:
+          type: integer
+          format: int64
+          nullable: true
+          description: >
+            Scope of the replacement. Omit for the provider's catalogue across every property; send a connection id when the values belong to a single customer account.
+
+        options:
+          type: array
+          description: >
+            The full list for this scope, in display order; anything not listed is deactivated. Active options are served before retired options, with connection-scoped options before provider-wide options of the same active status.
+
+          items:
+            $ref: '#/components/schemas/ProviderOption'
+    ProviderOption:
+      type: object
+      required: [value, label]
+      properties:
+        value:
+          type: string
+          description: >
+            Stored on the mapping and echoed back to the provider unchanged. Maximum 32 characters for taxCodes and paymentMethods, 128 for series, matching their mapping columns; 255 for other sections.
+
+          maxLength: 255
+        label:
+          type: string
+          description: What the hotelier sees in the dropdown.
+          maxLength: 255
+        group:
+          type: string
+          nullable: true
+          maxLength: 64
+          description: >-
+            Slot within the section this option is offered for. Series are offered per document type, so send the document kind here to have the option appear only against that document. Omit for an option that applies to the whole section, which is how taxes and payment methods are offered.
+      additionalProperties: true
+    ProviderOptionsReplaceResponse:
+      type: object
+      required: [providerId, sectionKey, count]
+      properties:
+        providerId:
+          type: string
+        sectionKey:
+          type: string
+        connectionId:
+          type: integer
+          format: int64
+          nullable: true
+        count:
+          type: integer
+          description: Number of options now offered in this scope.
     FiscalCountryListResponse:
       type: object
       required: [countries]
@@ -2952,6 +3175,34 @@ components:
             type: string
           maxItems: 10
           description: Ids of additional stored files to attach (from files on the list response), e.g. the Portuguese duplicate. The primary file is always attached; these are added on top. Absent or empty attaches only the primary file. Duplicate ids are ignored.
+        subject:
+          description: Optional per-send override for the email subject. When omitted or blank, the subject is resolved from the property's email template, falling back to the service default. Supports the same [Placeholder] tokens as template subjects.
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 255
+    EmailSubjectResponse:
+      type: object
+      required:
+        - subject
+      properties:
+        subject:
+          type: string
+          description: >
+            The resolved subject. On the create-form variant, tokens the service cannot fill yet are left verbatim, e.g. "Grand Hotel - Invoice #[Invoice Number]".
+
+    EmailSubjectRecipientType:
+      type: string
+      description: >
+        Which backing record a recipient id points at. Deliberately a separate schema from RecipientRequest.type even though the values match: $ref-ing that one would rename the generated RecipientRequest.TypeEnum and break every creation call site.
+
+      enum:
+        - GUEST
+        - CONTACT
+        - GROUP
+        - COMPANY
+        - GROUP_PROFILE
+        - GROUP_PROFILE_CONTACT
     CreateCreditNoteRequest:
       type: object
       required: [invoiceId, method]
@@ -3348,6 +3599,12 @@ components:
             type: string
             format: email
           maxItems: 10
+        subject:
+          description: Optional per-send override for the email subject. When omitted or blank, the subject is resolved from the property's email template, falling back to the service default. Supports the same [Placeholder] tokens as template subjects.
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 255
         summary:
           description: When true, marks this as a CFDI global/summary invoice (MX only)
           type: boolean
@@ -3591,6 +3848,12 @@ components:
             type: string
             format: email
           maxItems: 10
+        subject:
+          description: Optional per-send override for the email subject. When omitted or blank, the subject is resolved from the property's email template, falling back to the service default. Supports the same [Placeholder] tokens as template subjects.
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 255
         packageBreakdown:
           type: boolean
           nullable: true
@@ -4711,6 +4974,13 @@ components:
         satQrCode:
           type: string
           description: MX SAT validation URL used to verify a CFDI at verificacfdi.facturaelectronica.sat.gob.mx.
+        connectionId:
+          type: integer
+          format: int64
+          readOnly: true
+          description: >
+            The fiscalization connection this document was dispatched through; its provider and channel are those of the connection. Read-only — a partner reporting an outcome cannot change where the document was routed, and uses this to confirm the document was addressed to it before acting on it.
+
     IntegrationSignature:
       type: object
       description: A semantic signature/response item from a government integration.
@@ -4876,6 +5146,39 @@ components:
           type: string
           format: uri
           description: Presigned URL to access the original uncropped logo; only present when a crop has been applied
+    IssuerRegistryUpdate:
+      type: object
+      properties:
+        tourismClassification:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: Tourism establishment classification as registered with the regional authority, e.g. "Hotel 4*".
+        tourismRegistryCode:
+          type: string
+          nullable: true
+          maxLength: 40
+          description: Registro de Turismo code, e.g. "H/SE/01234".
+    IssuerRegistryResponse:
+      type: object
+      properties:
+        tourismClassification:
+          type: string
+          nullable: true
+        tourismRegistryCode:
+          type: string
+          nullable: true
+    PropertySettingsResponse:
+      type: object
+      properties:
+        issuerRegistry:
+          $ref: '#/components/schemas/IssuerRegistryResponse'
+    PropertySettingsUpdateRequest:
+      type: object
+      properties:
+        issuerRegistry:
+          $ref: '#/components/schemas/IssuerRegistryUpdate'
+          nullable: false
     CropLogoRequest:
       type: object
       required:
@@ -5848,7 +6151,16 @@ components:
         - key
         - rate
         - name
+        - value
+        - label
       properties:
+        value:
+          type: string
+          description: >-
+            Identifier to store against a mapping and send back on save. Composed by this service so the caller never has to build one: the category/key/rate triple joined by ":" for a country-defined option, or the partner's own code for a provider-supplied one.
+        label:
+          type: string
+          description: Display text for the option; same as name for country-defined options.
         category:
           type: string
           description: Tax category code (e.g., VAT, ISR)
@@ -5882,7 +6194,16 @@ components:
       required:
         - key
         - name
+        - value
+        - label
       properties:
+        value:
+          type: string
+          description: >-
+            Identifier to store against a mapping and send back on save. Composed by this service: the GOBL key, suffixed "::<ext>" when the option carries an extension code, or the partner's own code for a provider-supplied option.
+        label:
+          type: string
+          description: Display text for the option; same as name for country-defined options.
         key:
           type: string
           description: GOBL payment means key (e.g., cash, card, credit-transfer)
