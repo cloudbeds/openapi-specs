@@ -2849,8 +2849,9 @@ components:
     oauth2:
       type: oauth2
       flows:
-        implicit:
-          authorizationUrl: https://hotels.cloudbeds.com/api/v1.2/oauth
+        authorizationCode:
+          authorizationUrl: https://api.cloudbeds.com/auth/oauth/authorize
+          tokenUrl: https://api.cloudbeds.com/auth/oauth/token
           scopes:
             read:reservation: Read fiscal documents and fiscalization configuration
             write:reservation: Create, update, or void fiscal documents and fiscalization configuration
