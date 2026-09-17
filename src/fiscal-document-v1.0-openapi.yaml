@@ -14,6 +14,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: sourceId
@@ -44,6 +45,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: pageToken
@@ -110,6 +112,7 @@ paths:
       operationId: putFiscalDocument
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -150,6 +153,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: forDocumentType
@@ -346,6 +350,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: sourceIds
@@ -398,6 +403,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: id
@@ -490,6 +496,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: forDocumentType
@@ -596,6 +603,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/fiscalDocumentId"
         - $ref: "#/components/parameters/propertyIdHeader"
@@ -670,6 +678,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/fiscalDocumentId"
         - $ref: "#/components/parameters/propertyIdHeader"
@@ -721,6 +730,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/fiscalDocumentId"
         - name: fileId
@@ -753,6 +763,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       parameters:
         - $ref: "#/components/parameters/fiscalDocumentId"
         - $ref: "#/components/parameters/propertyIdHeader"
@@ -790,6 +801,7 @@ paths:
       operationId: getFiscalDocumentEmailSubject
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -859,6 +871,7 @@ paths:
       operationId: updateRequireAttention
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -886,6 +899,7 @@ paths:
       operationId: createInvoice
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -910,6 +924,7 @@ paths:
       operationId: getDocumentPreview
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -940,6 +955,7 @@ paths:
       operationId: createCreditNote
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -968,6 +984,7 @@ paths:
       operationId: getCreditNotePreview
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1008,6 +1025,7 @@ paths:
       operationId: createRectifyInvoice
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1059,6 +1077,7 @@ paths:
       operationId: getRectifyInvoicePreview
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1099,6 +1118,7 @@ paths:
       operationId: createSettlementInvoice
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1139,6 +1159,7 @@ paths:
       operationId: getProFormaPreview
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1177,6 +1198,7 @@ paths:
       operationId: createProFormaInvoice
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1205,6 +1227,7 @@ paths:
       operationId: updateProFormaInvoiceStatus
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1251,6 +1274,7 @@ paths:
       operationId: createReceipt
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1284,6 +1308,7 @@ paths:
       operationId: createSimpleReceipt
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1321,6 +1346,7 @@ paths:
       operationId: voidReceipt
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1397,6 +1423,7 @@ paths:
       operationId: allocateReceiptPayment
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1431,6 +1458,7 @@ paths:
         - Configs
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
       responses:
@@ -1447,6 +1475,7 @@ paths:
       description: Update document config.
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Configs
       parameters:
@@ -1477,6 +1506,7 @@ paths:
       description: Retrieve the logo image used in fiscal document templates as a presigned URL.
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Configs
       parameters:
@@ -1498,6 +1528,7 @@ paths:
       description: Upload a logo image to be used in fiscal document templates.
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Configs
       parameters:
@@ -1530,6 +1561,7 @@ paths:
 
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Configs
       parameters:
@@ -1555,6 +1587,7 @@ paths:
       description: Delete the logo image used in fiscal document templates.
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Configs
       parameters:
@@ -1573,6 +1606,7 @@ paths:
       description: Registry facts printed under the issuer on fiscal documents (e.g. Spain's tourism classification and registry code). Property-level, shared by every document kind.
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Configs
       parameters:
@@ -1592,6 +1626,7 @@ paths:
       description: A concern object that is present replaces that concern as a whole (blank strings are stored as null); a concern that is absent is left untouched.
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Configs
       parameters:
@@ -1622,6 +1657,7 @@ paths:
         - Configs
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - in: query
@@ -1651,6 +1687,7 @@ paths:
       operationId: getPropertyFeatures
       security:
         - bearerAuth: []
+        - oauth2: ['write:reservation']
       tags:
         - Features
       parameters:
@@ -1676,6 +1713,7 @@ paths:
       operationId: getDocumentRules
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Fiscal Documents
       parameters:
@@ -1702,6 +1740,7 @@ paths:
       operationId: exportFolioPdf
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Export
       parameters:
@@ -1733,6 +1772,7 @@ paths:
       operationId: getFolioPdf
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
       tags:
         - Export
       parameters:
@@ -1801,6 +1841,7 @@ paths:
           description: Rules not found for country
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
   /fiscal-document/v1/fiscalization/reports/{reportId}:
     get:
       tags:
@@ -1857,6 +1898,7 @@ paths:
           description: Property not registered or report not available
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
   /fiscal-document/v1/fiscalization/tax/rules:
     get:
       tags:
@@ -1889,6 +1931,7 @@ paths:
           description: Invalid country code
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
   /fiscal-document/v1/fiscalization/payment-methods/rules:
     get:
       tags:
@@ -1915,6 +1958,7 @@ paths:
           description: Invalid country code
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
   /fiscal-document/v1/fiscalization/items/rules:
     get:
       tags:
@@ -1941,6 +1985,7 @@ paths:
           description: Invalid country code
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
   /fiscal-document/v1/fiscalization/series/rules:
     get:
       tags:
@@ -1969,6 +2014,7 @@ paths:
           description: Invalid or unsupported country code
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
   /fiscal-document/v1/fiscalization/invoice-type-options:
     get:
       tags:
@@ -1992,6 +2038,7 @@ paths:
                 $ref: '#/components/schemas/InvoiceTypeOptionsResponse'
       security:
         - bearerAuth: []
+        - oauth2: ['read:reservation']
   /fiscal-document/v1/fiscalization/catalogue/countries:
     get:
       tags: [Fiscal Connection Config]
@@ -2105,7 +2152,9 @@ paths:
                 $ref: '#/components/schemas/FiscalConnection'
         '409':
           description: Provider already connected
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}:
     get:
       tags: [Fiscal Connection Config]
@@ -2152,7 +2201,9 @@ paths:
                 $ref: '#/components/schemas/FiscalConnection'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
     delete:
       tags: [Fiscal Connection Config]
       summary: Disconnect a connection
@@ -2168,7 +2219,9 @@ paths:
           description: Disconnected
         '400':
           $ref: '#/components/responses/400'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}/activate:
     post:
       tags: [Fiscal Connection Config]
@@ -2218,7 +2271,9 @@ paths:
                 $ref: '#/components/schemas/FiscalConnection'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}/resume:
     post:
       tags: [Fiscal Connection Config]
@@ -2239,7 +2294,9 @@ paths:
                 $ref: '#/components/schemas/FiscalConnection'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}/series/activate:
     put:
       tags: [Fiscal Connection Config]
@@ -2269,7 +2326,9 @@ paths:
           $ref: '#/components/responses/400'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}/series/deactivate:
     put:
       tags: [Fiscal Connection Config]
@@ -2299,7 +2358,9 @@ paths:
           $ref: '#/components/responses/400'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}/test:
     post:
       tags: [Fiscal Connection Config]
@@ -2347,7 +2408,9 @@ paths:
                 $ref: '#/components/schemas/FiscalizationCertificateStatus'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['read:reservation']
     post:
       tags: [Fiscal Connection Config]
       summary: Upload a certificate for a connection
@@ -2396,7 +2459,9 @@ paths:
                 properties:
                   message:
                     type: string
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}/customization/logo:
     post:
       tags: [Fiscal Connection Config]
@@ -2436,7 +2501,9 @@ paths:
           $ref: '#/components/responses/400'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
     delete:
       tags: [Fiscal Connection Config]
       summary: Delete the branding logo for a connection
@@ -2452,7 +2519,9 @@ paths:
           description: Logo deleted
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}/reports/{reportId}:
     get:
       tags:
@@ -2506,7 +2575,9 @@ paths:
           description: Invalid parameters
         '404':
           description: Connection not registered or report not available
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['read:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}/{sectionKey}:
     get:
       tags: [Fiscal Connection Config]
@@ -2564,7 +2635,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FiscalConnection'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/connections/{connectionId}/{sectionKey}/rules:
     get:
       tags: [Fiscal Connection Config]
@@ -2672,7 +2745,9 @@ paths:
                 $ref: '#/components/schemas/FiscalConnectionDraft'
         '400':
           $ref: '#/components/responses/400'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
     delete:
       tags: [Fiscal Connection Config]
       summary: Discard a registration draft
@@ -2686,7 +2761,9 @@ paths:
       responses:
         '204':
           description: Deleted
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/routing:
     get:
       tags: [Fiscal Connection Config]
@@ -2723,7 +2800,9 @@ paths:
                 $ref: '#/components/schemas/FiscalRoutingListResponse'
         '400':
           $ref: '#/components/responses/400'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
   /fiscal-document/v1/fiscalization/routing/{countryCode}/{channelCode}/{flowId}:
     patch:
       tags: [Fiscal Connection Config]
@@ -2758,13 +2837,23 @@ paths:
                 $ref: '#/components/schemas/FiscalRoutingRule'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: []
+        - oauth2: ['write:reservation']
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    oauth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://hotels.cloudbeds.com/api/v1.2/oauth
+          scopes:
+            read:reservation: Read fiscal documents and fiscalization configuration
+            write:reservation: Create, update, or void fiscal documents and fiscalization configuration
   parameters:
     propertyIdHeader:
       name: X-Property-ID
@@ -3259,6 +3348,20 @@ components:
           type: boolean
           nullable: true
           description: "Per-document override for package breakdown. Null means use property default."
+        emails:
+          description: Optional list of email addresses to send the document to once it is ready
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: email
+          maxItems: 10
+        subject:
+          description: Optional per-send override for the email subject. When omitted or blank, the subject is resolved from the property's email template, falling back to the service default. Supports the same [Placeholder] tokens as template subjects.
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 255
     CreateSettlementInvoiceRequest:
       type: object
       required: [userId]
