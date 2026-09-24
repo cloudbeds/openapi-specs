@@ -935,6 +935,10 @@ components:
                                                     blockConfirmed:
                                                         description: 'Number of units booked for the room type for this day'
                                                         type: integer
+                                                    isShoulderDate:
+                                                        description: 'Present on every availability entry when includeShoulderDates=true: true on a shoulder date, false on a core date. Absent otherwise.'
+                                                        type: boolean
+                                                        nullable: true
                                                     rate:
                                                         description: 'the price'
                                                         type: string
@@ -4644,7 +4648,7 @@ components:
                     type: string
                     nullable: true
                 roomIDs:
-                    description: 'List of room IDs comma-separated, i.e. 37,345,89'
+                    description: 'List of room IDs comma-separated, i.e. 101-0,101-3'
                     type: string
                 housekeeperID:
                     description: 'Housekeeper ID. To designate a room as unassigned, simply set the value to 0.'
@@ -5553,16 +5557,16 @@ components:
                                 type: string
                                 nullable: true
                             itemTaxes:
-                                description: 'List of taxes applied to the item. Taxes posted here are recorded as free-text labels rather than as taxes configured for the property, so they carry no VAT classification: endpoints that nest VAT taxes under their parent charge return them as separate top-level transactions instead. The item and its taxes stay linked through the parent transaction of the resulting folio records.'
+                                description: "List of taxes applied to the item. Taxes supplied here are not matched against the taxes configured for the property, so they carry no VAT classification and endpoints that nest VAT taxes under their parent charge return them as separate top-level entries instead. Each tax stays associated with its item through the item's parent transaction."
                                 type: array
                                 items:
                                     type: object
                                     properties:
                                         taxName:
-                                            description: 'Tax name, matched as free text. The first use of a name creates an inactive, rate-less tax record for the property, and each new spelling creates another one; names are not matched against the taxes configured for the property.'
+                                            description: 'Tax name, matched as free text. Names are not validated against the taxes configured for the property, and two different spellings are treated as two different taxes.'
                                             type: string
                                         taxValue:
-                                            description: 'Tax amount, stored exactly as sent - Cloudbeds does not recalculate it. When the item price is tax-inclusive, send the tax extracted from the gross price rather than the rate applied on top of it.'
+                                            description: 'Tax amount. Used exactly as supplied; Cloudbeds does not recalculate it. When the item price is tax-inclusive, supply the tax extracted from the gross price rather than the rate applied on top of it.'
                                             type: number
                                 nullable: true
                             itemFees:
@@ -5697,16 +5701,16 @@ components:
                                 type: string
                                 nullable: true
                             itemTaxes:
-                                description: 'List of taxes applied to the item. Taxes posted here are recorded as free-text labels rather than as taxes configured for the property, so they carry no VAT classification: endpoints that nest VAT taxes under their parent charge return them as separate top-level transactions instead. The item and its taxes stay linked through the parent transaction of the resulting folio records.'
+                                description: "List of taxes applied to the item. Taxes supplied here are not matched against the taxes configured for the property, so they carry no VAT classification and endpoints that nest VAT taxes under their parent charge return them as separate top-level entries instead. Each tax stays associated with its item through the item's parent transaction."
                                 type: array
                                 items:
                                     type: object
                                     properties:
                                         taxName:
-                                            description: 'Tax name, matched as free text. The first use of a name creates an inactive, rate-less tax record for the property, and each new spelling creates another one; names are not matched against the taxes configured for the property.'
+                                            description: 'Tax name, matched as free text. Names are not validated against the taxes configured for the property, and two different spellings are treated as two different taxes.'
                                             type: string
                                         taxValue:
-                                            description: 'Tax amount, stored exactly as sent - Cloudbeds does not recalculate it. When the item price is tax-inclusive, send the tax extracted from the gross price rather than the rate applied on top of it.'
+                                            description: 'Tax amount. Used exactly as supplied; Cloudbeds does not recalculate it. When the item price is tax-inclusive, supply the tax extracted from the gross price rather than the rate applied on top of it.'
                                             type: number
                                 nullable: true
                             itemFees:
@@ -10433,8 +10437,15 @@ paths:
                     OAuth2: []
             parameters:
                 -
-                    description: 'Specify a property ID when using role_details'
+                    description: 'Property to resolve role_details for. When the user holds both an Organization-level role and a Property-level role for this property, both are returned in `roles` and `acl` is the union of their permissions (an "allow" in either role wins). Takes precedence over organization_id when both are supplied.'
                     name: property_id
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: "Organization to resolve role_details for (alternative to property_id). Returns the user's Organization-level role for that organization and its permissions."
+                    name: organization_id
                     schema:
                         type: string
                     required: false
@@ -10695,6 +10706,13 @@ paths:
                 -
                     description: 'When true, each block in the response will include a resources[] array with associated space resource quotes. Requires the spaces-allotment-blocks feature flag to be enabled for the property; when the flag is off, resources[] will be empty even if the param is true.'
                     name: includeResources
+                    schema:
+                        type: boolean
+                    required: false
+                    in: query
+                -
+                    description: "When true, each interval's availability[] also includes the interval's shoulder dates, and every availability entry carries isShoulderDate. On a shoulder date blockAllotted and blockRemaining are 0 and blockConfirmed is the number of rooms picked up against the block for that night, so it may exceed blockAllotted. Requires the property's shoulder-dates feature to be enabled; when it is off, availability[] holds only the interval's own dates even if the param is true. Has no effect when forUpdate=true: that mode reads raw interval availability, which carries no shoulder dates."
+                    name: includeShoulderDates
                     schema:
                         type: boolean
                     required: false
@@ -12445,6 +12463,13 @@ paths:
                 -
                     description: 'Property ID'
                     name: propertyID
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Filter by room ID. If more than one, send as a comma-separated list, i.e. 101-0,101-3. A room ID has the form {roomTypeID}-{index} and is the same value this endpoint returns as data.roomID. Combined with the other filters using AND. A value that is not of that form is rejected with a 400 response. A well-formed ID that matches no room of this property is not an error - it simply contributes no result. An empty value applies no room filter, so every room of the property is returned.'
+                    name: roomIDs
                     schema:
                         type: string
                     required: false
