@@ -666,6 +666,7 @@ paths:
               type: string
               enum:
                 - 'delete:appPropertySettings'
+                - 'delete:calendarView'
                 - 'delete:doorLockKey'
                 - 'delete:item'
                 - 'delete:marketsegment'
@@ -674,6 +675,7 @@ paths:
                 - 'read:adjustment'
                 - 'read:allotmentBlock'
                 - 'read:appPropertySettings'
+                - 'read:calendarView'
                 - 'read:communication'
                 - 'read:currency'
                 - 'read:customFields'
@@ -708,6 +710,7 @@ paths:
                 - 'write:allotmentBlock'
                 - 'write:appError'
                 - 'write:appPropertySettings'
+                - 'write:calendarView'
                 - 'write:communication'
                 - 'write:customFields'
                 - 'write:doorLockKey'
@@ -1012,6 +1015,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NoContentResponseSchema'
+        '207':
+          description: 'Per-key invalidation results. Opt-in; by default this endpoint answers 204.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoorLockKeyBatchDeleteResultResponseSchema'
         '400':
           description: 'Bad Request response'
           content:
@@ -3435,7 +3444,7 @@ paths:
         - Payments
       summary: 'Create a payment or authorization'
       description: 'Creates a payment with the specified capture mode. Use ''auto'' for immediate charge, ''manual'' for authorization only.'
-      operationId: 'PaymentController::createPayment'
+      operationId: createPayment
       parameters:
         -
           name: x-property-id
@@ -4408,10 +4417,7 @@ components:
         - feature.distribution.market-segmentation-enable-custom-group
         - feature.distribution.age-policy-new-system-enabled
         - feature.distribution.age-policy-validation-enabled
-        - feature.distribution.age-policy-auto-rollback-enabled
-        - feature.distribution.age-policy-centralized-service-layer
         - feature.distribution.accommodations_v2
-        - feature.inventory.derived-rate-plans-from-another-derived-rate-plans
         - feature.inventory.derived-rate-plan-inherit-restrictions
         - feature.inventory.derived-rate-plan-room-type-coverage
         - feature.inventory.derived-parent-room-type-removal-guard
@@ -4678,7 +4684,7 @@ components:
                 type: array
                 items:
                   required: [dayOfWeek, priceAmount, priceCurrency]
-                  properties: { dayOfWeek: { description: 'Day of week (0=Sunday, 6=Saturday).', type: integer }, priceAmount: { description: 'Price amount.', type: string }, priceCurrency: { description: 'ISO 4217 currency code.', type: string } }
+                  properties: { dayOfWeek: { description: 'Day of week (0=Sunday, 6=Saturday).', type: integer }, priceAmount: { description: 'Price amount: a non-negative amount with at most 24 integer digits and 4 decimal places.', type: string, pattern: '^(\d{1,24})(?:\.(\d{1,4}))?$' }, priceCurrency: { description: 'ISO 4217 currency code.', type: string } }
                   type: object
             type: object
       type: object
@@ -4793,7 +4799,7 @@ components:
           description: 'Day of week (0=Sunday, 6=Saturday).'
           type: integer
         priceAmount:
-          description: 'Price amount.'
+          description: 'Price amount, with at least two decimal places and up to four — a price finer than cents keeps the decimals it needs, so do not parse this as a fixed-width two-decimal string.'
           type: string
         priceCurrency:
           description: 'ISO 4217 currency code.'
@@ -6021,8 +6027,570 @@ components:
           items:
             $ref: '#/components/schemas/ValidationErrorFieldSchema'
       type: object
+    ClearActiveRevisionRequestSchema:
+      description: "Taking a view down: clears the live revision, leaving nothing published.\n\nRevisions and their publish history survive, so the view can be brought back by making one live\nagain. On a customized built-in, clearing the pointer is the revert-to-default."
+      required:
+        - viewId
+      properties:
+        viewId:
+          description: 'The view to take down.'
+          type: string
+          example: 8f3k2
+      type: object
+    CreateRevisionRequestSchema:
+      description: "Saving a new revision under an existing view id. Existing revisions are never mutated — the id is\nthe stable key, the revisions are immutable content.\n\n`baseRevision` is the optimistic-concurrency assertion and must equal the view's latest revision.\n`baseRevision: 0` asserts the view has no stored revision yet, which is how a built-in is\nmaterialized in place: the same id starts fronting a stored definition, so preferences and shared\nlinks keep working. Against an already-stored view that is a 409."
+      required:
+        - name
+        - sections
+        - baseRevision
+      properties:
+        name:
+          description: 'Display name for the view.'
+          type: string
+          maxLength: 60
+          minLength: 1
+          example: 'Front Desk Sweep'
+        sections:
+          description: 'Sections in order, replacing the previous revision''s wholesale.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DefinitionSectionRequestSchema'
+          maxItems: 200
+          minItems: 1
+        baseRevision:
+          description: 'The revision this save is based on. Must equal the view''s latest revision; `"0"` asserts none exists yet and materializes a built-in.'
+          type: string
+          example: '4'
+          nullable: true
+        status:
+          description: 'Status of the new revision.'
+          type: string
+          default: draft
+          enum:
+            - draft
+            - published
+      type: object
+    CreateViewRequestSchema:
+      description: "Creating a stored view. The server mints the key — a client cannot choose one, and passing a\nreserved built-in id is a 400 rather than a way to pre-empt a built-in.\n\n`status` defaults to `draft` so the normal flow is build-then-publish; pass `published` to\nsave-and-publish in one step."
+      required:
+        - name
+        - sections
+      properties:
+        name:
+          description: 'Display name for the view.'
+          type: string
+          maxLength: 60
+          minLength: 1
+          example: 'Front Desk Sweep'
+        sections:
+          description: 'Sections in order. The uncategorized tail is computed at render time and must not be submitted.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DefinitionSectionRequestSchema'
+          maxItems: 200
+          minItems: 1
+        status:
+          description: 'Initial status of revision 1.'
+          type: string
+          default: draft
+          enum:
+            - draft
+            - published
+      type: object
+    DefinitionSectionRequestSchema:
+      description: "One section of a submitted definition — the same `{id, label, unitIds}` a read returns, because\nthe read and the write of a definition are the same document.\n\nReserved ids (the `sec_rt_` prefix, `sec_alpha`, `sec_uncat`) are rejected: those belong to\nserver-computed sections, and letting a client claim one would collide at render time."
+      required:
+        - label
+        - unitIds
+      properties:
+        id:
+          description: 'The section''s id, stable across saves. **Omit it for a new section** — the server assigns one. Round-trip the id from a definition read to keep an existing section''s identity, and with it whatever the client hangs off that id. Must not be a server-reserved id such as `sec_uncat`.'
+          type: string
+          maxLength: 64
+          pattern: '^[A-Za-z0-9_-]+$'
+          example: sec_a1
+        label:
+          description: 'Section label as the admin typed it.'
+          type: string
+          maxLength: 60
+          minLength: 1
+          example: 'Tower — Low Floors'
+        unitIds:
+          description: 'Units placed in this section, in order. A unit may appear in only one section, and a bed must sit in the same section as its dorm — placing the dorm alone brings its beds along, which is the normal case. At most 20,000 unit ids across the whole definition; the ceiling is on the definition, not on one section, so it cannot be expressed as `maxItems` here.'
+          type: array
+          items:
+            type: string
+          example:
+            - 12345-0
+            - 12350-0
+      type: object
+    DeleteRevisionRequestSchema:
+      description: "Discarding a draft an admin tried and rejected. Only drafts are deletable — the active revision,\npublished history and a view's last remaining revision refuse with `REVISION_NOT_DELETABLE`."
+      required:
+        - viewId
+        - revision
+      properties:
+        viewId:
+          description: 'The view the revision belongs to.'
+          type: string
+          example: 8f3k2
+        revision:
+          description: 'The draft revision to discard.'
+          type: string
+          example: '6'
+      type: object
+    DeleteViewRequestSchema:
+      description: "Deleting a view. On a built-in this deletes the property's customization rather than the view: the\nid reverts to its derived layout and keeps working, which is why a reserved id is accepted here."
+      required:
+        - viewId
+      properties:
+        viewId:
+          description: 'The view to delete.'
+          type: string
+          example: 8f3k2
+      type: object
+    GetViewLayoutRequestSchema:
+      description: "Parameters for resolving a view into a layout.\n\n`filters` and `date` travel together: a day-scoped filter (`busy`) needs the day it is\nevaluated against, while a structural one (`kind`) does not. `revision` selects a\nspecific revision instead of the published resolution."
+      required:
+        - viewId
+      type: object
+      allOf:
+        -
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+        -
+          properties:
+            viewId:
+              description: 'A reserved built-in id (`accommodation-type`, `alphabetical`) or a stored view key.'
+              type: string
+              example: accommodation-type
+            revision:
+              description: 'Render a specific revision instead of the published resolution. Requires the manage permission when the revision is a draft.'
+              type: string
+              example: '5'
+              nullable: true
+            date:
+              description: 'The day day-scoped filters are evaluated against, `yyyy-MM-dd`. Required when such a filter is present (`busy`), ignored otherwise — `kind` is structural and needs no date.'
+              type: string
+              format: date
+              example: '2026-08-12'
+              nullable: true
+          type: object
+    GetViewRequestSchema:
+      description: 'Reading a stored view''s definition — what the builder edits.'
+      required:
+        - viewId
+      properties:
+        viewId:
+          description: 'The view whose definition to read.'
+          type: string
+          example: 8f3k2
+      type: object
+    ListRevisionsRequestSchema:
+      description: 'Listing a view''s revisions. Metadata only — no definition content is decoded.'
+      required:
+        - viewId
+      properties:
+        viewId:
+          description: 'The view whose revisions to list.'
+          type: string
+          example: 8f3k2
+      type: object
+    ListViewsRequestSchema:
+      description: "Listing the property's views. No pagination: two built-ins plus at most five stored keys is\nbounded by the model, not by a page size."
+    SetActiveRevisionRequestSchema:
+      description: "Which revision the view should serve.\n\nThe live revision belongs to the view, not to the revision, so this writes the view's pointer\nand copies no content: what an admin previewed is exactly what goes live. Any revision\nqualifies — naming an older one is the rollback — and naming the one already live changes\nnothing."
+      required:
+        - revision
+      properties:
+        revision:
+          description: 'The revision to make live.'
+          type: string
+          example: '4'
+      type: object
+    DefinitionSectionResponseSchema:
+      description: "A section as stored — exactly the shape a save accepts back, because the read and the write of a\ndefinition are the same document.\n\nNot to be confused with a section in a rendered layout: a definition holds the unit ids, while a\nlayout puts the id on each unit and leaves the section carrying only its label and kind."
+      required:
+        - id
+        - label
+        - unitIds
+      properties:
+        id:
+          description: 'Client-assigned section id, stable across saves.'
+          type: string
+          example: sec_a1
+        label:
+          description: 'Admin-authored label.'
+          type: string
+          example: 'Tower — Low Floors'
+        unitIds:
+          description: 'Units placed in this section, in order. Ids the catalog cannot resolve are kept here verbatim and reported in `unresolvedUnitIds`.'
+          type: array
+          items:
+            type: string
+          example:
+            - 12345-0
+            - 12350-0
+      type: object
+    LayoutMetaResponseSchema:
+      description: "What was rendered and how much of it. `revision`/`status` appear only for a view resolved from a\nstored revision — their absence is how a client tells a derived built-in from a materialized one,\nwithout a discriminator field."
+      required:
+        - viewId
+        - totalUnits
+        - hiddenUnits
+        - filtersApplied
+      properties:
+        viewId:
+          description: 'The view this layout was resolved from.'
+          type: string
+          example: 8f3k2
+        totalUnits:
+          description: 'Sellable spaces in the property. A dorm container is a structural row and is not counted; each of its beds is.'
+          type: integer
+          example: 148
+        hiddenUnits:
+          description: 'Units the filters removed from this response.'
+          type: integer
+          example: 145
+        filtersApplied:
+          description: 'Whether any filter was applied.'
+          type: boolean
+          example: true
+        revision:
+          description: 'Revision rendered. Absent when the view resolved to its derived layout.'
+          type: string
+          example: '5'
+          nullable: true
+        status:
+          description: 'Status of the rendered revision. Absent alongside `revision`.'
+          type: string
+          enum:
+            - draft
+            - published
+          example: draft
+          nullable: true
+        focusedDate:
+          description: 'Echo of the `date` the filters were evaluated against. Present only when a day-scoped filter ran.'
+          type: string
+          format: date
+          example: '2026-08-12'
+          nullable: true
+      type: object
+    RevisionListResponseSchema:
+      description: "A view's revisions, newest first. Unpaginated: retention keeps at most the three newest published\nrevisions, but drafts staged ahead of the live revision are never swept — so what actually\nbounds this collection is the ceiling of 50 revisions per view, enforced on save."
+      required:
+        - data
+      properties:
+        data:
+          description: 'Revision metadata, newest first.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RevisionResponseSchema'
+      type: object
+    RevisionResponseSchema:
+      description: "Revision metadata — no definition content, which is why listing revisions never decodes the\nlayout blobs.\n\n`status` is immutable history: a revision stamped `published` was live at some point, whether or\nnot it is the active one now. Which revision is live is the view's active-revision pointer.\n\nThe revision number is this resource's `id` — an item in `/revisions` is identified by `id`, not by\na field repeating the resource name — and it is a string, as every numeric identifier is."
+      required:
+        - id
+        - name
+        - status
+        - created
+      properties:
+        id:
+          description: 'Revision number, from a monotonic per-view counter. Never reused, so a discard leaves a gap and an old preview link cannot come to point at new content.'
+          type: string
+          example: '5'
+        name:
+          description: 'The view''s name as of this revision. Names are versioned with the layout, so a rename staged in a draft shows here before it reaches the picker.'
+          type: string
+          example: 'Front Desk Sweep'
+        status:
+          description: 'Whether this revision has ever been published. History, not state: a revision that was taken down keeps it. What is live now is the view''s active revision.'
+          type: string
+          enum:
+            - draft
+            - published
+          example: published
+        created:
+          description: 'When the revision was stamped.'
+          type: string
+          format: date-time
+          example: '2026-08-16T10:41:02Z'
+        createdBy:
+          description: 'User who stamped it.'
+          type: string
+          example: '541223'
+          nullable: true
+      type: object
+    SectionEntityResponseSchema:
+      description: "A generic record reference, so adding a sectioning dimension is a new `type` value rather than a\nschema change."
+      required:
+        - type
+        - id
+      properties:
+        type:
+          description: 'Record kind.'
+          type: string
+          example: unit_type
+        id:
+          description: 'Record id.'
+          type: string
+          example: '12345'
+      type: object
+    SectionResponseSchema:
+      description: "One entry of the ordered section index. Carries no units — every unit names its section by\n`sectionId`, so a unit appears exactly once no matter how the sections are arranged.\n\n`id` is opaque and must never be parsed. What a section *is* comes from `kind` plus its companion\nfield: `entity` for an entity-backed section, `systemLabel` for a computed one. A new sectioning\ndimension (floor, building) adds an `entity.type` value rather than a new section shape."
+      required:
+        - id
+        - kind
+        - label
+      properties:
+        id:
+          description: 'Opaque section id. Never parsed by the client.'
+          type: string
+          example: sec_a1
+        kind:
+          description: '`entity`: backed by a domain record, see `entity`. `custom`: named by an admin. `system`: computed by the server, see `systemLabel`.'
+          type: string
+          enum:
+            - entity
+            - custom
+            - system
+          example: custom
+        label:
+          description: 'Display label, resolved server-side and rendered verbatim. Not localized: property-authored labels come back as authored, and the two server-generated labels ship English here plus a `systemLabel` token for the client to translate. Rendered verbatim.'
+          type: string
+          example: 'Tower — Low Floors'
+        systemLabel:
+          description: 'Which computed section this is, for clients that need to treat one specially — the uncategorized tail is default-collapsed, for instance.'
+          type: string
+          enum:
+            - alphabetical
+            - uncategorized
+          example: uncategorized
+          nullable: true
+        entity:
+          oneOf:
+            -
+              $ref: '#/components/schemas/SectionEntityResponseSchema'
+          nullable: true
+          description: 'The record this section is derived from, for `kind: entity`.'
+      type: object
+    UnitRelationResponseSchema:
+      description: 'Generic `{type, unitId}` so a new relation kind is a new value, not a new shape.'
+      required:
+        - type
+        - unitId
+      properties:
+        type:
+          description: 'Relation kind.'
+          type: string
+          enum:
+            - part_of
+            - composed_of
+          example: part_of
+        unitId:
+          description: 'The related unit.'
+          type: string
+          example: 12350-g0
+      type: object
+    UnitResponseSchema:
+      description: "One unit — a space that can be filled. Identity and structure only; volatile per-day state\n(housekeeping, busy/free) lives on the existing state endpoints.\n\n`restrictions` and `relations` are `required` so an empty one serializes as `[]` rather than\nbeing dropped: a client reading `unit.relations` must never meet an undefined.\n\n`sectionId` is always present: a unit only crosses the wire as part of a layout, and a unit in a\nlayout always renders under exactly one section."
+      required:
+        - id
+        - name
+        - kind
+        - unitTypeId
+        - restrictions
+        - relations
+        - sectionId
+      properties:
+        id:
+          description: 'PMS room identifier.'
+          type: string
+          example: 12345-0
+        name:
+          description: 'Server-resolved display name.'
+          type: string
+          example: '101'
+        kind:
+          description: '`standard`: a room in its own right. `dorm`: a shared unit whose beds sell individually — a structural row, not inventory. `bed`: an individually sellable bed. `virtual`: a space composed of other units.'
+          type: string
+          enum:
+            - standard
+            - dorm
+            - bed
+            - virtual
+          example: standard
+        unitTypeId:
+          description: 'Accommodation type this unit belongs to.'
+          type: string
+          example: '12345'
+        restrictions:
+          description: 'What the unit restricts, e.g. dorm gender. A mixed dorm carries no entry — absence already means anyone.'
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitRestrictionResponseSchema'
+        relations:
+          description: 'Structural links: `part_of` (bed to its dorm) and `composed_of` (virtual to each physical component).'
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitRelationResponseSchema'
+        sectionId:
+          description: 'The section this unit renders under.'
+          type: string
+          example: sec_a1
+      type: object
+    UnitRestrictionResponseSchema:
+      description: 'Generic `{type, value}` so a new restriction kind is a new value, not a new shape.'
+      required:
+        - type
+        - value
+      properties:
+        type:
+          description: 'Restriction kind.'
+          type: string
+          example: gender
+        value:
+          description: 'Restriction value.'
+          type: string
+          example: female
+      type: object
+    ViewDetailResponseSchema:
+      description: "A stored view's definition at one revision — what the builder edits, and symmetric with the save.\n\n`unresolvedUnitIds` is computed at read time: saved ids the current catalog can no longer resolve,\nbecause the unit was deactivated or re-typed (re-typing mints a new id). They stay in `sections`\nverbatim and are flagged here rather than dropped, so a read/modify/write cycle cannot silently\ndelete units that may come back."
+      required:
+        - id
+        - name
+        - revision
+        - status
+        - sections
+      properties:
+        id:
+          description: 'The view id.'
+          type: string
+          example: 8f3k2
+        name:
+          description: 'Display name.'
+          type: string
+          example: 'Front Desk Sweep'
+        revision:
+          description: 'The revision this definition is from.'
+          type: string
+          example: '5'
+        status:
+          description: 'Status of this revision.'
+          type: string
+          enum:
+            - draft
+            - published
+          example: draft
+        sections:
+          description: 'Sections in order. The uncategorized tail is computed at render time and is not stored here.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DefinitionSectionResponseSchema'
+        publishedRevision:
+          description: 'The active revision, if any.'
+          type: string
+          example: '3'
+          nullable: true
+        created:
+          description: 'When the view was created.'
+          type: string
+          format: date-time
+          example: '2026-08-12T09:21:44Z'
+          nullable: true
+        modified:
+          description: 'When this revision was stamped.'
+          type: string
+          format: date-time
+          example: '2026-08-16T10:41:02Z'
+          nullable: true
+        createdBy:
+          description: 'User who created the view.'
+          type: string
+          example: '541223'
+          nullable: true
+        unresolvedUnitIds:
+          description: 'Saved unit ids the current catalog cannot resolve. Absent when every id still resolves.'
+          type: array
+          items:
+            type: string
+      type: object
+    ViewLayoutResponseSchema:
+      description: "A view resolved into a layout: every unit to draw, flat and in final render order, each naming\nits section; the ordered section index; and what was rendered.\n\nThe units are under `units` rather than the platform's `data`: this is not a collection of the\nresource in the path — it is one layout, whose parts happen to include units.\n\nDeliberately unpaginated. A partial layout is not a layout: the calendar needs every row before\nit can draw one, so paging this would mean N requests before first paint. Bounded by\nconstruction instead — a stored view is capped on write, a built-in by the property's inventory."
+      required:
+        - units
+        - sections
+        - meta
+      properties:
+        units:
+          description: 'Units in final render order, each carrying its `sectionId`.'
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitResponseSchema'
+        sections:
+          description: "The ordered section index.\n\nWhat it contains depends on how the view resolved. A view resolved from a stored definition ends with the uncategorized tail, always last and always present even when every unit is placed. The two derived built-ins have no tail: `accommodation-type` returns one section per unit type, and `alphabetical` returns a single band. Do not index off the last section to find the tail — match on `systemLabel`."
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionResponseSchema'
+        meta:
+          $ref: '#/components/schemas/LayoutMetaResponseSchema'
+      type: object
+    ViewListResponseSchema:
+      description: "The property's views. Unpaginated: two built-ins plus at most five stored keys, so the collection\nis bounded at seven by the model itself rather than by a page size.\n\nA caller with the manage permission additionally sees views with nothing published; everyone else\nsees only what is live."
+      required:
+        - data
+      properties:
+        data:
+          description: 'View summaries, built-ins first.'
+          type: array
+          items:
+            $ref: '#/components/schemas/ViewSummaryResponseSchema'
+      type: object
+    ViewSummaryResponseSchema:
+      description: "One entry in the view picker.\n\nA view with no `publishedRevision` has nothing active: it is out of the picker for everyone but\nan admin, which is how a view is put away. `latestRevision` above `publishedRevision` means an\nadmin has work staged ahead of what is live."
+      required:
+        - id
+        - name
+        - isDefault
+      properties:
+        id:
+          description: 'Either a reserved built-in id (`accommodation-type`, `alphabetical`) or a stored key.'
+          type: string
+          example: 8f3k2
+        name:
+          description: 'Display name. For a built-in the property has not customized this is server-generated English — localize it from `systemLabel` instead of showing it verbatim.'
+          type: string
+          example: 'Front Desk Sweep'
+        isDefault:
+          description: 'Whether this is the default view and the client''s fallback target.'
+          type: boolean
+          example: false
+        publishedRevision:
+          description: 'The active revision. Absent when nothing is published — a derived built-in, or a view that has been put away.'
+          type: string
+          example: '3'
+          nullable: true
+        latestRevision:
+          description: 'Highest revision that exists. Above `publishedRevision` when work is staged ahead of what is live.'
+          type: string
+          example: '5'
+          nullable: true
+        modified:
+          description: 'When the view last changed.'
+          type: string
+          format: date-time
+          example: '2026-08-16T10:41:02Z'
+          nullable: true
+        systemLabel:
+          description: 'Token for a built-in view''s server-generated name, so the client can localize it. Absent for a stored view and for a customized built-in, whose names the admin typed. `name` carries the English fallback.'
+          type: string
+          enum:
+            - accommodation-type
+            - alphabetical
+          example: accommodation-type
+          nullable: true
+      type: object
     CheckDiscountRequestSchema:
-      description: 'A discount applied to the check. Check-level discounts (no `appliesToItem`) post as a distinct negative folio line. Item-level discounts (`appliesToItem` set) are folded into the target item: the item''s amount is reduced by the discount value and the discount description is appended to the item''s note so it remains visible on the folio.'
+      description: 'A discount applied to the whole check. It posts as its own negative folio line. To discount a single line instead, nest the discount inside that item as `items[].discounts[]`.'
       required:
         - amount
         - name
@@ -6047,14 +6615,36 @@ components:
           type: string
           example: 'Manager comp'
           nullable: true
-        appliesToItem:
-          description: 'Optional zero-based index into the `items` array on the same postCheck request. When set, the discount is folded into that item: item.amount is reduced by the discount value and the discount description is appended to item.note. When omitted, the discount is check-level and posts as its own folio line.'
-          type: integer
-          example: 0
-          nullable: true
       type: object
     CheckItemDetailsSchema:
       description: 'Marker base for the polymorphic `details` block on a check item. Concrete shape is selected by the sibling `type` field — see CheckItemRequestSchema.details.'
+      type: object
+    CheckItemDiscountRequestSchema:
+      description: 'A discount applied to the line it is nested under. Cloudbeds reduces that line''s `amount` by this value and appends the discount to the line''s `note`, so it stays visible on the folio; an item-level discount does not post a separate negative line. Several may be applied to one line, in which case their values are summed. A discount that applies to the whole check goes in the check-level `discounts[]` instead.'
+      required:
+        - amount
+        - name
+        - code
+      properties:
+        amount:
+          description: 'Discount amount as a positive value in the property currency. It is subtracted from the line''s amount. The combined discounts on a line may not exceed that line''s amount.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '5.00'
+          nullable: true
+        name:
+          description: 'Human-readable label. Appended to the line''s note so the reduction is explained on the folio.'
+          type: string
+          example: 'Happy Hour 20%'
+        code:
+          description: 'Partner-supplied code identifying the discount (e.g. promotion or coupon code).'
+          type: string
+          example: HAPPY_HOUR
+        note:
+          description: 'Optional free-text note.'
+          type: string
+          example: 'Manager comp'
+          nullable: true
       type: object
     CheckItemRequestSchema:
       description: 'A single line on a POS check. Shared envelope fields — name, quantity, price, amount, taxes, fees, note, customTransactionCode, generalLedgerCustomCode — describe the line. quantity is the unit count; price, when supplied, is the per-unit rate but is informational metadata only. The `details` block is polymorphic: its concrete shape is selected by the `type` discriminator. Today only PRODUCT is accepted, so `details` carries product-specific fields (sku, category, sub-reservation routing). Bookable-resource details will land alongside as a second `oneOf` branch when that flow is reintroduced. amount is the financial source of truth — the server posts it verbatim without recomputing from price * quantity.'
@@ -6116,6 +6706,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FeeSchema'
+        discounts:
+          description: 'Discounts applied to this line. The line''s amount is reduced by their total and each is appended to the line''s note; they do not post separate negative lines. A discount covering the whole check belongs in the check-level `discounts[]`.'
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckItemDiscountRequestSchema'
         details:
           oneOf:
             -
@@ -6192,7 +6787,7 @@ components:
         - totalItems
       properties:
         totalItems:
-          description: 'Items subtotal — sum of items[].amount + items[].taxes + items[].fees. When items[] is supplied alongside, this value must equal the server-computed items subtotal within 1 minor unit per currency. When items[] is empty, this is the gross figure the synthetic pos_check_total folio line carries. Not a grand-total — service charge, gratuity, and discount totals are reported in their own fields below.'
+          description: 'Items subtotal. Per item: amount + its taxes[] + its fees[] + the taxes on those fees — the nested fee-tax term is the one most often left out. When items[] is supplied alongside, this value must equal the server-computed subtotal within 1 minor unit per currency; a larger difference is rejected with INVALID_TOTAL_MISMATCH. When an item carries a discount this figure is the amount BEFORE that discount — the comparison runs on the items as sent, and the discount is applied afterwards, so a 20.00 item with a 5.00 discount is declared as 20.00 and posts 15.00. When items[] is empty, this is the gross figure the single synthesised line carries. Not a grand total — service charge, gratuity and discount have their own fields below.'
           type: string
           pattern: '^\d+(\.\d{1,4})?$'
           example: '24.30'
@@ -6245,7 +6840,7 @@ components:
           example: '2047'
           nullable: true
         checkId:
-          description: 'Partner-assigned durable external reference for the check (UUID or opaque string). Distinct from referenceID — used to correlate the check across systems regardless of retries. Letters, digits, and . _ ~ - only (addressed as a URL path segment for void).'
+          description: 'Partner-assigned durable external reference for the check (UUID or opaque string). Optional — when omitted, Cloudbeds generates one and returns it. Echoed on the response and used to void the check later. Must be unique among the property''s active checks; a value released by a void can be reused. Letters, digits, and . _ ~ - only (addressed as a URL path segment for void).'
           type: string
           example: 8f2c1e3a-9b6d-4f1e-9d2a-3b6c0a1f7e51
           nullable: true
@@ -6379,7 +6974,6 @@ components:
       enum:
         - FOLIO_NOT_FOUND
         - RESERVATION_CHECKED_OUT
-        - DUPLICATE_REFERENCE
         - IDEMPOTENCY_KEY_REUSED
         - DUPLICATE_CHECK_ID
         - TAX_NOT_FOUND
@@ -6415,10 +7009,77 @@ components:
           type: string
           example: CHK-9911283
         notice:
-          description: 'Set when the request was identified as a duplicate via referenceId. When present, no new posting was created and the original response is returned.'
+          description: 'Set when this request replayed an earlier one: the same Idempotency-Key was sent with the same body. When present, no new posting was created and the original response is returned.'
           type: string
-          example: 'Duplicate referenceId detected; original response returned.'
+          example: 'Duplicate Idempotency-Key — returning original posting.'
           nullable: true
+      type: object
+    ChecklistConfigUpdateRequestSchema:
+      description: 'A full replacement of the property''s check-in checklist configuration. A replace rather than a patch, because the order of the items is part of the configuration. Sending both stages empty removes the configuration, leaving the property with no checklist.'
+      required:
+        - checkIn
+        - checkOut
+      properties:
+        checkIn:
+          description: 'Items guarding check-in, in the order they should appear.'
+          type: array
+          items:
+            type: object
+          example:
+            -
+              key: balance_due
+              severity: block
+        checkOut:
+          description: 'Items guarding check-out, in the order they should appear.'
+          type: array
+          items:
+            type: object
+          example:
+            -
+              key: balance_due
+              severity: warn
+      type: object
+    ChecklistConfigResponseSchema:
+      description: 'A property''s check-in checklist configuration, as the platform applies it.'
+      required:
+        - isConfigured
+        - checkIn
+        - checkOut
+      properties:
+        isConfigured:
+          description: 'False when the property has no checklist at all, which is the default and the behaviour that predates the feature. Both item lists are then empty.'
+          type: boolean
+        checkIn:
+          description: 'Items guarding check-in, in display order.'
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistItemResponseSchema'
+        checkOut:
+          description: 'Items guarding check-out, in display order.'
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistItemResponseSchema'
+      type: object
+    ChecklistItemResponseSchema:
+      required:
+        - key
+        - severity
+        - severityIsFixed
+      properties:
+        key:
+          description: 'The checklist item.'
+          type: string
+          example: balance_due
+        severity:
+          description: 'The severity actually applied to this item, which is not always the one stored.'
+          type: string
+          enum:
+            - block
+            - warn
+          example: block
+        severityIsFixed:
+          description: 'True when the severity is a property of the platform rather than a choice. The settings page must not offer a severity control for these items: the value cannot be changed, and showing a control implies otherwise.'
+          type: boolean
       type: object
     DynamicFilterFieldSchema:
       description: 'Represents a single filter condition'
@@ -6771,6 +7432,140 @@ components:
         - house_account
         - group_profile
         - accounts_receivable_ledger
+    LastRoomValueDecisionSchema:
+      required:
+        - roomTypeId
+        - occupancyDate
+        - lastRoomValue
+      properties:
+        roomTypeId:
+          description: 'Room Type ID.'
+          type: integer
+          example: 67890
+          nullable: true
+        occupancyDate:
+          description: 'Occupancy date (YYYY-MM-DD).'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-01'
+          nullable: true
+        lastRoomValue:
+          description: 'Last room value as sent by IDeaS. May be negative; a negative value is flagged as an anomaly downstream rather than rejected here.'
+          type: string
+          example: '150.00'
+          nullable: true
+        ceilingValue:
+          description: 'Ceiling value as sent by IDeaS, kept for context/audit.'
+          type: string
+          example: '200.00'
+          nullable: true
+        deltaValue:
+          description: 'Delta value as sent by IDeaS, kept for context/audit.'
+          type: string
+          example: '10.00'
+          nullable: true
+        maxSolds:
+          description: 'Maximum number of units sold as sent by IDeaS, kept for context/audit.'
+          type: integer
+          example: 5
+          nullable: true
+        currencyCode:
+          description: 'ISO 4217 currency code.'
+          type: string
+          example: USD
+          nullable: true
+      type: object
+    LastRoomValuePutRequestSchema:
+      required:
+        - correlationId
+        - data
+      properties:
+        correlationId:
+          description: 'Correlation id for tracing this request end-to-end.'
+          type: string
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        data:
+          description: 'Last room value decisions to store.'
+          type: array
+          items:
+            $ref: '#/components/schemas/LastRoomValueDecisionSchema'
+        testRequest:
+          description: 'Mark as test request (honored in non-production only).'
+          type: boolean
+          example: false
+      type: object
+    OverbookingDecisionSchema:
+      required:
+        - level
+        - occupancyDate
+        - overbooking
+      properties:
+        level:
+          description: 'Overbooking level: house-wide or per room type.'
+          type: string
+          enum:
+            - house
+            - room_type
+          nullable: true
+        roomTypeId:
+          description: 'Room Type ID. Required and positive when level is room_type; 0 (or omitted) for house level.'
+          type: integer
+          example: 67890
+          nullable: true
+        occupancyDate:
+          description: 'Occupancy date (YYYY-MM-DD).'
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2030-01-01'
+          nullable: true
+        overbooking:
+          description: 'Overbooking limit in the Cloudbeds convention: positive = rooms sellable above capacity, negative = below. Stored as received (the integration translates its vendor sign).'
+          type: integer
+          example: 5
+          nullable: true
+        authorizedCapacity:
+          description: 'Authorized capacity as sent by IDeaS, kept for context/audit.'
+          type: integer
+          example: 20
+          nullable: true
+      type: object
+    OverbookingPutRequestSchema:
+      required:
+        - correlationId
+        - data
+      properties:
+        correlationId:
+          description: 'Correlation id for tracing this request end-to-end.'
+          type: string
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        data:
+          description: 'Overbooking decisions to store.'
+          type: array
+          items:
+            $ref: '#/components/schemas/OverbookingDecisionSchema'
+        testRequest:
+          description: 'Mark as test request (honored in non-production only).'
+          type: boolean
+          example: false
+      type: object
+    LastRoomValueJobAcceptedResponseSchema:
+      required:
+        - jobReferenceId
+      properties:
+        jobReferenceId:
+          description: 'Reference ID for tracking via getAsyncApiJob.'
+          type: integer
+          example: 1234
+      type: object
+    OverbookingJobAcceptedResponseSchema:
+      required:
+        - jobReferenceId
+      properties:
+        jobReferenceId:
+          description: 'Reference ID for tracking via getAsyncApiJob.'
+          type: integer
+          example: 1234
+      type: object
     MyallocatorProxyRequestSchema:
       required:
         - endpoint
@@ -7060,6 +7855,35 @@ components:
           default: null
           nullable: true
       type: object
+    DoorLockKeyBatchDeleteItemSchema:
+      description: 'The outcome of invalidating one key in a batch request.'
+      required:
+        - keyId
+        - status
+      properties:
+        keyId:
+          type: string
+        status:
+          type: string
+          enum:
+            - deleted
+            - deleting
+            - failed
+            - not_found
+        message:
+          type: string
+          nullable: true
+      type: object
+    DoorLockKeyBatchDeleteResultResponseSchema:
+      description: 'Per-key outcomes for a batch invalidation, one entry per requested key.'
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorLockKeyBatchDeleteItemSchema'
+      type: object
     DoorLockKeyCollectionResponseSchema:
       required:
         - items
@@ -7231,6 +8055,10 @@ components:
       properties:
         id:
           type: string
+          enum:
+            - key_card
+            - access_code
+            - mobile_key
         name:
           type: string
       type: object
@@ -7270,6 +8098,10 @@ components:
       properties:
         id:
           type: string
+          enum:
+            - key_card
+            - access_code
+            - mobile_key
         name:
           type: string
       type: object
@@ -7934,7 +8766,7 @@ components:
           nullable: true
       type: object
     PostCheckGratuityRequestSchema:
-      description: "Request body for the nested create endpoint `POST /folio/v1/checks/{checkId}/gratuities`.\n\nLinkage is expressed by the URL: `checkId` is the **path parameter** (documented on the\ncontroller operation, bound by name — NOT a body field), so the body carries only the\ngratuity entries. Retry-safety is the required Idempotency-Key header (referenceId retired).\nIf a client also sends `checkId` in the JSON body, the URL segment wins —\nApiControllerArgumentsResolver merges path params last, so the body value is silently overridden.\nThe gratuities inherit the linked check's folio target and checkNumber; POS context stays an\nattribute of the check (it is not copied onto the gratuity). Contrast the standalone\n`POST /folio/v1/gratuities` request body."
+      description: 'Request body for posting tips onto an existing check. The check is identified by the `checkId` path parameter, so the body carries only the gratuity entries — a `checkId` sent in the body is ignored. The tips inherit the check''s folio target and check number; POS context stays an attribute of the check and is not copied onto them. Retry-safety is the required Idempotency-Key header. For a tip with no associated check, use POST /folio/v1/gratuities.'
       required:
         - gratuities
       properties:
@@ -8015,7 +8847,6 @@ components:
         - RECIPIENT_USER_NOT_FOUND
         - SUBRESERVATION_NOT_FOUND
         - CHECK_NOT_FOUND
-        - DUPLICATE_REFERENCE
         - IDEMPOTENCY_KEY_REUSED
         - DUPLICATE_GRATUITY_ID
         - GRATUITY_NOT_FOUND
@@ -8041,9 +8872,9 @@ components:
             - '9911283'
             - '9911284'
         notice:
-          description: 'Set when the request was identified as a duplicate via referenceId. When present, no new posting was created and the original response is returned.'
+          description: 'Set when this request replayed an earlier one: the same Idempotency-Key was sent with the same body. When present, no new posting was created and the original response is returned.'
           type: string
-          example: 'Duplicate referenceId — returning original posting.'
+          example: 'Duplicate Idempotency-Key — returning original posting.'
           nullable: true
       type: object
     AvailabilitySearchRequestSchema:
@@ -8380,6 +9211,8 @@ components:
           description: 'Re-process failed records of parent task.'
           type: boolean
           nullable: true
+      type: object
+    ImportTaskReprocessRequestSchema:
       type: object
     ImportTaskToggleProcessingRequestSchema:
       properties:
@@ -9346,6 +10179,299 @@ components:
         canDisable:
           type: boolean
       type: object
+    OrganizationAvailabilityRequestSchema:
+      properties:
+        id:
+          description: 'Organization ID'
+          type: integer
+          example: 12
+        check_in:
+          description: 'Check-in date in YYYY-MM-DD format.'
+          type: string
+          format: date
+          example: '2026-05-01'
+        check_out:
+          description: 'Check-out date in YYYY-MM-DD format. Exclusive: the departure day is not charged.'
+          type: string
+          format: date
+          example: '2026-05-05'
+        currency:
+          description: 'ISO 4217 currency code every property is priced in. Required: the response is a comparison list, and prices only compare if they share a currency.'
+          type: string
+          example: EUR
+      type: object
+    OrganizationDetailRequestSchema:
+      properties:
+        id:
+          description: 'Organization ID'
+          type: integer
+          example: 12
+        lang:
+          description: 'Cloudbeds language code (e.g. en, pt-br, es-es). Defaults to en.'
+          type: string
+          example: en
+        currency:
+          description: 'ISO 4217 currency code. Optional: when omitted, each property keeps its own currency, and every monetary value carries the currency it is expressed in.'
+          type: string
+          example: EUR
+          nullable: true
+      type: object
+    OrganizationAddressSchema:
+      required:
+        - city
+        - state
+        - country
+      properties:
+        city:
+          type: string
+          example: 'Miami Beach'
+        state:
+          type: string
+          example: Florida
+        country:
+          type: string
+          example: 'United States'
+      type: object
+    OrganizationAvailabilityDataSchema:
+      required:
+        - checkIn
+        - checkOut
+        - properties
+      properties:
+        checkIn:
+          description: 'The requested check-in date, echoed back so a client can match a response to the date range currently on screen.'
+          type: string
+          format: date
+          example: '2026-05-01'
+        checkOut:
+          description: 'The requested check-out date. Exclusive: the departure day is not a charged night.'
+          type: string
+          format: date
+          example: '2026-05-05'
+        properties:
+          description: 'One entry per member property, including those with no vacancy. A property is omitted when it has no base currency configured, so a missing property id means no data for that property rather than no vacancy.'
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationAvailabilityPropertySchema'
+      type: object
+    OrganizationAvailabilityPropertySchema:
+      required:
+        - id
+        - hasAvailability
+        - minNightlyRate
+        - minTotalPrice
+      properties:
+        id:
+          description: 'Property identifier, used to join this entry with the organization detail response.'
+          type: string
+          example: '101'
+        hasAvailability:
+          description: 'Whether the property can be booked for the requested dates.'
+          type: boolean
+          example: true
+        minNightlyRate:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Lowest nightly price available for the requested dates. Null when there is no availability.'
+        minTotalPrice:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Lowest total price for the whole stay. Null when there is no availability. Not the nightly minimum multiplied by the number of nights: the cheapest single night and the cheapest stay can come from different options.'
+      type: object
+    OrganizationAvailabilityResponseSchema:
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/OrganizationAvailabilityDataSchema'
+      type: object
+    OrganizationBadRequestSchema:
+      description: 'Returned when the request cannot be served as sent: a malformed or reversed date range, or an unsupported currency. The error string identifies which.'
+      required:
+        - success
+        - error
+      properties:
+        error:
+          type: string
+          example: 'Invalid date range'
+        success:
+          type: boolean
+          example: false
+      type: object
+    OrganizationDetailDataSchema:
+      required:
+        - id
+        - name
+        - slug
+        - properties
+      properties:
+        id:
+          type: string
+          example: '12'
+        name:
+          type: string
+          example: 'Beach Hotels Group'
+        slug:
+          type: string
+          example: beach-hotels
+        properties:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationPropertySchema'
+      type: object
+    OrganizationDetailResponseSchema:
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/OrganizationDetailDataSchema'
+      type: object
+    OrganizationLateCheckoutSchema:
+      required:
+        - hour
+        - feeType
+        - fee
+      properties:
+        hour:
+          description: 'Property-local latest late-checkout time-of-day (HH:MM); read with the property timeZone. Not an instant.'
+          type: string
+          example: '13:00'
+        feeType:
+          type: string
+          enum:
+            - flat
+            - percent
+          example: flat
+        fee:
+          description: 'Money (amount + currencyCode) when feeType is "flat"; a percentage number (e.g. 10 for 10%) when "percent".'
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+            -
+              type: number
+              format: float
+              example: 10
+      type: object
+    OrganizationNotFoundResponseSchema:
+      required:
+        - success
+        - error
+      properties:
+        error:
+          type: string
+          example: 'Organization not found'
+        success:
+          type: boolean
+          example: false
+      type: object
+    OrganizationPoliciesSchema:
+      properties:
+        checkinTime:
+          description: 'Property-local check-in time-of-day (HH:MM); read with the property timeZone. Not an instant.'
+          type: string
+          example: '15:00'
+          nullable: true
+        checkoutTime:
+          description: 'Property-local check-out time-of-day (HH:MM); read with the property timeZone. Not an instant.'
+          type: string
+          example: '11:00'
+          nullable: true
+        lateCheckout:
+          oneOf:
+            -
+              $ref: '#/components/schemas/OrganizationLateCheckoutSchema'
+          nullable: true
+      type: object
+    OrganizationPropertySchema:
+      required:
+        - id
+        - code
+        - name
+        - currencyCode
+        - hotelAddress
+        - lat
+        - lng
+        - bookingUrl
+        - images
+        - amenities
+        - policies
+      properties:
+        id:
+          type: string
+          example: '101'
+        code:
+          type: string
+          example: SEASIDE
+        name:
+          type: string
+          example: 'Seaside Resort'
+        description:
+          type: string
+          nullable: true
+        currencyCode:
+          type: string
+          example: USD
+        timeZone:
+          description: 'Property IANA timezone; read together with policy times (which are property-local).'
+          type: string
+          example: America/Los_Angeles
+          nullable: true
+        hotelAddress:
+          $ref: '#/components/schemas/OrganizationAddressSchema'
+        lat:
+          type: number
+          format: float
+          example: 25.7907
+        lng:
+          type: number
+          format: float
+          example: -80.13
+        bookingUrl:
+          type: string
+          example: 'https://hotels.cloudbeds.com/reservation/SEASIDE'
+        website:
+          type: string
+          example: 'https://www.seasideresort.com'
+          nullable: true
+        images:
+          type: array
+          items:
+            type: string
+        logo:
+          type: string
+          example: 'https://static.cloudbeds.com/img/seaside-logo.png'
+          nullable: true
+        amenities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AmenityItemSchema'
+        policies:
+          $ref: '#/components/schemas/OrganizationPoliciesSchema'
+      type: object
+    OrganizationServiceUnavailableResponseSchema:
+      required:
+        - success
+        - error
+      properties:
+        error:
+          type: string
+          example: 'Service temporarily unavailable. Please retry.'
+        success:
+          type: boolean
+          example: false
+      type: object
     CaptureModeSchema:
       description: 'The capture mode for the payment'
       type: string
@@ -10208,6 +11334,47 @@ components:
           description: 'Saleable Accommodations: caps how many rooms of the room type this rate may sell. Null means no limit — the rate may sell the room type''s full capacity.'
           type: integer
           example: 5
+          nullable: true
+        agePolicyPricing:
+          description: 'Age-group pricing for this interval, one entry per priced age group — or, under per_each_guest pricing, one entry per extra-guest position within a group, so several entries can share an ageGroupId and differ by guestNumber. Null when the property does not use age-group pricing, or when this interval''s rate still prices guests with the adultDays / childDays model — in which case those two fields carry the pricing. An empty array means age-group pricing applies to this interval but nothing is priced on it yet. Infant groups are absent while infant support is off for the property. Join ageGroupId against GET /age-policy/v1/policies for each group''s name and age range.'
+          type: array
+          items:
+            required:
+              - ageGroupId
+              - isExtraGuestsPricing
+              - days
+            properties:
+              ageGroupId:
+                description: 'Age group this price applies to.'
+                type: integer
+                minimum: 1
+                example: 7
+              isExtraGuestsPricing:
+                description: 'True when the price applies to a guest beyond base occupancy rather than to the base rate.'
+                type: boolean
+                example: false
+              extraGuestsType:
+                description: 'The property''s extra-guest pricing mode: per_age_group prices every extra guest of a group alike, per_each_guest prices each position separately.'
+                type: string
+                enum:
+                  - per_age_group
+                  - per_each_guest
+                example: per_age_group
+                nullable: true
+              guestNumber:
+                description: 'Extra-guest position this price applies to, counting from the first guest beyond base occupancy. Only set under per_each_guest pricing.'
+                type: integer
+                minimum: 1
+                example: null
+                nullable: true
+              days:
+                description: 'Price per day-of-week. A day with no price is absent from the list.'
+                type: array
+                items:
+                  required: [dayOfWeek, priceAmount, priceCurrency]
+                  properties: { dayOfWeek: { description: '0=Sunday … 6=Saturday.', type: integer, example: 1 }, priceAmount: { description: 'Decimal amount, with at least two decimal places and up to four — a price finer than cents keeps the decimals it needs, so do not parse this as a fixed-width two-decimal string.', type: string, example: '12.00' }, priceCurrency: { description: 'ISO 4217 currency code.', type: string, example: USD } }
+                  type: object
+            type: object
           nullable: true
       type: object
     RatePlanListResponseSchema:
