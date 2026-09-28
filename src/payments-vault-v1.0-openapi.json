@@ -15,7 +15,7 @@
       "post": {
         "summary": "Tokenize a Card",
         "operationId": "tokenizeACard",
-        "description": "Accepts card data along with optional billing details, tokenizes the card,\nand securely stores the tokenized payment method. Returns a token ID that can be\nused in place of the card number for future transactions.\n\nAuthentication is done via Cloudbeds JWT",
+        "description": "Accepts card data along with optional billing details, tokenizes the card,\nand securely stores the tokenized payment method. Returns a token ID that can be\nused in place of the card number for future transactions.\n\nAuthentication is done via Cloudbeds JWT\n\n## Test mode\n\nWhen the property's payment gateway is in test mode, send the `CB-Tokenization-Mode: test` header so the card is tokenized in the test environment. Omit the header for gateways in live mode.\n\n```bash\ncurl -X POST https://api.payments.cloudbeds.com/vault/v1/tokens/card \\\n  -H \"Authorization: Bearer $TOKEN\" \\\n  -H \"X-Property-Id: 123456789\" \\\n  -H \"CB-Tokenization-Mode: test\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"card_number\": \"4111111111111111\",\n    \"cvv\": \"123\",\n    \"cardholder_name\": \"Sara Ryder\",\n    \"expiration\": { \"month\": \"08\", \"year\": \"2028\" }\n  }'\n```",
         "parameters": [
           {
             "in": "header",
@@ -24,6 +24,19 @@
             "example": "123456789",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "CB-Tokenization-Mode",
+            "description": "Required when the property's payment gateway is in test mode; the only accepted value is `test`. Omit this header for gateways in live mode.",
+            "required": false,
+            "example": "test",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "test"
+              ]
             }
           }
         ],
