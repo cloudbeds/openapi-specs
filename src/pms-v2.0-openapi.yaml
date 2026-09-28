@@ -759,6 +759,83 @@ paths:
       security:
         -
           default: []
+  '/booking-room/v1/{bookingRoomId}/assignable-rooms':
+    get:
+      tags:
+        - booking-room
+      summary: 'Get rooms a reservation can be reassigned to'
+      description: 'Returns the reservation''s current room assignment, the property''s room types, and the rates and rooms available for a room type: the reservation''s current type when roomTypeId is omitted, or the requested type when it is provided.'
+      operationId: 'AssignableRoomsController::getAssignableRooms'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: bookingRoomId
+          in: path
+          description: 'The reservation''s current room assignment.'
+          required: true
+          schema:
+            type: string
+            pattern: ^\d+$
+            example: '713'
+        -
+          name: roomTypeId
+          in: query
+          description: 'Scopes rates and rooms to this room type. Omit to use the reservation''s current type.'
+          required: false
+          schema:
+            type: string
+            pattern: ^\d+$
+            example: '713'
+      responses:
+        '200':
+          description: 'Assignable rooms and supporting data'
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: '#/components/schemas/AssignableRoomsResponseSchema' }
+                  - { $ref: '#/components/schemas/LegacyAssignableRoomsResponseSchema' }
+        '400':
+          description: 'Malformed request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'No permission for the property'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Booking room not found / out of scope'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '422':
+          description: 'Invalid room type for property, or reservation not reassignable'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponseSchema'
+        '500':
+          description: 'Server error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:reservation'
   /folio/v1/checks:
     post:
       tags:
@@ -4406,23 +4483,6 @@ paths:
             - 'write:rate'
 components:
   schemas:
-    FeatureEnum:
-      description: 'The operator to use for the filter'
-      type: string
-      enum:
-        - feature.integrations.example
-        - feature.payment-processing.postcheck-third-party-payments
-        - feature.integrations.generate-dummy-doorlock-keys
-        - feature.integrations.doorlock-await-invalidation-confirmation
-        - feature.distribution.market-segmentation-enable-custom-group
-        - feature.distribution.age-policy-new-system-enabled
-        - feature.distribution.age-policy-validation-enabled
-        - feature.distribution.accommodations_v2
-        - feature.inventory.derived-rate-plan-inherit-restrictions
-        - feature.inventory.derived-rate-plan-room-type-coverage
-        - feature.inventory.derived-parent-room-type-removal-guard
-        - feature.inventory.lock-rates-by-room-type
-        - feature.prop-staff.property-feature-cache
     GetAddonsRequestSchema:
       allOf:
         -
@@ -5899,8 +5959,8 @@ components:
             $ref: '#/components/schemas/RoomTypeOptionSchema'
         selectedRoomTypeId:
           description: 'The room type the rates and rooms below are scoped to.'
-          type: integer
-          example: 713
+          type: string
+          example: '713'
         rates:
           description: 'Rate plans for the selected room type, totalled over the stay.'
           type: array
@@ -5912,7 +5972,39 @@ components:
           items:
             $ref: '#/components/schemas/AssignableRoomSchema'
       type: object
-    RatePlanSchema:
+    LegacyAssignableRoomsResponseSchema:
+      description: "An earlier, narrower shape of this response. See AssignableRoomsResponseSchema for the\ncurrent shape."
+      required:
+        - reservation
+        - roomTypes
+        - selectedRoomTypeId
+        - rates
+        - rooms
+      properties:
+        reservation:
+          $ref: '#/components/schemas/LegacyReservationContextSchema'
+        roomTypes:
+          description: 'Selectable room types (names only, no pricing).'
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacyRoomTypeOptionSchema'
+        selectedRoomTypeId:
+          description: 'The room type the rates and rooms below are scoped to.'
+          type: integer
+          example: 713
+        rates:
+          description: 'Rate plans for the selected room type, totalled over the stay.'
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacyRatePlanSchema'
+        rooms:
+          description: 'Rooms of the selected type free for the whole stay. Includes the reservation''s currently-assigned room when the selected type matches its current type (match on reservation.currentRoomId), so the drawer can render it as selected.'
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignableRoomSchema'
+      type: object
+    LegacyRatePlanSchema:
+      description: "An earlier, narrower assignable-rooms rate-plan shape: rateId is an integer, rateTotal is a\nraw float, and detailedRates is not present. See RatePlanSchema for the current shape."
       required:
         - rateId
         - rateType
@@ -5923,8 +6015,13 @@ components:
           type: integer
           example: 4521
         rateType:
-          description: 'standard | derived | package | allotment'
+          description: 'Rate plan type.'
           type: string
+          enum:
+            - standard
+            - derived
+            - package
+            - allotment
           example: standard
         name:
           type: string
@@ -5943,7 +6040,8 @@ components:
           example: null
           nullable: true
       type: object
-    ReservationContextSchema:
+    LegacyReservationContextSchema:
+      description: "An earlier, narrower assignable-rooms reservation-context shape: ids are integers,\noriginalRateTotal is a raw float, and none of the save-context fields are present. See\nReservationContextSchema for the current shape."
       required:
         - bookingRoomId
         - checkinDate
@@ -5975,6 +6073,7 @@ components:
           type: integer
           example: 4521
         originalRateTotal:
+          description: 'Total for the stay under the current rate.'
           type: number
           format: float
           example: 320
@@ -5983,7 +6082,8 @@ components:
           type: string
           nullable: true
       type: object
-    RoomTypeOptionSchema:
+    LegacyRoomTypeOptionSchema:
+      description: "An earlier, narrower assignable-rooms room-type-option shape: id is an integer. See\nRoomTypeOptionSchema for the current shape."
       required:
         - id
         - name
@@ -5991,6 +6091,150 @@ components:
         id:
           type: integer
           example: 713
+        name:
+          type: string
+          example: 'Deluxe King Room'
+      type: object
+    NightlyRateSchema:
+      required:
+        - date
+        - rate
+        - adults
+        - kids
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2026-04-04'
+        rate:
+          $ref: '#/components/schemas/MoneySchema'
+        adults:
+          $ref: '#/components/schemas/MoneySchema'
+        kids:
+          $ref: '#/components/schemas/MoneySchema'
+      type: object
+    RatePlanSchema:
+      required:
+        - rateId
+        - rateType
+        - name
+        - rateTotal
+        - detailedRates
+      properties:
+        rateId:
+          type: string
+          example: '4521'
+        rateType:
+          description: 'Rate plan type.'
+          type: string
+          enum:
+            - standard
+            - derived
+            - package
+            - allotment
+          example: standard
+        name:
+          type: string
+          example: 'Deluxe King Room'
+        rateTotal:
+          $ref: '#/components/schemas/MoneySchema'
+        packageId:
+          type: string
+          example: null
+          nullable: true
+        packageName:
+          type: string
+          example: null
+          nullable: true
+        detailedRates:
+          description: 'Per-night rates for the stay under this plan.'
+          type: array
+          items:
+            $ref: '#/components/schemas/NightlyRateSchema'
+      type: object
+    ReservationContextSchema:
+      required:
+        - bookingRoomId
+        - checkinDate
+        - checkoutDate
+        - currentRoomTypeId
+        - currentRateId
+        - originalRateTotal
+        - adults
+        - children
+        - confirmationNumber
+        - roomGroup
+        - guestName
+        - currentPackageId
+        - detailedRates
+      properties:
+        bookingRoomId:
+          type: string
+          example: '123456'
+        checkinDate:
+          type: string
+          format: date
+          example: '2026-04-04'
+        checkoutDate:
+          type: string
+          format: date
+          example: '2026-04-06'
+        currentRoomTypeId:
+          type: string
+          example: '713'
+        currentRoomId:
+          description: 'Composite room id "{roomTypeId}-{roomNumber}", or null when no room is assigned.'
+          type: string
+          example: 713-2
+          nullable: true
+        currentRateId:
+          type: string
+          example: '4521'
+        originalRateTotal:
+          $ref: '#/components/schemas/MoneySchema'
+        allotmentBlockCode:
+          description: 'Allotment block code the reservation belongs to, if any.'
+          type: string
+          nullable: true
+        adults:
+          description: 'Adults on the current assignment.'
+          type: integer
+          example: 2
+        children:
+          description: 'Children on the current assignment.'
+          type: integer
+          example: 0
+        confirmationNumber:
+          description: 'Confirmation number for this specific room within the reservation.'
+          type: string
+          example: 1234567-1
+        roomGroup:
+          description: 'Group key shared by the rooms that were booked together in this reservation.'
+          type: string
+          example: '1'
+        guestName:
+          description: 'Guest full name for the current assignment; empty when unset.'
+          type: string
+          example: 'Jane Doe'
+        currentPackageId:
+          description: 'Package id of the current rate, or null when the current rate has no package.'
+          type: string
+          example: null
+          nullable: true
+        detailedRates:
+          description: 'Current assignment''s per-night rates (for "preserve original price" saves).'
+          type: array
+          items:
+            $ref: '#/components/schemas/NightlyRateSchema'
+      type: object
+    RoomTypeOptionSchema:
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          example: '713'
         name:
           type: string
           example: 'Deluxe King Room'
@@ -9259,6 +9503,13 @@ components:
         message:
           type: string
       type: object
+    ImportTaskActionNotAllowedResponse:
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      type: object
     ImportTaskGetResponseSchema:
       required:
         - id
@@ -11620,9 +11871,9 @@ components:
           example: 15
           nullable: true
         adjustPrice:
-          description: 'Whether to adjust price if room assignment changes rate'
+          description: 'Whether the guest pays the difference when the assignment changes the rate. Omit it to leave the price decision unanswered — false is an answer, not a default.'
           type: boolean
-          default: false
+          nullable: true
       type: object
     UpdateReservationRoomResponseSchema:
       required:
@@ -13873,6 +14124,9 @@ tags:
   -
     name: Applications
     description: Applications
+  -
+    name: booking-room
+    description: booking-room
   -
     name: Checks
     description: Checks
