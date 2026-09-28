@@ -221,6 +221,11 @@ components:
                     description: 'Apply Adjustment to. Identifier for: product, tax, fee. Not for rate'
                     type: string
                     nullable: true
+                serviceDate:
+                    description: "Adjustment service date in the property timezone, format YYYY-MM-DD. Must be within the reservation's check-in and check-out dates. When omitted, the current date and time are used. A past date requires permission to post adjustments for past dates; a future date creates an unposted transaction."
+                    type: string
+                    format: date
+                    nullable: true
         PostAdjustmentResponse:
             type: object
             properties:
@@ -10681,7 +10686,7 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'Interval start date'
+                    description: "Lower limit for the block's date range. That range includes shoulder dates, so it can begin before the earliest interval startDate. A block is returned only if its date range starts on or after this date."
                     name: startDate
                     schema:
                         type: string
@@ -10689,7 +10694,7 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'Interval end date'
+                    description: "Upper limit for the block's date range. That range includes shoulder dates, so it can end after the latest interval endDate. A block is returned only if its date range ends on or before this date."
                     name: endDate
                     schema:
                         type: string
