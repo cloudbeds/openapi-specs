@@ -8,7 +8,9 @@ info:
     Public API base path: `/attribute-tagging/v1`
 
 
-    Download OpenAPI specification: [JSON](https://api.cloudbeds.com/attribute-tagging/v1/docs/json) | [YAML](https://api.cloudbeds.com/attribute-tagging/v1/docs/yaml)
+    Download OpenAPI specification:
+    [JSON](https://api.cloudbeds.com/attribute-tagging/v1/docs/json) |
+    [YAML](https://api.cloudbeds.com/attribute-tagging/v1/docs/yaml)
   version: v1
 components:
   securitySchemes:
@@ -31,12 +33,14 @@ paths:
           name: filters
           required: false
           description: >-
-            Filter format: `field:operator:value`, multiple filters separated by semicolons.
+            Filter format: `field:operator:value`, multiple filters separated by
+            semicolons.
 
 
             Supported fields:
 
-            - `entityTypes:in:` - a comma-separated list of values: `guest_profile`, `reservation`
+            - `entityTypes:in:` - a comma-separated list of values:
+            `guest_profile`, `reservation`
 
 
             Examples:
@@ -57,7 +61,8 @@ paths:
             Valid directions: `asc`, `desc` (defaults to `asc` when omitted)
 
 
-            Default: `position` ascending — the order `PATCH /categories/reorder` persists
+            Default: `position` ascending — the order `PATCH
+            /categories/reorder` persists
         - schema:
             type: string
             pattern: ^\d+$
@@ -108,7 +113,10 @@ paths:
                       nullable: true
                       type: string
                     category:
-                      description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
+                      description: The category this attribute belongs to, or null when Uncategorized.
+                        Present on `GET /attributes`; omitted on `POST`/`PATCH
+                        /attributes` and where an attribute is embedded in
+                        another response (e.g. a tag) that does not join it.
                       nullable: true
                       type: object
                       properties:
@@ -223,23 +231,33 @@ paths:
                 isEnabled:
                   type: boolean
                 categoryId:
-                  description: Category this attribute belongs to. Omitted or null means Uncategorized.
+                  description: Category this attribute belongs to. Omitted or null means
+                    Uncategorized.
                   nullable: true
                   type: string
                   pattern: ^\d+$
                 position:
-                  description: Explicit slot within the category. Omitted, the row is appended after the current maximum. Capped at 500000, well below the column's int4 ceiling, so no single write can exhaust the scope's append space.
+                  description: Explicit slot within the category. Omitted, the row is appended
+                    after the current maximum. Capped at 500000, well below the
+                    column's int4 ceiling, so no single write can exhaust the
+                    scope's append space.
                   type: integer
                   minimum: 0
                   maximum: 500000
                 icon:
-                  description: Icon name for this tag, from the Nebula icon set. Null defers to the icon on the category this attribute belongs to, then to the default tag glyph. Not validated against the icon set — an unknown name falls back the same way.
+                  description: Icon name for this tag, from the Nebula icon set. Null defers to
+                    the icon on the category this attribute belongs to, then to
+                    the default tag glyph. Not validated against the icon set —
+                    an unknown name falls back the same way.
                   nullable: true
                   type: string
                   minLength: 1
                   maxLength: 64
                 color:
-                  description: Tag colour as a hex string, `#RGB` or `#RRGGBB`. Null defers to the colour on the category this attribute belongs to, then to a neutral tile. Stored verbatim, so compare against a preset case-insensitively.
+                  description: Tag colour as a hex string, `#RGB` or `#RRGGBB`. Null defers to the
+                    colour on the category this attribute belongs to, then to a
+                    neutral tile. Stored verbatim, so compare against a preset
+                    case-insensitively.
                   nullable: true
                   type: string
                   pattern: ^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
@@ -296,7 +314,10 @@ paths:
                     nullable: true
                     type: string
                   category:
-                    description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
+                    description: The category this attribute belongs to, or null when Uncategorized.
+                      Present on `GET /attributes`; omitted on `POST`/`PATCH
+                      /attributes` and where an attribute is embedded in another
+                      response (e.g. a tag) that does not join it.
                     nullable: true
                     type: object
                     properties:
@@ -468,23 +489,33 @@ paths:
                 isEnabled:
                   type: boolean
                 categoryId:
-                  description: Category this attribute belongs to. Explicit null moves it to Uncategorized.
+                  description: Category this attribute belongs to. Explicit null moves it to
+                    Uncategorized.
                   nullable: true
                   type: string
                   pattern: ^\d+$
                 position:
-                  description: Explicit slot within the category. Omitted, the row is appended after the current maximum. Capped at 500000, well below the column's int4 ceiling, so no single write can exhaust the scope's append space.
+                  description: Explicit slot within the category. Omitted, the row is appended
+                    after the current maximum. Capped at 500000, well below the
+                    column's int4 ceiling, so no single write can exhaust the
+                    scope's append space.
                   type: integer
                   minimum: 0
                   maximum: 500000
                 icon:
-                  description: Icon name for this tag, from the Nebula icon set. Null defers to the icon on the category this attribute belongs to, then to the default tag glyph. Not validated against the icon set — an unknown name falls back the same way.
+                  description: Icon name for this tag, from the Nebula icon set. Null defers to
+                    the icon on the category this attribute belongs to, then to
+                    the default tag glyph. Not validated against the icon set —
+                    an unknown name falls back the same way.
                   nullable: true
                   type: string
                   minLength: 1
                   maxLength: 64
                 color:
-                  description: Tag colour as a hex string, `#RGB` or `#RRGGBB`. Null defers to the colour on the category this attribute belongs to, then to a neutral tile. Stored verbatim, so compare against a preset case-insensitively.
+                  description: Tag colour as a hex string, `#RGB` or `#RRGGBB`. Null defers to the
+                    colour on the category this attribute belongs to, then to a
+                    neutral tile. Stored verbatim, so compare against a preset
+                    case-insensitively.
                   nullable: true
                   type: string
                   pattern: ^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
@@ -544,7 +575,10 @@ paths:
                     nullable: true
                     type: string
                   category:
-                    description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
+                    description: The category this attribute belongs to, or null when Uncategorized.
+                      Present on `GET /attributes`; omitted on `POST`/`PATCH
+                      /attributes` and where an attribute is embedded in another
+                      response (e.g. a tag) that does not join it.
                     nullable: true
                     type: object
                     properties:
@@ -1107,7 +1141,8 @@ paths:
                       - id
                       - position
                     additionalProperties: false
-                  description: New position for each reordered category. Max 500 entries, ids unique.
+                  description: New position for each reordered category. Max 500 entries, ids
+                    unique.
                 attributePositions:
                   maxItems: 500
                   type: array
@@ -1119,7 +1154,8 @@ paths:
                         pattern: ^\d+$
                       categoryId:
                         nullable: true
-                        description: The category the attribute is placed under after this reorder. Null means Uncategorized.
+                        description: The category the attribute is placed under after this reorder. Null
+                          means Uncategorized.
                         type: string
                         pattern: ^\d+$
                       position:
@@ -1131,7 +1167,9 @@ paths:
                       - categoryId
                       - position
                     additionalProperties: false
-                  description: New category and position for each reordered attribute, applied in the same transaction as categoryPositions. Max 500 entries, ids unique.
+                  description: New category and position for each reordered attribute, applied in
+                    the same transaction as categoryPositions. Max 500 entries,
+                    ids unique.
               required:
                 - categoryPositions
                 - attributePositions
@@ -1591,14 +1629,17 @@ paths:
           name: filters
           required: false
           description: >-
-            Filter format: `field:operator:value`, multiple filters separated by semicolons.
+            Filter format: `field:operator:value`, multiple filters separated by
+            semicolons.
 
 
             Supported fields and operators:
 
-            - `entityId:in:` - comma-separated list of numeric entity IDs (e.g., `123,456,789`)
+            - `entityId:in:` - comma-separated list of numeric entity IDs (e.g.,
+            `123,456,789`)
 
-            - `entityType:in:` - comma-separated list of entity types: `guest_profile`, `reservation`
+            - `entityType:in:` - comma-separated list of entity types:
+            `guest_profile`, `reservation`
 
 
             Examples:
@@ -1607,14 +1648,16 @@ paths:
 
             - `entityType:in:guest_profile,reservation`
 
-            - `entityId:in:100,101;entityType:in:guest_profile,reservation` (bulk query for multiple entities)
+            - `entityId:in:100,101;entityType:in:guest_profile,reservation`
+            (bulk query for multiple entities)
 
 
             Notes:
 
             - Bulk queries support up to 1000 entities per request
 
-            - For single entity queries, use `entityId` and `entityType` parameters instead
+            - For single entity queries, use `entityId` and `entityType`
+            parameters instead
         - schema:
             type: string
             pattern: ^\d+$
@@ -1692,7 +1735,11 @@ paths:
                           nullable: true
                           type: string
                         category:
-                          description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
+                          description: The category this attribute belongs to, or null when Uncategorized.
+                            Present on `GET /attributes`; omitted on
+                            `POST`/`PATCH /attributes` and where an attribute is
+                            embedded in another response (e.g. a tag) that does
+                            not join it.
                           nullable: true
                           type: object
                           properties:
@@ -1896,7 +1943,11 @@ paths:
                           nullable: true
                           type: string
                         category:
-                          description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
+                          description: The category this attribute belongs to, or null when Uncategorized.
+                            Present on `GET /attributes`; omitted on
+                            `POST`/`PATCH /attributes` and where an attribute is
+                            embedded in another response (e.g. a tag) that does
+                            not join it.
                           nullable: true
                           type: object
                           properties:
@@ -2231,7 +2282,14 @@ paths:
                       - ids
                       - type
                     additionalProperties: false
-                  description: "Entities to fetch tags for, grouped by type: a list of `{ ids, type }` groups. Each group binds its id list to a single type, so a group's ids only match tags of that type (no cross-product between ids and types across groups). Use this endpoint instead of `GET /tags?filters=...` for bulk lookups: the body has no URL-length limit. The total number of ids across all groups must not exceed 1000 (enforced in the handler)."
+                  description: "Entities to fetch tags for, grouped by type: a list of `{ ids,
+                    type }` groups. Each group binds its id list to a single
+                    type, so a group's ids only match tags of that type (no
+                    cross-product between ids and types across groups). Use this
+                    endpoint instead of `GET /tags?filters=...` for bulk
+                    lookups: the body has no URL-length limit. The total number
+                    of ids across all groups must not exceed 1000 (enforced in
+                    the handler)."
               required:
                 - entities
               additionalProperties: false
@@ -2313,7 +2371,11 @@ paths:
                           nullable: true
                           type: string
                         category:
-                          description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
+                          description: The category this attribute belongs to, or null when Uncategorized.
+                            Present on `GET /attributes`; omitted on
+                            `POST`/`PATCH /attributes` and where an attribute is
+                            embedded in another response (e.g. a tag) that does
+                            not join it.
                           nullable: true
                           type: object
                           properties:
@@ -2442,13 +2504,22 @@ paths:
                       propertyId:
                         type: string
                         pattern: ^\d+$
-                        description: Property the tags in this group belong to. Carried per group rather than taken from the `x-property-id` header so one request can span several properties; each group is authorized independently against the caller property ids.
+                        description: Property the tags in this group belong to. Carried per group rather
+                          than taken from the `x-property-id` header so one
+                          request can span several properties; each group is
+                          authorized independently against the caller property
+                          ids.
                     required:
                       - ids
                       - type
                       - propertyId
                     additionalProperties: false
-                  description: "Entities to tag, grouped by type and property: a list of `{ ids, type, propertyId }` groups. Each group binds its ids to one type and one property, so a group's ids are only tagged as that type. The total number of ids across all groups must not exceed 500, and entities x attributeIds must not exceed 5000 (both enforced in the handler)."
+                  description: "Entities to tag, grouped by type and property: a list of `{ ids,
+                    type, propertyId }` groups. Each group binds its ids to one
+                    type and one property, so a group's ids are only tagged as
+                    that type. The total number of ids across all groups must
+                    not exceed 500, and entities x attributeIds must not exceed
+                    5000 (both enforced in the handler)."
                 attributeIds:
                   minItems: 1
                   type: array
@@ -2508,7 +2579,8 @@ paths:
                           type: integer
                           minimum: 0
                           maximum: 9007199254740991
-                          description: Tags this call wrote for the entity. Zero means it already carried every requested attribute.
+                          description: Tags this call wrote for the entity. Zero means it already carried
+                            every requested attribute.
                         error:
                           type: string
                       required:
@@ -2518,7 +2590,9 @@ paths:
                         - status
                         - created
                       additionalProperties: false
-                    description: One entry per distinct entity target, in first-mentioned order, so partial failures can be retried individually. A target named twice collapses to one entry.
+                    description: One entry per distinct entity target, in first-mentioned order, so
+                      partial failures can be retried individually. A target
+                      named twice collapses to one entry.
                   tags:
                     type: array
                     items:
@@ -2577,7 +2651,11 @@ paths:
                               nullable: true
                               type: string
                             category:
-                              description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
+                              description: The category this attribute belongs to, or null when Uncategorized.
+                                Present on `GET /attributes`; omitted on
+                                `POST`/`PATCH /attributes` and where an
+                                attribute is embedded in another response (e.g.
+                                a tag) that does not join it.
                               nullable: true
                               type: object
                               properties:
@@ -2655,7 +2733,8 @@ paths:
                           type: integer
                           minimum: 0
                           maximum: 9007199254740991
-                          description: Tags this call wrote for the entity. Zero means it already carried every requested attribute.
+                          description: Tags this call wrote for the entity. Zero means it already carried
+                            every requested attribute.
                         error:
                           type: string
                       required:
@@ -2665,7 +2744,9 @@ paths:
                         - status
                         - created
                       additionalProperties: false
-                    description: One entry per distinct entity target, in first-mentioned order, so partial failures can be retried individually. A target named twice collapses to one entry.
+                    description: One entry per distinct entity target, in first-mentioned order, so
+                      partial failures can be retried individually. A target
+                      named twice collapses to one entry.
                   tags:
                     type: array
                     items:
@@ -2724,7 +2805,11 @@ paths:
                               nullable: true
                               type: string
                             category:
-                              description: The category this attribute belongs to, or null when Uncategorized. Present on `GET /attributes`; omitted on `POST`/`PATCH /attributes` and where an attribute is embedded in another response (e.g. a tag) that does not join it.
+                              description: The category this attribute belongs to, or null when Uncategorized.
+                                Present on `GET /attributes`; omitted on
+                                `POST`/`PATCH /attributes` and where an
+                                attribute is embedded in another response (e.g.
+                                a tag) that does not join it.
                               nullable: true
                               type: object
                               properties:
@@ -2913,20 +2998,29 @@ paths:
                       propertyId:
                         type: string
                         pattern: ^\d+$
-                        description: Property the tags in this group belong to. Carried per group rather than taken from the `x-property-id` header so one request can span several properties; each group is authorized independently against the caller property ids.
+                        description: Property the tags in this group belong to. Carried per group rather
+                          than taken from the `x-property-id` header so one
+                          request can span several properties; each group is
+                          authorized independently against the caller property
+                          ids.
                     required:
                       - ids
                       - type
                       - propertyId
                     additionalProperties: false
-                  description: Entities to untag, grouped by type and property, in the same shape the bulk attach takes. The total number of ids across all groups must not exceed 500, and entities x attributeIds must not exceed 5000 (both enforced in the handler).
+                  description: Entities to untag, grouped by type and property, in the same shape
+                    the bulk attach takes. The total number of ids across all
+                    groups must not exceed 500, and entities x attributeIds must
+                    not exceed 5000 (both enforced in the handler).
                 attributeIds:
                   minItems: 1
                   type: array
                   items:
                     type: string
                     pattern: ^\d+$
-                  description: Attributes removed from every entity in every group. An entity that does not carry a listed attribute is left alone rather than reported as an error, so repeating the request is safe.
+                  description: Attributes removed from every entity in every group. An entity that
+                    does not carry a listed attribute is left alone rather than
+                    reported as an error, so repeating the request is safe.
               required:
                 - entities
                 - attributeIds
@@ -2972,12 +3066,14 @@ paths:
                           type: string
                           enum:
                             - ok
-                          description: Always "ok" — an entity that did not carry a listed attribute is a no-op.
+                          description: Always "ok" — an entity that did not carry a listed attribute is a
+                            no-op.
                         removed:
                           type: integer
                           minimum: -9007199254740991
                           maximum: 9007199254740991
-                          description: Tags actually removed from this entity. `0` means it carried none of them.
+                          description: Tags actually removed from this entity. `0` means it carried none
+                            of them.
                       required:
                         - entityId
                         - entityType
@@ -2985,7 +3081,9 @@ paths:
                         - status
                         - removed
                       additionalProperties: false
-                    description: One entry per distinct entity target, in first-mentioned order, carrying what was removed from each. A target named twice collapses to one entry.
+                    description: One entry per distinct entity target, in first-mentioned order,
+                      carrying what was removed from each. A target named twice
+                      collapses to one entry.
                   removed:
                     type: integer
                     minimum: -9007199254740991
@@ -3221,11 +3319,29 @@ paths:
                   - message
                 additionalProperties: false
 servers:
-  - url: https://api.cloudbeds.com
+  - url: https://api.{environment}.com
+    variables:
+      environment:
+        default: cloudbeds
+        enum: &a1
+          - cloudbeds-stage
+          - cloudbeds
+  - url: https://api.{island}.{environment}.com
+    variables:
+      island:
+        default: us1
+        enum:
+          - us1
+          - us2
+      environment:
+        default: cloudbeds
+        enum: *a1
+  - url: http://localhost:3000
 security:
   - bearerAuth: []
 tags:
   - name: Attributes
     description: Reusable labels (e.g. "VIP", "Honeymoon") that can be applied to entities
   - name: Tags
-    description: Records that associate Attributes with specific entities (reservations, guests)
+    description: Records that associate Attributes with specific entities
+      (reservations, guests)
