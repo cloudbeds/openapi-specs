@@ -290,6 +290,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: pageToken
@@ -479,6 +480,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
         - name: sourceId
@@ -622,6 +624,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
       parameters:
         - $ref: "#/components/parameters/propertyIdHeader"
       requestBody:
@@ -766,6 +769,7 @@ paths:
         - Fiscal Documents
       security:
         - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
       parameters:
         - $ref: "#/components/parameters/fiscalDocumentId"
         - $ref: "#/components/parameters/propertyIdHeader"
@@ -1465,6 +1469,7 @@ paths:
       operationId: applyReceipt
       security:
         - bearerAuth: [ ]
+        - oauth2: [ write:reservation ]
       tags:
         - Fiscal Documents
       parameters:
@@ -1492,7 +1497,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/ApiError"
         '404':
-          description: Receipt not found
+          description: Receipt or invoice not found in the property
 
   "/fiscal-document/v1/fiscal-documents/receipt/allocate-payment":
     post:
@@ -4699,17 +4704,17 @@ components:
         currency:
           type: string
           description: >-
-            Currency the totals are expressed in. Equals the requested invoice currency when one was
-            provided (totals converted from the property currency using the property's configured
-            exchange rates), otherwise the property currency.
+            Currency the totals are expressed in. For an existing document, the currency it was issued in;
+            for a selection, the requested invoice currency (converted at the property's configured rates),
+            otherwise the property currency.
         propertyCurrency:
           type: string
           description: The property's base currency code.
         propertyCurrencyTotal:
           type: string
           description: >-
-            The invoice total in the property's base currency, shown as a reference alongside the
-            converted total when an invoice currency was requested.
+            The total in the property's base currency, shown as a reference alongside the total when
+            the totals are expressed in another currency.
         transactionCount:
           type: integer
           description: >-
