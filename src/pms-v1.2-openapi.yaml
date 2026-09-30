@@ -246,9 +246,6 @@ components:
         PostCreateAllotmentBlockRequest:
             type: object
             properties:
-                groupCode:
-                    description: 'The unique identifier of the group profile the allotment block should be created'
-                    type: string
                 eventCode:
                     description: 'The unique identifier of the event the allotment block should be created'
                     type: string
@@ -2596,8 +2593,8 @@ components:
         PostPatchGroupRequest:
             type: object
             properties:
-                groupCode:
-                    description: 'code for a group'
+                eventCode:
+                    description: 'code for an event (group)'
                     type: string
                 propertyID:
                     description: 'Property ID'
@@ -2703,8 +2700,8 @@ components:
                 propertyID:
                     description: 'Property ID'
                     type: string
-                groupCode:
-                    description: 'Group code'
+                eventCode:
+                    description: 'Event (group) code'
                     type: string
                 groupNote:
                     description: 'Group note'
@@ -4266,8 +4263,8 @@ components:
                     description: 'Form-based File Upload<br/> Allowed file types: <code>*.pdf, *.rtf, *.doc, *.docx, *.txt, *.jpg, *.jpeg, *.png, *.gif, *.csv, *.xls, *.xlsx, *.xml, *.json</code><br/> Allowed max file size: 100MB'
                     type: string
                     format: binary
-                groupCode:
-                    description: 'optional - the group code if the file is to be attached to a group profile'
+                eventCode:
+                    description: 'optional - the event (group profile) code if the file is to be attached to a group profile'
                     type: string
                     nullable: true
         PostFileResponse:
@@ -5408,15 +5405,15 @@ components:
                     type: string
                     nullable: true
                 reservationID:
-                    description: 'Reservation identifier. Required if no houseAccountID or groupCode is provided.'
+                    description: 'Reservation identifier. Required if no houseAccountID or eventCode is provided.'
                     type: string
                     nullable: true
                 houseAccountID:
-                    description: 'House account identifier. Required if no reservationID or groupCode is provided.'
+                    description: 'House account identifier. Required if no reservationID or eventCode is provided.'
                     type: string
                     nullable: true
-                groupCode:
-                    description: 'Group identifier. Required if no reservationID or houseAccountID is provided.'
+                eventCode:
+                    description: 'Event (group profile) code. Required if no reservationID or houseAccountID is provided.'
                     type: string
                     nullable: true
                 subReservationID:
@@ -5508,15 +5505,15 @@ components:
                     type: string
                     nullable: true
                 reservationID:
-                    description: 'Reservation identifier. Required if no houseAccountID or groupCode is provided.'
+                    description: 'Reservation identifier. Required if no houseAccountID or eventCode is provided.'
                     type: string
                     nullable: true
                 houseAccountID:
-                    description: 'House account identifier. Required if no reservationID or groupCode is provided.'
+                    description: 'House account identifier. Required if no reservationID or eventCode is provided.'
                     type: string
                     nullable: true
-                groupCode:
-                    description: 'Group identifier. Required if no reservationID or houseAccountID is provided.'
+                eventCode:
+                    description: 'Event (group profile) code. Required if no reservationID or houseAccountID is provided.'
                     type: string
                     nullable: true
                 referenceID:
@@ -5653,15 +5650,15 @@ components:
                     type: string
                     nullable: true
                 reservationID:
-                    description: 'Reservation identifier. Required if no houseAccountID or groupCode is provided.'
+                    description: 'Reservation identifier. Required if no houseAccountID or eventCode is provided.'
                     type: string
                     nullable: true
                 houseAccountID:
-                    description: 'House Account identifier. Required if no reservationID or groupCode is provided.'
+                    description: 'House Account identifier. Required if no reservationID or eventCode is provided.'
                     type: string
                     nullable: true
-                groupCode:
-                    description: 'Group code. Required if no reservationID or houseAccountID is provided.'
+                eventCode:
+                    description: 'Event (group profile) code. Required if no reservationID or houseAccountID is provided.'
                     type: string
                     nullable: true
                 referenceID:
@@ -5794,15 +5791,15 @@ components:
                     type: string
                     nullable: true
                 reservationID:
-                    description: 'Reservation identifier. Required if no houseAccountID or groupCode is provided.'
+                    description: 'Reservation identifier. Required if no houseAccountID or eventCode is provided.'
                     type: string
                     nullable: true
                 houseAccountID:
-                    description: 'House Account identifier. Required if no reservationID or groupCode is provided.'
+                    description: 'House Account identifier. Required if no reservationID or eventCode is provided.'
                     type: string
                     nullable: true
-                groupCode:
-                    description: 'Group identifier. Required if no reservationID or houseAccountID is provided.'
+                eventCode:
+                    description: 'Event (group profile) code. Required if no reservationID or houseAccountID is provided.'
                     type: string
                     nullable: true
                 soldProductID:
@@ -5851,8 +5848,8 @@ components:
                 houseAccountID:
                     description: 'House Account identifier is necessary if reservationID not sent'
                     type: string
-                groupCode:
-                    description: 'Group Code. Required if neither reservationID nor houseAccountID is sent'
+                eventCode:
+                    description: 'Event (group profile) code. Required if neither reservationID nor houseAccountID is sent'
                     type: string
                 subReservationID:
                     description: 'The Sub Reservation identifier. reservationID is still mandatory if subReservationID is sent.'
@@ -6035,8 +6032,8 @@ components:
                     description: 'House Account ID'
                     type: string
                     nullable: true
-                groupID:
-                    description: 'Group ID'
+                eventID:
+                    description: 'Event (group profile) ID'
                     type: string
                     nullable: true
                 accountsReceivableLedgerID:
@@ -7384,8 +7381,8 @@ components:
                     description: 'Allotment block code to add reservation to allotment block.'
                     type: string
                     nullable: true
-                groupCode:
-                    description: 'Code from the Aggregate Allotment block the reservation will be added to.'
+                eventCode:
+                    description: 'Event (group profile) code the reservation will be added to.'
                     type: string
                     nullable: true
                 dateCreated:
@@ -10622,21 +10619,14 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'A group profile code'
-                    name: groupCode
-                    schema:
-                        type: string
-                    required: false
-                    in: query
-                -
                     description: 'GPS (Group Profile Service) external profile ID. Returns all allotment blocks linked to this GPS profile.'
-                    name: groupProfileID
+                    name: eventProfileID
                     schema:
                         type: string
                     required: false
                     in: query
                 -
-                    description: 'An event code'
+                    description: 'An event (group profile) code'
                     name: eventCode
                     schema:
                         type: string
@@ -11233,8 +11223,8 @@ paths:
                     required: true
                     in: query
                 -
-                    description: 'Group code'
-                    name: groupCode
+                    description: 'Event (group) code'
+                    name: eventCode
                     schema:
                         type: string
                     required: true
@@ -11282,15 +11272,15 @@ paths:
                     required: true
                     in: query
                 -
-                    description: 'Unique ID for a group'
-                    name: groupCode
+                    description: 'Unique code for an event (group)'
+                    name: eventCode
                     schema:
                         type: string
                     required: false
                     in: query
                 -
-                    description: 'GPS (Group Profile Service) external profile ID. Returns all MFD groups linked to this GPS profile.'
-                    name: groupProfileID
+                    description: 'GPS (Group Profile Service) external event profile ID. Returns all MFD groups linked to this GPS profile.'
+                    name: eventProfileID
                     schema:
                         type: string
                     required: false
@@ -12313,8 +12303,8 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'The group code, if the files are to be fetched from a group profile'
-                    name: groupCode
+                    description: 'The event (group profile) code, if the files are to be fetched from a group profile'
+                    name: eventCode
                     schema:
                         type: string
                     required: false
@@ -13209,7 +13199,7 @@ paths:
             tags:
                 - Payment
             summary: postPayment
-            description: 'Add a payment to a specified reservation, house account, or group. If multiple IDs are provided, precedence is reservationID, then houseAccountID, then groupCode.'
+            description: 'Add a payment to a specified reservation, house account, or group. If multiple IDs are provided, precedence is reservationID, then houseAccountID, then eventCode.'
             responses:
                 200:
                     description: '200 Response'
@@ -13852,7 +13842,7 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'Filters reservation with the supplied room name (customizable by each property). CheckIn/checkOut dates OR status are required. If dates are provided and span more than one day, more than one reservation can be returned.'
+                    description: 'Filters reservation with the supplied room name (customizable by each property). CheckIn/checkOut dates OR status are required. If dates are provided and span more than one day, more than one reservation can be returned. If no room with the supplied name exists, an empty result is returned.'
                     name: roomName
                     schema:
                         type: string
@@ -13947,8 +13937,8 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'Filters reservation with the supplied group code.'
-                    name: groupCode
+                    description: 'Filters reservation with the supplied event (group profile) code.'
+                    name: eventCode
                     schema:
                         type: string
                     required: false
