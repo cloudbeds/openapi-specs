@@ -4899,6 +4899,337 @@ components:
           items:
             $ref: '#/components/schemas/PricingDayResponseSchema'
       type: object
+    AiAvailabilityRequestSchema:
+      description: 'Query string of the AI availability search. Dates are ISO-8601 calendar dates (YYYY-MM-DD) and the departure day is not charged.'
+      required:
+        - propertyCode
+        - checkIn
+        - checkOut
+      type: object
+      allOf:
+        -
+          $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+        -
+          properties:
+            propertyCode:
+              description: 'Opaque alphanumeric property short code, as published in the `@id` URL returned by the property metadata endpoint.'
+              type: string
+              example: N2FKyS
+            checkIn:
+              description: 'Arrival date in YYYY-MM-DD format. Today or later in the property''s time zone.'
+              type: string
+              format: date
+              example: '2026-05-01'
+            checkOut:
+              description: 'Departure date in YYYY-MM-DD format. Exclusive: the departure day is not charged. Must fall after checkIn, at most 730 nights later.'
+              type: string
+              format: date
+              example: '2026-05-04'
+            adults:
+              description: 'Number of adults. Omitted, the offer is priced at the base occupancy of each room type.'
+              type: integer
+              maximum: 20
+              minimum: 1
+              example: 2
+            children:
+              description: 'Number of children. Omitted, the offer is priced without children.'
+              type: integer
+              maximum: 10
+              minimum: 0
+              example: 0
+            currencyCode:
+              description: 'ISO 4217 code to price the response in. Omitted, prices are returned in the property''s own currency.'
+              type: string
+              maxLength: 3
+              minLength: 3
+              example: EUR
+            lang:
+              description: 'Preferred language. A hint, not a filter: translatable fields always carry the property''s default language and English, and add this language when a translation exists.'
+              type: string
+              example: pt-BR
+          type: object
+    AiAvailabilityErrorResponseSchema:
+      description: 'An error, in the same schema.org vocabulary as a successful response, carrying the standard `code` and per-field `errors` alongside.'
+      required:
+        - '@context'
+        - '@type'
+        - name
+        - description
+        - statusCode
+        - code
+        - errors
+      properties:
+        '@context':
+          description: 'JSON-LD vocabulary the document is expressed in.'
+          type: string
+          example: 'https://schema.org'
+        '@type':
+          type: string
+          example: Error
+        name:
+          description: 'Stable token an agent can branch on.'
+          type: string
+          enum:
+            - InvalidRequest
+            - Forbidden
+            - NotFound
+            - MethodNotAllowed
+            - RateLimitExceeded
+            - InternalError
+            - ServiceUnavailable
+            - HttpError
+        description:
+          description: 'Human-readable detail.'
+          type: string
+          example: 'checkIn must be today or later'
+        statusCode:
+          type: integer
+          example: 400
+        code:
+          description: 'Upper-case machine code, as on every Public API error.'
+          type: string
+          example: INVALID_REQUEST
+        errors:
+          description: 'The offending fields, one entry per violation. Empty when the error is not about a field.'
+          type: array
+          items:
+            required:
+              - field
+              - message
+            properties:
+              field:
+                type: string
+                example: checkIn
+              message:
+                type: string
+                example: 'checkIn must be today or later'
+            type: object
+      type: object
+    AiAvailabilityResponseSchema:
+      description: 'A schema.org `LodgingBusiness` whose `containsPlace` lists every room type that can host the stay, each with one tax-inclusive `Offer`. Room types with no unit left are omitted rather than marked out of stock. Money is expressed as schema.org `price` (a decimal number) plus `priceCurrency`, not as the Public API minor-unit `amount` object: the document has to validate against the vocabulary AI agents already parse. Decimal places follow the currency (JPY 0, USD 2, BHD 3).'
+      required:
+        - '@context'
+        - '@type'
+        - '@id'
+        - name
+        - availabilitySearch
+        - containsPlace
+      properties:
+        '@context':
+          description: 'JSON-LD vocabulary the document is expressed in.'
+          type: string
+          example: 'https://schema.org'
+        '@type':
+          type: string
+          example: LodgingBusiness
+        '@id':
+          description: 'Same URL the property metadata endpoint publishes for the property.'
+          type: string
+          format: uri
+          example: 'https://hotels.cloudbeds.com/reservation/N2FKyS'
+        name:
+          type: string
+          example: 'Seaside Hotel'
+        availabilitySearch:
+          description: 'The search as it was answered, with defaults filled in.'
+          required:
+            - propertyCode
+            - checkIn
+            - checkOut
+            - nights
+            - adults
+            - children
+            - currencyCode
+          properties:
+            propertyCode:
+              type: string
+              example: N2FKyS
+            checkIn:
+              type: string
+              format: date
+              example: '2026-05-01'
+            checkOut:
+              type: string
+              format: date
+              example: '2026-05-04'
+            nights:
+              type: integer
+              example: 3
+            adults:
+              description: 'Null when the request left it out and each offer is priced at its room type''s base occupancy.'
+              type: integer
+              example: 2
+              nullable: true
+            children:
+              type: integer
+              example: 0
+            currencyCode:
+              type: string
+              example: USD
+          type: object
+        containsPlace:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiAvailabilityHotelRoomSchema'
+      type: object
+    AiAvailabilityHotelRoomSchema:
+      required:
+        - '@type'
+        - '@id'
+        - name
+        - occupancy
+        - offers
+        - additionalProperty
+      properties:
+        '@type':
+          type: string
+          example: HotelRoom
+        '@id':
+          description: 'Booking-engine URL of the room type, keyed by `roomId`.'
+          type: string
+          format: uri
+          example: 'https://hotels.cloudbeds.com/reservation/N2FKyS?roomId=101'
+        name:
+          description: 'Language-tagged values: always the property''s default language and English, plus the requested `lang` when a translation exists.'
+          type: array
+          items:
+            required:
+              - '@value'
+              - '@language'
+            properties:
+              '@value':
+                type: string
+                example: 'King Suite'
+              '@language':
+                type: string
+                example: en
+            type: object
+        occupancy:
+          required:
+            - '@type'
+            - maxValue
+          properties:
+            '@type':
+              type: string
+              example: QuantitativeValue
+            maxValue:
+              type: integer
+              example: 2
+          type: object
+        offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiAvailabilityOfferSchema'
+        additionalProperty:
+          description: '`unitsAvailable` (integer) and `policyId` (string, or null when the room type has no policy). Identifiers are strings; only counts and amounts are numbers.'
+          type: array
+          items:
+            required:
+              - '@type'
+              - name
+              - value
+            properties:
+              '@type':
+                type: string
+                example: PropertyValue
+              name:
+                type: string
+                enum:
+                  - unitsAvailable
+                  - policyId
+              value:
+                example: '42'
+                nullable: true
+                oneOf:
+                  - { type: integer }
+                  - { type: string }
+            type: object
+      type: object
+    AiAvailabilityOfferSchema:
+      required:
+        - '@type'
+        - availability
+        - priceSpecification
+        - validFrom
+        - validThrough
+        - url
+      properties:
+        '@type':
+          type: string
+          example: Offer
+        availability:
+          type: string
+          enum:
+            - 'https://schema.org/InStock'
+            - 'https://schema.org/OutOfStock'
+        priceSpecification:
+          description: 'Tax-inclusive total for the whole stay, itemized in `priceComponent`. Components always sum to `price`.'
+          required:
+            - '@type'
+            - price
+            - priceCurrency
+            - unitText
+            - referenceQuantity
+            - priceComponent
+          properties:
+            '@type':
+              type: string
+              example: CompoundPriceSpecification
+            price:
+              type: number
+              example: 660
+            priceCurrency:
+              type: string
+              example: USD
+            unitText:
+              type: string
+              example: 'total stay (tax-inclusive)'
+            referenceQuantity:
+              required:
+                - '@type'
+                - value
+                - unitCode
+              properties:
+                '@type':
+                  type: string
+                  example: QuantitativeValue
+                value:
+                  description: Nights.
+                  type: integer
+                  example: 3
+                unitCode:
+                  type: string
+                  example: NIG
+              type: object
+            priceComponent:
+              type: array
+              items:
+                required:
+                  - '@type'
+                  - name
+                  - price
+                  - priceCurrency
+                properties:
+                  '@type': { type: string, example: UnitPriceSpecification }
+                  name: { type: string, example: 'City tax' }
+                  price: { type: number, example: 60 }
+                  priceCurrency: { type: string, example: USD }
+                  priceComponentType: { description: 'Absent on the base rate.', type: string, enum: [GenericTax, ResortFee, ServiceFee] }
+                type: object
+          type: object
+        validFrom:
+          type: string
+          format: date
+          example: '2026-05-01'
+        validThrough:
+          type: string
+          format: date
+          example: '2026-05-04'
+        url:
+          description: 'Deep link into the booking engine with the stay pre-filled.'
+          type: string
+          format: uri
+      type: object
     AllotmentBlockAutoReleaseScheduleCreateRequestSchema:
       required:
         - releaseDate
@@ -7089,17 +7420,17 @@ components:
           example: 8f2c1e3a-9b6d-4f1e-9d2a-3b6c0a1f7e51
           nullable: true
         reservationId:
-          description: 'Reservation identifier. Required if houseAccountId and groupCode are not provided. Per-item sub-reservation targeting is expressed via items[].subReservationId.'
+          description: 'Reservation identifier. Required if houseAccountId and eventCode are not provided. Per-item sub-reservation targeting is expressed via items[].subReservationId.'
           type: string
           example: RES123456
           nullable: true
         houseAccountId:
-          description: 'House account identifier. Required if reservationId and groupCode are not provided.'
+          description: 'House account identifier. Required if reservationId and eventCode are not provided.'
           type: string
           example: HA-99812
           nullable: true
-        groupCode:
-          description: 'Group code. Required if reservationId and houseAccountId are not provided.'
+        eventCode:
+          description: 'Event code. Required if reservationId and houseAccountId are not provided.'
           type: string
           example: GRP2026
           nullable: true
@@ -7185,7 +7516,7 @@ components:
             - houseAccountId
         -
           required:
-            - groupCode
+            - eventCode
     ProductDetailsSchema:
       description: 'Product-only fields for a check item whose type is PRODUCT. sku is required — it is the catalog dedup key. Category and sub-reservation override remain optional.'
       required:
@@ -7207,7 +7538,7 @@ components:
               example: Food
               nullable: true
             subReservationId:
-              description: 'Sub-reservation identifier. If provided, this item is routed to the specified sub-reservation within the parent reservation (request-level reservationId). Has no effect when the request-level target is houseAccountId or groupCode.'
+              description: 'Sub-reservation identifier. If provided, this item is routed to the specified sub-reservation within the parent reservation (request-level reservationId). Has no effect when the request-level target is houseAccountId or eventCode.'
               type: string
               example: SUB123
               nullable: true
@@ -7451,18 +7782,6 @@ components:
           nullable: true
           description: 'This parameter should be formatted as a list of strings separated by ;'
           example: 'field1:value;field2:operator:value'
-      type: object
-    CursorPaginationSchema:
-      properties:
-        limit:
-          description: 'The limit for the number of items to return (max 1000)'
-          type: integer
-          default: 5
-          example: 1
-        pageToken:
-          description: 'Token to retrieve the next page of results. It is returned in the response of the previous page.'
-          type: string
-          nullable: true
       type: object
     LimitOffsetPaginationSchema:
       properties:
@@ -8425,15 +8744,18 @@ components:
           enum:
             - none
             - post_into_group
-          example: none
+          example: post_into_group
         transactionTypes:
-          description: 'Transaction types to route (required when transactionMode is post_into_group)'
+          description: 'Transaction types to route (required when transactionMode is post_into_group). Matched exactly. Unknown values are stored but never match a transaction. Values by group. Room revenue: rate, roomRevenue_cancellation, roomRevenue_no_show, roomRevenue_manual. By identifier: `product_<itemID>` from getItems, `tax_<taxID>` and `fee_<feeID>` from getTaxesAndFees, `addon_<id>`, `custom_item_<id>`, `bookable_resource_<resourceTypeID>`. Other: channel_commission, accountsReceivable. Payments: the payment method `code` from getPaymentMethods, e.g. cash, cards, check (debit card), check_true (check), ebanking, pay_pal, terminal. Card brands: `cards_<cardCode>` and `terminal_<cardCode>` with cardCode from getPaymentMethods. Bare cards and terminal match only payments recorded without a brand.'
           type: array
           items:
             type: string
           example:
-            - accommodation
-            - products
+            - rate
+            - product_42
+            - tax_5
+            - cards
+            - cards_visa
           nullable: true
         folioConfigId:
           description: 'Folio configuration ID'
@@ -8469,7 +8791,7 @@ components:
       description: 'Request parameters for listing events'
       properties:
         eventCode:
-          description: 'Filter by event code (legacy: groupCode)'
+          description: 'Filter by event code'
           type: string
           example: g162795
           nullable: true
@@ -8653,13 +8975,16 @@ components:
           example: post_into_group
           nullable: true
         transactionTypes:
-          description: 'Transaction types to route (required when transactionMode is post_into_group)'
+          description: 'Transaction types to route (replaces the whole list, omit to keep). An empty array is rejected when the resulting transactionMode is post_into_group and clears the list otherwise. Values: see Create a new event.'
           type: array
           items:
             type: string
           example:
-            - accommodation
-            - products
+            - rate
+            - product_42
+            - tax_5
+            - cards
+            - cards_visa
           nullable: true
         folioConfigId:
           description: 'Folio configuration ID'
@@ -8816,7 +9141,7 @@ components:
           type: string
           example: '12345'
         eventCode:
-          description: 'Event code (legacy: groupCode)'
+          description: 'Event code'
           type: string
           example: g162795
         profileId:
@@ -8872,13 +9197,16 @@ components:
             - post_into_group
           example: post_into_group
         transactionTypes:
-          description: 'Transaction types when mode is post_into_group'
+          description: 'Transaction types as stored (no effect when transactionMode is none)'
           type: array
           items:
             type: string
           example:
-            - accommodation
-            - products
+            - rate
+            - product_42
+            - tax_5
+            - cards
+            - cards_visa
           nullable: true
         folioConfigId:
           description: 'Folio configuration ID'
@@ -8991,7 +9319,7 @@ components:
           example: GL-2410
           nullable: true
         subReservationId:
-          description: 'Sub-reservation identifier. If provided, this gratuity entry is routed to the specified sub-reservation within the parent reservation (request-level reservationId). Has no effect when the request-level target is houseAccountId or groupCode.'
+          description: 'Sub-reservation identifier. If provided, this gratuity entry is routed to the specified sub-reservation within the parent reservation (request-level reservationId). Has no effect when the request-level target is houseAccountId or eventCode.'
           type: string
           example: SUB123
           nullable: true
@@ -9021,22 +9349,22 @@ components:
             $ref: '#/components/schemas/GratuitySchema'
       type: object
     PostGratuityRequestSchema:
-      description: 'Request body for the standalone postGratuity endpoint (a tip with no check). Exactly one of reservationId / houseAccountId / groupCode must be provided. Sub-reservation routing is per-gratuity via GratuitySchema.subReservationId. To link tips to a check, use POST /folio/v1/checks/{checkId}/gratuities instead — checkId / checkNumber / POS context are check attributes and are not accepted here.'
+      description: 'Request body for the standalone postGratuity endpoint (a tip with no check). Exactly one of reservationId / houseAccountId / eventCode must be provided. Sub-reservation routing is per-gratuity via GratuitySchema.subReservationId. To link tips to a check, use POST /folio/v1/checks/{checkId}/gratuities instead — checkId / checkNumber / POS context are check attributes and are not accepted here.'
       required:
         - gratuities
       properties:
         reservationId:
-          description: 'Reservation identifier. Required if houseAccountId and groupCode are not provided.'
+          description: 'Reservation identifier. Required if houseAccountId and eventCode are not provided.'
           type: string
           example: RES123456
           nullable: true
         houseAccountId:
-          description: 'House account identifier. Required if reservationId and groupCode are not provided.'
+          description: 'House account identifier. Required if reservationId and eventCode are not provided.'
           type: string
           example: '123456'
           nullable: true
-        groupCode:
-          description: 'Group code. Required if reservationId and houseAccountId are not provided.'
+        eventCode:
+          description: 'Event code. Required if reservationId and houseAccountId are not provided.'
           type: string
           example: GRP2025
           nullable: true
@@ -9060,7 +9388,7 @@ components:
             - houseAccountId
         -
           required:
-            - groupCode
+            - eventCode
     RecipientSchema:
       description: 'Recipient attribution for a gratuity. All three fields are optional and independent. When more than one is provided, resolution priority is: userId > email > name.'
       properties:
@@ -9938,17 +10266,17 @@ components:
         - items
       properties:
         reservationId:
-          description: 'Reservation identifier. Required if houseAccountId and groupCode are not provided.'
+          description: 'Reservation identifier. Required if houseAccountId and eventCode are not provided.'
           type: string
           example: RES123456
           nullable: true
         houseAccountId:
-          description: 'House account identifier. Required if reservationId and groupCode are not provided.'
+          description: 'House account identifier. Required if reservationId and eventCode are not provided.'
           type: string
           example: '123456'
           nullable: true
-        groupCode:
-          description: 'Group code. Required if reservationId and houseAccountId are not provided.'
+        eventCode:
+          description: 'Event code. Required if reservationId and houseAccountId are not provided.'
           type: string
           example: GRP2025
           nullable: true
@@ -9972,7 +10300,7 @@ components:
             - houseAccountId
         -
           required:
-            - groupCode
+            - eventCode
     CustomItemCollectionResponseSchema:
       required:
         - items
@@ -11142,8 +11470,8 @@ components:
           type: integer
           example: 10
           nullable: true
-        groupCode:
-          description: 'Group code.'
+        eventCode:
+          description: 'Event code.'
           type: string
           example: '990'
           nullable: true
@@ -14114,6 +14442,7 @@ components:
             'write:allotmentBlocks': 'Write AllotmentBlock information'
             'read:allotmentBlocks': 'Read AllotmentBlock information'
             'delete:allotmentBlocks': 'Delete AllotmentBlock information'
+            'read:aiAvailability': 'Read availability and pricing for AI agents'
 tags:
   -
     name: Addons
