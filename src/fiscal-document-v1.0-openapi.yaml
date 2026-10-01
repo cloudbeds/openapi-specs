@@ -715,7 +715,7 @@ paths:
             Invoice currency to convert every transaction into. Each transaction's amount is
             converted to this currency using the property's current exchange rate and returned in
             the display* fields; the original amount and currency are also returned. When omitted,
-            no conversion is applied.
+            only a document issued in another currency is converted (see displayDocumentFiscalizedAmount).
           required: false
           schema:
             type: string
@@ -4633,7 +4633,9 @@ components:
           description: Available amount converted to the display currency.
         displayDocumentFiscalizedAmount:
           type: number
-          description: Document fiscalized amount converted to the display currency.
+          description: >-
+            Document fiscalized amount converted to the display currency. Without a requested currency,
+            set for a document issued in another currency, at the exchange rate locked when it was issued.
         folioId:
           type: string
         status:
@@ -4979,6 +4981,9 @@ components:
           nullable: true
         dateDisplay:
           $ref: '#/components/schemas/DateDisplay'
+        lineGroupingSettings:
+          $ref: '#/components/schemas/LineGroupingSettings'
+          nullable: true
         simplifiedEnabled:
           type: boolean
           nullable: true
@@ -5441,6 +5446,9 @@ components:
           default: false
         dateDisplay:
           $ref: '#/components/schemas/DateDisplay'
+        lineGroupingSettings:
+          $ref: '#/components/schemas/LineGroupingSettings'
+          nullable: true
         simplifiedSupported:
           type: boolean
           description: Whether simplified invoices are supported for this property's country (INVOICE kind)
@@ -5746,6 +5754,53 @@ components:
         - SETTLEMENT_INVOICE
         - TAX_WITHHOLDING
 
+    LineGrouping:
+      type: string
+      enum:
+        - NONE
+        - TRANSACTION
+        - RATE_PLAN_SHOW_ADDONS
+        - RATE_PLAN_HIDE_ADDONS
+    PosGrouping:
+      type: string
+      enum:
+        - NOTHING
+        - CHECK_NUMBER
+    VatDisplay:
+      type: string
+      enum:
+        - PER_LINE
+        - SUMMARY_ONLY
+    LineGroupingSettings:
+      type: object
+      description: New grouped line/POS rendering configuration. When absent on write the legacy boolean fields are used.
+      properties:
+        defaultLineGrouping:
+          $ref: '#/components/schemas/LineGrouping'
+        allowedLineGroupings:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineGrouping'
+        defaultPosGrouping:
+          $ref: '#/components/schemas/PosGrouping'
+        allowedPosGroupings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PosGrouping'
+        defaultGroupByRoom:
+          type: boolean
+        defaultGroupByBusinessDate:
+          type: boolean
+        vatDisplay:
+          $ref: '#/components/schemas/VatDisplay'
+      required:
+        - defaultLineGrouping
+        - allowedLineGroupings
+        - defaultPosGrouping
+        - allowedPosGroupings
+        - defaultGroupByRoom
+        - defaultGroupByBusinessDate
+        - vatDisplay
     DateDisplay:
       type: string
       description: Controls which date columns to show on the document
