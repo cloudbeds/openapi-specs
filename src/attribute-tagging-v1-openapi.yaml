@@ -835,6 +835,11 @@ paths:
         - Categories
       parameters:
         - schema:
+            type: boolean
+          in: query
+          name: archived
+          required: false
+        - schema:
             type: string
             pattern: ^\d+$
           in: header
@@ -878,6 +883,11 @@ paths:
                       maximum: 9007199254740991
                     isSystem:
                       type: boolean
+                    archivedAt:
+                      nullable: true
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                   required:
                     - id
                     - organizationId
@@ -888,6 +898,7 @@ paths:
                     - color
                     - position
                     - isSystem
+                    - archivedAt
                   additionalProperties: false
         "400":
           description: Default Response
@@ -1017,6 +1028,11 @@ paths:
                     maximum: 9007199254740991
                   isSystem:
                     type: boolean
+                  archivedAt:
+                    nullable: true
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                 required:
                   - id
                   - organizationId
@@ -1027,6 +1043,7 @@ paths:
                   - color
                   - position
                   - isSystem
+                  - archivedAt
                 additionalProperties: false
         "400":
           description: Default Response
@@ -1346,6 +1363,11 @@ paths:
                     maximum: 9007199254740991
                   isSystem:
                     type: boolean
+                  archivedAt:
+                    nullable: true
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                 required:
                   - id
                   - organizationId
@@ -1356,6 +1378,7 @@ paths:
                   - color
                   - position
                   - isSystem
+                  - archivedAt
                 additionalProperties: false
         "400":
           description: Default Response
@@ -1603,6 +1626,189 @@ paths:
                   - code
                   - message
                 additionalProperties: false
+  /attribute-tagging/v1/categories/{id}/unarchive:
+    post:
+      summary: Restore an archived category to the end of the active list
+      tags:
+        - Categories
+      parameters:
+        - schema:
+            type: string
+            pattern: ^\d+$
+          in: path
+          name: id
+          required: true
+        - schema:
+            type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: true
+          description: Organization ID
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^\d+$
+                  organizationId:
+                    type: string
+                    pattern: ^\d+$
+                  key:
+                    nullable: true
+                    type: string
+                  label:
+                    type: string
+                    minLength: 1
+                  description:
+                    nullable: true
+                    type: string
+                  icon:
+                    nullable: true
+                    type: string
+                  color:
+                    nullable: true
+                    type: string
+                  position:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  isSystem:
+                    type: boolean
+                  archivedAt:
+                    nullable: true
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+                required:
+                  - id
+                  - organizationId
+                  - key
+                  - label
+                  - description
+                  - icon
+                  - color
+                  - position
+                  - isSystem
+                  - archivedAt
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "409":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
   /attribute-tagging/v1/tags/:
     get:
       summary: Returns a list of tags for an entity
@@ -1663,7 +1869,7 @@ paths:
             pattern: ^\d+$
           in: header
           name: x-organization-id
-          required: false
+          required: true
           description: Organization ID
         - schema:
             type: string
@@ -1871,7 +2077,7 @@ paths:
             pattern: ^\d+$
           in: header
           name: x-organization-id
-          required: false
+          required: true
           description: Organization ID
         - schema:
             type: string
@@ -2153,7 +2359,7 @@ paths:
             pattern: ^\d+$
           in: header
           name: x-organization-id
-          required: false
+          required: true
           description: Organization ID
         - schema:
             type: string
@@ -2299,7 +2505,7 @@ paths:
             pattern: ^\d+$
           in: header
           name: x-organization-id
-          required: false
+          required: true
           description: Organization ID
         - schema:
             type: string
@@ -2537,7 +2743,7 @@ paths:
             pattern: ^\d+$
           in: header
           name: x-organization-id
-          required: false
+          required: true
           description: Organization ID
         - schema:
             type: string
@@ -3031,7 +3237,7 @@ paths:
             pattern: ^\d+$
           in: header
           name: x-organization-id
-          required: false
+          required: true
           description: Organization ID
         - schema:
             type: string
@@ -3222,7 +3428,7 @@ paths:
             pattern: ^\d+$
           in: header
           name: x-organization-id
-          required: false
+          required: true
           description: Organization ID
         - schema:
             type: string
