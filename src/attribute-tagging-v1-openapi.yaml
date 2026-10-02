@@ -8,6 +8,36 @@ info:
     Public API base path: `/attribute-tagging/v1`
 
 
+    ## Base URL — pick your region
+
+
+    Cloudbeds hosts every property in one region (island), `us1` or `us2`, and
+    this API answers only for the region it runs in. Use the base URL of the
+    region that hosts your property:
+
+
+    - `https://api.us1.cloudbeds.com/attribute-tagging/v1` (us1)
+
+    - `https://api.us2.cloudbeds.com/attribute-tagging/v1` (us2)
+
+
+    The general (non-island) host
+    `https://api.cloudbeds.com/attribute-tagging/v1` is served by the us1 region
+    only, so a property hosted in us2 gets no data from it.
+
+
+    To find your region, send any request to one of the regional URLs above: a
+    request that reaches a region other than the one hosting your property is
+    rejected with `421 WRONG_REGION`, and the error message names the base URL
+    to use instead. A property that genuinely has no tags gets a `200` with an
+    empty list, never a `421`. Your Cloudbeds contact can also tell you the
+    region.
+
+
+    Both regions accept partner API keys (`cbat_…`) and Okta JWTs as
+    `Authorization: Bearer <token>`.
+
+
     Download OpenAPI specification:
     [JSON](https://api.cloudbeds.com/attribute-tagging/v1/docs/json) |
     [YAML](https://api.cloudbeds.com/attribute-tagging/v1/docs/yaml)
@@ -114,16 +144,21 @@ paths:
                       type: string
                     category:
                       description: The category this attribute belongs to, or null when Uncategorized.
-                        Present on `GET /attributes`; omitted on `POST`/`PATCH
-                        /attributes` and where an attribute is embedded in
-                        another response (e.g. a tag) that does not join it.
+                        Present on `GET /attributes`, `GET /tags` and `POST
+                        /tags/query`; omitted on `POST`/`PATCH /attributes` and
+                        on tag write responses (`POST /tags`, `POST
+                        /tags/bulk`).
                       nullable: true
                       type: object
                       properties:
                         id:
                           type: string
                           pattern: ^\d+$
+                        key:
+                          nullable: true
+                          type: string
                         label:
+                          nullable: true
                           type: string
                           minLength: 1
                         icon:
@@ -134,6 +169,7 @@ paths:
                           type: string
                       required:
                         - id
+                        - key
                         - label
                         - icon
                         - color
@@ -154,6 +190,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -315,16 +382,20 @@ paths:
                     type: string
                   category:
                     description: The category this attribute belongs to, or null when Uncategorized.
-                      Present on `GET /attributes`; omitted on `POST`/`PATCH
-                      /attributes` and where an attribute is embedded in another
-                      response (e.g. a tag) that does not join it.
+                      Present on `GET /attributes`, `GET /tags` and `POST
+                      /tags/query`; omitted on `POST`/`PATCH /attributes` and on
+                      tag write responses (`POST /tags`, `POST /tags/bulk`).
                     nullable: true
                     type: object
                     properties:
                       id:
                         type: string
                         pattern: ^\d+$
+                      key:
+                        nullable: true
+                        type: string
                       label:
+                        nullable: true
                         type: string
                         minLength: 1
                       icon:
@@ -335,6 +406,7 @@ paths:
                         type: string
                     required:
                       - id
+                      - key
                       - label
                       - icon
                       - color
@@ -411,6 +483,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -576,16 +679,20 @@ paths:
                     type: string
                   category:
                     description: The category this attribute belongs to, or null when Uncategorized.
-                      Present on `GET /attributes`; omitted on `POST`/`PATCH
-                      /attributes` and where an attribute is embedded in another
-                      response (e.g. a tag) that does not join it.
+                      Present on `GET /attributes`, `GET /tags` and `POST
+                      /tags/query`; omitted on `POST`/`PATCH /attributes` and on
+                      tag write responses (`POST /tags`, `POST /tags/bulk`).
                     nullable: true
                     type: object
                     properties:
                       id:
                         type: string
                         pattern: ^\d+$
+                      key:
+                        nullable: true
+                        type: string
                       label:
+                        nullable: true
                         type: string
                         minLength: 1
                       icon:
@@ -596,6 +703,7 @@ paths:
                         type: string
                     required:
                       - id
+                      - key
                       - label
                       - icon
                       - color
@@ -672,6 +780,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -800,6 +939,37 @@ paths:
                   - code
                   - message
                 additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
         "503":
           description: Default Response
           content:
@@ -866,6 +1036,7 @@ paths:
                       nullable: true
                       type: string
                     label:
+                      nullable: true
                       type: string
                       minLength: 1
                     description:
@@ -905,6 +1076,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -982,9 +1184,12 @@ paths:
                 color:
                   type: string
                   pattern: ^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
-              required:
-                - label
               additionalProperties: false
+              anyOf:
+                - required:
+                    - key
+                - required:
+                    - label
       parameters:
         - schema:
             type: string
@@ -1011,6 +1216,7 @@ paths:
                     nullable: true
                     type: string
                   label:
+                    nullable: true
                     type: string
                     minLength: 1
                   description:
@@ -1078,6 +1284,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -1258,6 +1495,37 @@ paths:
                   - code
                   - message
                 additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
         "503":
           description: Default Response
           content:
@@ -1299,6 +1567,7 @@ paths:
               type: object
               properties:
                 label:
+                  nullable: true
                   type: string
                   minLength: 1
                 description:
@@ -1346,6 +1615,7 @@ paths:
                     nullable: true
                     type: string
                   label:
+                    nullable: true
                     type: string
                     minLength: 1
                   description:
@@ -1441,6 +1711,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -1598,6 +1899,37 @@ paths:
                   - code
                   - message
                 additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
         "503":
           description: Default Response
           content:
@@ -1663,6 +1995,7 @@ paths:
                     nullable: true
                     type: string
                   label:
+                    nullable: true
                     type: string
                     minLength: 1
                   description:
@@ -1758,6 +2091,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -1942,17 +2306,21 @@ paths:
                           type: string
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized.
-                            Present on `GET /attributes`; omitted on
-                            `POST`/`PATCH /attributes` and where an attribute is
-                            embedded in another response (e.g. a tag) that does
-                            not join it.
+                            Present on `GET /attributes`, `GET /tags` and `POST
+                            /tags/query`; omitted on `POST`/`PATCH /attributes`
+                            and on tag write responses (`POST /tags`, `POST
+                            /tags/bulk`).
                           nullable: true
                           type: object
                           properties:
                             id:
                               type: string
                               pattern: ^\d+$
+                            key:
+                              nullable: true
+                              type: string
                             label:
+                              nullable: true
                               type: string
                               minLength: 1
                             icon:
@@ -1963,6 +2331,7 @@ paths:
                               type: string
                           required:
                             - id
+                            - key
                             - label
                             - icon
                             - color
@@ -1991,6 +2360,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -2150,17 +2550,21 @@ paths:
                           type: string
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized.
-                            Present on `GET /attributes`; omitted on
-                            `POST`/`PATCH /attributes` and where an attribute is
-                            embedded in another response (e.g. a tag) that does
-                            not join it.
+                            Present on `GET /attributes`, `GET /tags` and `POST
+                            /tags/query`; omitted on `POST`/`PATCH /attributes`
+                            and on tag write responses (`POST /tags`, `POST
+                            /tags/bulk`).
                           nullable: true
                           type: object
                           properties:
                             id:
                               type: string
                               pattern: ^\d+$
+                            key:
+                              nullable: true
+                              type: string
                             label:
+                              nullable: true
                               type: string
                               minLength: 1
                             icon:
@@ -2171,6 +2575,7 @@ paths:
                               type: string
                           required:
                             - id
+                            - key
                             - label
                             - icon
                             - color
@@ -2255,6 +2660,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -2404,6 +2840,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -2578,17 +3045,21 @@ paths:
                           type: string
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized.
-                            Present on `GET /attributes`; omitted on
-                            `POST`/`PATCH /attributes` and where an attribute is
-                            embedded in another response (e.g. a tag) that does
-                            not join it.
+                            Present on `GET /attributes`, `GET /tags` and `POST
+                            /tags/query`; omitted on `POST`/`PATCH /attributes`
+                            and on tag write responses (`POST /tags`, `POST
+                            /tags/bulk`).
                           nullable: true
                           type: object
                           properties:
                             id:
                               type: string
                               pattern: ^\d+$
+                            key:
+                              nullable: true
+                              type: string
                             label:
+                              nullable: true
                               type: string
                               minLength: 1
                             icon:
@@ -2599,6 +3070,7 @@ paths:
                               type: string
                           required:
                             - id
+                            - key
                             - label
                             - icon
                             - color
@@ -2627,6 +3099,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -2858,17 +3361,21 @@ paths:
                               type: string
                             category:
                               description: The category this attribute belongs to, or null when Uncategorized.
-                                Present on `GET /attributes`; omitted on
-                                `POST`/`PATCH /attributes` and where an
-                                attribute is embedded in another response (e.g.
-                                a tag) that does not join it.
+                                Present on `GET /attributes`, `GET /tags` and
+                                `POST /tags/query`; omitted on `POST`/`PATCH
+                                /attributes` and on tag write responses (`POST
+                                /tags`, `POST /tags/bulk`).
                               nullable: true
                               type: object
                               properties:
                                 id:
                                   type: string
                                   pattern: ^\d+$
+                                key:
+                                  nullable: true
+                                  type: string
                                 label:
+                                  nullable: true
                                   type: string
                                   minLength: 1
                                 icon:
@@ -2879,6 +3386,7 @@ paths:
                                   type: string
                               required:
                                 - id
+                                - key
                                 - label
                                 - icon
                                 - color
@@ -3012,17 +3520,21 @@ paths:
                               type: string
                             category:
                               description: The category this attribute belongs to, or null when Uncategorized.
-                                Present on `GET /attributes`; omitted on
-                                `POST`/`PATCH /attributes` and where an
-                                attribute is embedded in another response (e.g.
-                                a tag) that does not join it.
+                                Present on `GET /attributes`, `GET /tags` and
+                                `POST /tags/query`; omitted on `POST`/`PATCH
+                                /attributes` and on tag write responses (`POST
+                                /tags`, `POST /tags/bulk`).
                               nullable: true
                               type: object
                               properties:
                                 id:
                                   type: string
                                   pattern: ^\d+$
+                                key:
+                                  nullable: true
+                                  type: string
                                 label:
+                                  nullable: true
                                   type: string
                                   minLength: 1
                                 icon:
@@ -3033,6 +3545,7 @@ paths:
                                   type: string
                               required:
                                 - id
+                                - key
                                 - label
                                 - icon
                                 - color
@@ -3122,6 +3635,37 @@ paths:
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
                 type: object
                 properties:
                   code:
@@ -3383,6 +3927,37 @@ paths:
                   - code
                   - message
                 additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
         "503":
           description: Default Response
           content:
@@ -3496,6 +4071,37 @@ paths:
                   - code
                   - message
                 additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
         "503":
           description: Default Response
           content:
@@ -3525,20 +4131,23 @@ paths:
                   - message
                 additionalProperties: false
 servers:
-  - url: https://api.{environment}.com
-    variables:
-      environment:
-        default: cloudbeds
-        enum: &a1
-          - cloudbeds-stage
-          - cloudbeds
   - url: https://api.{island}.{environment}.com
+    description: Regional gateway — use the island that hosts your property
     variables:
       island:
         default: us1
         enum:
           - us1
           - us2
+      environment:
+        default: cloudbeds
+        enum: &a1
+          - cloudbeds-stage
+          - cloudbeds
+  - url: https://api.{environment}.com
+    description: General (non-island) host — served by us1 only; a request for a us2
+      property is misdirected
+    variables:
       environment:
         default: cloudbeds
         enum: *a1
