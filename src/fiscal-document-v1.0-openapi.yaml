@@ -2230,7 +2230,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FiscalizationStatusResponse'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
 
   /fiscal-document/v1/fiscalization/connections:
     get:
@@ -2250,7 +2252,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FiscalConnectionListResponse'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
     post:
       tags: [Fiscal Connection Config]
       summary: Create a connection
@@ -2296,7 +2300,9 @@ paths:
                 $ref: '#/components/schemas/FiscalConnection'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
     put:
       tags: [Fiscal Connection Config]
       summary: Update a connection
@@ -2370,6 +2376,8 @@ paths:
                 $ref: '#/components/schemas/FiscalConnection'
         '400':
           $ref: '#/components/responses/400'
+        '403':
+          $ref: '#/components/responses/403'
         '404':
           $ref: '#/components/responses/404'
       security: [{bearerAuth: []}]
@@ -2508,7 +2516,9 @@ paths:
                 $ref: '#/components/schemas/FiscalConnectionTestResult'
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
 
   /fiscal-document/v1/fiscalization/connections/{connectionId}/certificate:
     get:
@@ -2738,7 +2748,9 @@ paths:
                 additionalProperties: true
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
     put:
       tags: [Fiscal Connection Config]
       summary: Update section configuration
@@ -2798,7 +2810,9 @@ paths:
                 additionalProperties: true
         '404':
           $ref: '#/components/responses/404'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
 
   /fiscal-document/v1/fiscalization/providers/{providerId}/{sectionKey}/options:
     put:
@@ -2860,7 +2874,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FiscalConnectionDraftListResponse'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
 
   /fiscal-document/v1/fiscalization/connections/drafts/{providerId}:
     put:
@@ -2922,7 +2938,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FiscalRoutingListResponse'
-      security: [{bearerAuth: []}]
+      security:
+        - bearerAuth: [ ]
+        - oauth2: [ read:reservation ]
     put:
       tags: [Fiscal Connection Config]
       summary: Bulk-replace routing rules
@@ -3805,6 +3823,16 @@ components:
           nullable: true
           additionalProperties:
             type: number
+        transactionIdToDisplayAmount:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: number
+          description: >-
+            Map of transaction ID to amount in the invoice currency (major units, as in displayAmount) for
+            partial transaction inclusion, recorded on the document exactly as given. Takes precedence over
+            transactionIdToAmount for the same transaction. When the invoice currency is the property currency
+            it behaves like transactionIdToAmount.
         sourceId:
           type: integer
           format: int64
@@ -3922,6 +3950,16 @@ components:
           nullable: true
           additionalProperties:
             type: number
+        transactionIdToDisplayAmount:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: number
+          description: >-
+            Map of transaction ID to amount in the invoice currency (major units, as in displayAmount) for
+            partial transaction inclusion, recorded on the document exactly as given. Takes precedence over
+            transactionIdToAmount for the same transaction. When the invoice currency is the property currency
+            it behaves like transactionIdToAmount.
         transactionIds:
           deprecated: true
           description: Include transactions with the specified IDs (deprecated, use `includeTransactionIds` instead)
@@ -4717,6 +4755,12 @@ components:
           description: >-
             The total in the property's base currency, shown as a reference alongside the total when
             the totals are expressed in another currency.
+        exchangeRate:
+          type: string
+          description: >-
+            The property's configured rate from its base currency into the currency the totals are expressed
+            in (1 base unit = exchangeRate units), the rate an invoice issued now is locked at. Absent when the
+            totals are in the property currency or no rate is configured.
         transactionCount:
           type: integer
           description: >-
@@ -4767,6 +4811,16 @@ components:
           additionalProperties:
             type: number
           description: Map of transaction ID to amount (in major currency units, e.g., 10.50 for $10.50) for partial transaction inclusion.
+        transactionIdToDisplayAmount:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: number
+          description: >-
+            Map of transaction ID to amount in the invoice currency (major units, as in displayAmount) for
+            partial transaction inclusion, recorded on the document exactly as given. Takes precedence over
+            transactionIdToAmount for the same transaction. When the invoice currency is the property currency
+            it behaves like transactionIdToAmount.
         currency:
           type: string
           description: >-
