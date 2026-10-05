@@ -48,7 +48,7 @@ paths:
         -
           name: filters
           in: query
-          description: 'This parameter should be formatted as a list of strings separated by ;'
+          description: 'This parameter should be formatted as a list of strings separated by ; Use \; for a literal semicolon inside a value.'
           required: false
           schema:
             $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
@@ -2131,7 +2131,7 @@ paths:
         -
           name: filters
           in: query
-          description: 'This parameter should be formatted as a list of strings separated by ;'
+          description: 'This parameter should be formatted as a list of strings separated by ; Use \; for a literal semicolon inside a value.'
           required: false
           schema:
             $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
@@ -2192,7 +2192,7 @@ paths:
         -
           name: filters
           in: query
-          description: 'This parameter should be formatted as a list of strings separated by ;'
+          description: 'This parameter should be formatted as a list of strings separated by ; Use \; for a literal semicolon inside a value.'
           required: false
           schema:
             $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
@@ -2432,7 +2432,7 @@ paths:
         -
           name: filters
           in: query
-          description: 'This parameter should be formatted as a list of strings separated by ;'
+          description: 'This parameter should be formatted as a list of strings separated by ; Use \; for a literal semicolon inside a value.'
           required: false
           schema:
             $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
@@ -2996,7 +2996,7 @@ paths:
         -
           name: filters
           in: query
-          description: 'This parameter should be formatted as a list of strings separated by ;'
+          description: 'This parameter should be formatted as a list of strings separated by ; Use \; for a literal semicolon inside a value.'
           required: false
           schema:
             $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
@@ -3665,6 +3665,31 @@ paths:
             maximum: 500
             minimum: 1
           example: '100'
+        -
+          name: filters
+          in: query
+          description: 'Filter the list. Each clause is written field:operator:value, and multiple clauses are separated by a semicolon (;) — not a comma, which the sort parameter uses. Clauses are combined with AND; grouping and OR are not supported here. Supported fields: isActive (equals), isDerived (equals), promoCode (contains).'
+          required: false
+          schema:
+            type: string
+          example: 'isActive:equals:true;promoCode:contains:SUMMER'
+        -
+          name: sort
+          in: query
+          description: 'Sort the list. Supported fields: createdAt, updatedAt, isActive. Multiple fields are separated by a comma (,), and each may carry a direction written as field:asc or field:desc; a field given on its own sorts ascending. When omitted, the list is returned newest first (createdAt descending).'
+          required: false
+          schema:
+            type: string
+          example: 'createdAt:desc,updatedAt:asc'
+        -
+          name: includeTotal
+          in: query
+          description: 'Return the total number of items matching the request, ignoring limit and offset. Boolean values are accepted case-insensitively, so true, TRUE, True and 1 all enable it.'
+          required: false
+          schema:
+            type: boolean
+            default: false
+          example: true
       responses:
         '200':
           description: 'List of Rates Plans.'
@@ -4111,7 +4136,7 @@ paths:
         -
           name: filters
           in: query
-          description: 'This parameter should be formatted as a list of strings separated by ;'
+          description: 'This parameter should be formatted as a list of strings separated by ; Use \; for a literal semicolon inside a value.'
           required: false
           schema:
             $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
@@ -7780,7 +7805,7 @@ components:
             -
               $ref: '#/components/schemas/DynamicFilterSchema'
           nullable: true
-          description: 'This parameter should be formatted as a list of strings separated by ;'
+          description: 'This parameter should be formatted as a list of strings separated by ; Use \; for a literal semicolon inside a value.'
           example: 'field1:value;field2:operator:value'
       type: object
     LimitOffsetPaginationSchema:
@@ -8237,12 +8262,33 @@ components:
                   - write
                   - none
                 example: read
+              options:
+                description: 'Valid choices for this setting. Omitted when options are disabled for the property or the setting has no fixed list. Scalar labels use the requested language. Channel labels use catalogue names, or the channel identifier when no active row exists.'
+                type: array
+                items:
+                  required: [value, label]
+                  properties: { value: { description: 'The value to send back when saving this setting.', type: string }, label: { description: 'Display text for this choice. A raw value is returned if its label cannot be resolved.', type: string } }
+                  type: object
             type: object
           example:
             -
               key: example_setting_key
               value: true
               permission: read
+            -
+              key: include_breakfast_pricing
+              value: IN
+              permission: read
+              options:
+                -
+                  value: ''
+                  label: 'Not available'
+                -
+                  value: IN
+                  label: 'Included in room/bed price'
+                -
+                  value: EX
+                  label: 'Excluded from room/bed price (i.e., extra charge)'
       type: object
     PatchDistributionSettingsErrorResponseSchema:
       required:
@@ -11970,6 +12016,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RatePlanResponseSchema'
+          nullable: true
+        total:
+          description: 'Total number of items matching the request; present only when includeTotal is requested.'
+          type: integer
           nullable: true
       type: object
     RatePlanResponseSchema:
