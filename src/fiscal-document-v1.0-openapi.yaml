@@ -1491,13 +1491,11 @@ paths:
         '204':
           description: Receipt successfully voided
         '400':
-          description: Bad Request - Invalid status or document type
+          description: Bad Request - Invalid status or document type, or receipt or invoice not found in the property
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ApiError"
-        '404':
-          description: Receipt or invoice not found in the property
 
   "/fiscal-document/v1/fiscal-documents/receipt/allocate-payment":
     post:
