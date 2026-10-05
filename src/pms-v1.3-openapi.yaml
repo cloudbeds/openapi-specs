@@ -910,6 +910,9 @@ components:
                                         roomTypeId:
                                             description: 'Room type ID'
                                             type: string
+                                        rateId:
+                                            description: "Rate ID of the block rate for this room type (the `rateID` carried by rooms on the block's reservations)"
+                                            type: string
                                         startDate:
                                             description: 'Interval start date'
                                             type: string
@@ -5662,7 +5665,7 @@ components:
                     type: string
                     nullable: true
                 referenceID:
-                    description: "partner's transaction reference. If exist then Cloudbeds will prevent adding of duplicates"
+                    description: "partner's transaction reference of the existing posting to append the items to. Items are added on every call; duplicates are not prevented"
                     type: string
                 subReservationID:
                     description: 'Sub Reservation identifier'
@@ -13505,7 +13508,7 @@ paths:
             tags:
                 - Rate
             summary: getRatePlans
-            description: 'Returns the rates of the room type or promo code selected, based on the provided parameters. If no parameters are provided, then the method will return all publicly available rate plans. ### Group account support'
+            description: "Returns the rates of the room type or promo code selected, based on the provided parameters. If no parameters are provided, then the method will return all publicly available rate plans. Rate plans attached to an allotment block are never returned by this endpoint, even when their IDs are passed in `rateIDs`. Allotment-block rates are group inventory, not publicly sellable inventory. Their IDs do appear elsewhere (for example the `rateID` of a room on a group reservation), so an ID that cannot be resolved here is not a mapping error: use `/getAllotmentBlocks`, which returns the block's rate plan ID as `ratePlanId` and the rate IDs that reservations carry as `allotmentIntervals[].rateId`, together with `allotmentBlockCode`, `allotmentBlockName`, `allotmentBlockStatus` and the per-interval rates. Deleted rate plans are not returned by this endpoint and `/getAllotmentBlocks` omits deleted blocks, so an ID that resolves in neither endpoint belongs to a deleted rate plan or a deleted (archived) allotment block. ### Group account support"
             responses:
                 200:
                     description: '200 Response'
