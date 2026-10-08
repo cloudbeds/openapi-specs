@@ -4570,6 +4570,8 @@ components:
           type: boolean
           nullable: true
           description: "Per-document override for package breakdown. Null means use property default."
+        vatDisplay:
+          $ref: '#/components/schemas/VatDisplay'
         currency:
           type: string
           nullable: true
