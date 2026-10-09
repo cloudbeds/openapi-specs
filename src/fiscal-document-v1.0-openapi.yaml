@@ -1796,6 +1796,7 @@ paths:
                   HANDWRITTEN_RECEIPTS: false
                   DOCUMENT_PREVIEW: true
                   HAS_LEGACY_INVOICES: false
+                  INVOICE_REPLACES_RECEIPTS: false
   "/fiscal-document/v1/fiscal-documents/rules":
     get:
       summary: Get document creation rules for a given document kind
@@ -3873,7 +3874,12 @@ components:
             format: int64
             minimum: 1
         includeTransactionIds:
-          description: Include transactions with the specified IDs
+          description: >-
+            Include only the transactions with these IDs. With folioIds they are added on top of the folios'
+            transactions instead. Empty or omitted means every not-yet-invoiced transaction of the source (or of
+            folioIds when given) minus excludeTransactionIds, payments included and
+            pending transactions only when the property allows them. Transactions listed in transactionIdToAmount
+            are added automatically. Ignored when the deprecated transactionIds is set.
           type: array
           items:
             type: integer
@@ -3895,6 +3901,9 @@ components:
           type: boolean
           nullable: true
           description: "Per-document override for package breakdown. Null means use property default."
+        lineGroupingSelection:
+          $ref: '#/components/schemas/LineGroupingSelectionRequest'
+          nullable: true
         dueDatePropertyTimezone:
           type: string
           format: date
@@ -4022,6 +4031,9 @@ components:
           type: boolean
           nullable: true
           description: "Per-document override for package breakdown. Null means use property default."
+        lineGroupingSelection:
+          $ref: '#/components/schemas/LineGroupingSelectionRequest'
+          nullable: true
         dueDatePropertyTimezone:
           type: string
           format: date
@@ -4098,6 +4110,9 @@ components:
           type: boolean
           nullable: true
           description: "Per-document override for package breakdown. Null means use property default."
+        lineGroupingSelection:
+          $ref: '#/components/schemas/LineGroupingSelectionRequest'
+          nullable: true
 
     ProFormaInvoiceRequest:
       type: object
@@ -4185,6 +4200,9 @@ components:
           type: boolean
           nullable: true
           description: "Per-document override for package breakdown. Null means use property default."
+        lineGroupingSelection:
+          $ref: '#/components/schemas/LineGroupingSelectionRequest'
+          nullable: true
 
     ProFormaStatusUpdateRequest:
       type: object
@@ -4769,6 +4787,20 @@ components:
         maxTransactions:
           type: integer
           description: Maximum number of transactions allowed on a single fiscal document.
+        replacedReceipts:
+          type: array
+          items:
+            type: string
+          description: >-
+            For an invoice selection on a property whose invoice replaces the receipts that already
+            declared its charges: the receipts issuing it would void, by number (or id while one is
+            still waiting for its number), in issue order. Absent when nothing would be replaced.
+        receiptReplacementConflict:
+          type: string
+          description: >-
+            Why an invoice over this selection could not replace the receipts behind it — a receipt
+            still being signed, or a covered charge not taken in full. The same message the create
+            request refuses with, so a client can block issuing before submit. Absent when it can.
     TransactionsSummaryRequest:
       type: object
       required: [sourceId, sourceKind]
@@ -5693,8 +5725,15 @@ components:
           description: Whether this is the latest document in the chain
         relationshipType:
           type: string
-          enum: [PARENT, CHILD]
-          description: The relationship type - PARENT means this document is linked to the current document, CHILD means the current document is linked to this one
+          enum: [PARENT, CHILD, REPLACED, REPLACED_BY]
+          description: >-
+            PARENT means this document is linked to the current document, CHILD means the current
+            document is linked to this one. REPLACED and REPLACED_BY are the two sides of a
+            replacement: on an invoice, REPLACED names a receipt it withdrew — one that already
+            declared the same charges and was voided when the invoice was issued; on that receipt,
+            REPLACED_BY names the invoice that withdrew it. A client that presents the two
+            differently should read this field; one that lists related documents plainly needs
+            no change.
     FiscalDocumentFile:
       type: object
       properties:
@@ -5818,7 +5857,7 @@ components:
     PosGrouping:
       type: string
       enum:
-        - NOTHING
+        - NONE
         - CHECK_NUMBER
     VatDisplay:
       type: string
@@ -5855,6 +5894,26 @@ components:
         - defaultGroupByRoom
         - defaultGroupByBusinessDate
         - vatDisplay
+    LineGroupingSelectionRequest:
+      type: object
+      description: >-
+        Per-document grouping chosen in the create modal. Each omitted field keeps the property default.
+        lineGrouping and posGrouping must be inside the property allowed set; otherwise the request is
+        rejected. groupByRoom and groupByBusinessDate are free per-document modifiers: the property has no
+        allowed set for them, only a default. Locked on the document once created.
+      properties:
+        lineGrouping:
+          $ref: '#/components/schemas/LineGrouping'
+          nullable: true
+        posGrouping:
+          $ref: '#/components/schemas/PosGrouping'
+          nullable: true
+        groupByRoom:
+          type: boolean
+          nullable: true
+        groupByBusinessDate:
+          type: boolean
+          nullable: true
     DateDisplay:
       type: string
       description: Controls which date columns to show on the document
