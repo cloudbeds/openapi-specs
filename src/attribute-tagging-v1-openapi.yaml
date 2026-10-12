@@ -70,7 +70,7 @@ paths:
             Supported fields:
 
             - `entityTypes:in:` - a comma-separated list of values:
-            `guest_profile`, `reservation`
+            `guest_profile`, `reservation`, `accommodation_type`, `room`
 
 
             Examples:
@@ -126,6 +126,8 @@ paths:
                         enum:
                           - guest_profile
                           - reservation
+                          - accommodation_type
+                          - room
                     isEnabled:
                       type: boolean
                     categoryId:
@@ -295,6 +297,8 @@ paths:
                     enum:
                       - guest_profile
                       - reservation
+                      - accommodation_type
+                      - room
                 isEnabled:
                   type: boolean
                 categoryId:
@@ -364,6 +368,8 @@ paths:
                       enum:
                         - guest_profile
                         - reservation
+                        - accommodation_type
+                        - room
                   isEnabled:
                     type: boolean
                   categoryId:
@@ -589,6 +595,8 @@ paths:
                     enum:
                       - guest_profile
                       - reservation
+                      - accommodation_type
+                      - room
                 isEnabled:
                   type: boolean
                 categoryId:
@@ -661,6 +669,8 @@ paths:
                       enum:
                         - guest_profile
                         - reservation
+                        - accommodation_type
+                        - room
                   isEnabled:
                     type: boolean
                   categoryId:
@@ -2181,7 +2191,7 @@ paths:
       parameters:
         - schema:
             type: string
-            pattern: ^\d+$
+            pattern: ^\d+(-\d+)?$
           in: query
           name: entityId
           required: false
@@ -2190,6 +2200,8 @@ paths:
             enum:
               - guest_profile
               - reservation
+              - accommodation_type
+              - room
           in: query
           name: entityType
           required: false
@@ -2205,24 +2217,27 @@ paths:
 
             Supported fields and operators:
 
-            - `entityId:in:` - comma-separated list of numeric entity IDs (e.g.,
-            `123,456,789`)
+            - `entityId:in:` - comma-separated entity IDs (numeric for numeric
+            types; room keys for `room`)
 
-            - `entityType:in:` - comma-separated list of entity types:
-            `guest_profile`, `reservation`
+            - `entityType:in:<type>` - a single entity type; valid values:
+            `guest_profile`, `reservation`, `accommodation_type`, `room`
 
 
             Examples:
 
-            - `entityId:in:100,101,102`
+            - `entityId:in:100,101;entityType:in:guest_profile` (multiple IDs
+            for one type)
 
-            - `entityType:in:guest_profile,reservation`
+            - `entityId:in:12345-3;entityType:in:room`
 
-            - `entityId:in:100,101;entityType:in:guest_profile,reservation`
-            (bulk query for multiple entities)
+            - `entityType:in:guest_profile`
 
 
             Notes:
+
+            - To look up several entity types in one request, use `POST
+            /tags/query`.
 
             - Bulk queries support up to 1000 entities per request
 
@@ -2257,12 +2272,14 @@ paths:
                       pattern: ^\d+$
                     entityId:
                       type: string
-                      pattern: ^\d+$
+                      pattern: ^\d+(-\d+)?$
                     entityType:
                       type: string
                       enum:
                         - guest_profile
                         - reservation
+                        - accommodation_type
+                        - room
                     propertyId:
                       type: string
                       pattern: ^\d+$
@@ -2288,6 +2305,8 @@ paths:
                             enum:
                               - guest_profile
                               - reservation
+                              - accommodation_type
+                              - room
                         isEnabled:
                           type: boolean
                         categoryId:
@@ -2455,12 +2474,14 @@ paths:
               properties:
                 entityId:
                   type: string
-                  pattern: ^\d+$
+                  pattern: ^\d+(-\d+)?$
                 entityType:
                   type: string
                   enum:
                     - guest_profile
                     - reservation
+                    - accommodation_type
+                    - room
                 attributeIds:
                   type: array
                   items:
@@ -2501,12 +2522,14 @@ paths:
                       pattern: ^\d+$
                     entityId:
                       type: string
-                      pattern: ^\d+$
+                      pattern: ^\d+(-\d+)?$
                     entityType:
                       type: string
                       enum:
                         - guest_profile
                         - reservation
+                        - accommodation_type
+                        - room
                     propertyId:
                       type: string
                       pattern: ^\d+$
@@ -2532,6 +2555,8 @@ paths:
                             enum:
                               - guest_profile
                               - reservation
+                              - accommodation_type
+                              - room
                         isEnabled:
                           type: boolean
                         categoryId:
@@ -2945,12 +2970,14 @@ paths:
                         type: array
                         items:
                           type: string
-                          pattern: ^\d+$
+                          pattern: ^\d+(-\d+)?$
                       type:
                         type: string
                         enum:
                           - guest_profile
                           - reservation
+                          - accommodation_type
+                          - room
                     required:
                       - ids
                       - type
@@ -2996,12 +3023,14 @@ paths:
                       pattern: ^\d+$
                     entityId:
                       type: string
-                      pattern: ^\d+$
+                      pattern: ^\d+(-\d+)?$
                     entityType:
                       type: string
                       enum:
                         - guest_profile
                         - reservation
+                        - accommodation_type
+                        - room
                     propertyId:
                       type: string
                       pattern: ^\d+$
@@ -3027,6 +3056,8 @@ paths:
                             enum:
                               - guest_profile
                               - reservation
+                              - accommodation_type
+                              - room
                         isEnabled:
                           type: boolean
                         categoryId:
@@ -3204,12 +3235,14 @@ paths:
                         type: array
                         items:
                           type: string
-                          pattern: ^\d+$
+                          pattern: ^\d+(-\d+)?$
                       type:
                         type: string
                         enum:
                           - guest_profile
                           - reservation
+                          - accommodation_type
+                          - room
                       propertyId:
                         type: string
                         pattern: ^\d+$
@@ -3270,12 +3303,14 @@ paths:
                       properties:
                         entityId:
                           type: string
-                          pattern: ^\d+$
+                          pattern: ^\d+(-\d+)?$
                         entityType:
                           type: string
                           enum:
                             - guest_profile
                             - reservation
+                            - accommodation_type
+                            - room
                         propertyId:
                           type: string
                           pattern: ^\d+$
@@ -3312,12 +3347,14 @@ paths:
                           pattern: ^\d+$
                         entityId:
                           type: string
-                          pattern: ^\d+$
+                          pattern: ^\d+(-\d+)?$
                         entityType:
                           type: string
                           enum:
                             - guest_profile
                             - reservation
+                            - accommodation_type
+                            - room
                         propertyId:
                           type: string
                           pattern: ^\d+$
@@ -3343,6 +3380,8 @@ paths:
                                 enum:
                                   - guest_profile
                                   - reservation
+                                  - accommodation_type
+                                  - room
                             isEnabled:
                               type: boolean
                             categoryId:
@@ -3429,12 +3468,14 @@ paths:
                       properties:
                         entityId:
                           type: string
-                          pattern: ^\d+$
+                          pattern: ^\d+(-\d+)?$
                         entityType:
                           type: string
                           enum:
                             - guest_profile
                             - reservation
+                            - accommodation_type
+                            - room
                         propertyId:
                           type: string
                           pattern: ^\d+$
@@ -3471,12 +3512,14 @@ paths:
                           pattern: ^\d+$
                         entityId:
                           type: string
-                          pattern: ^\d+$
+                          pattern: ^\d+(-\d+)?$
                         entityType:
                           type: string
                           enum:
                             - guest_profile
                             - reservation
+                            - accommodation_type
+                            - room
                         propertyId:
                           type: string
                           pattern: ^\d+$
@@ -3502,6 +3545,8 @@ paths:
                                 enum:
                                   - guest_profile
                                   - reservation
+                                  - accommodation_type
+                                  - room
                             isEnabled:
                               type: boolean
                             categoryId:
@@ -3739,12 +3784,14 @@ paths:
                         type: array
                         items:
                           type: string
-                          pattern: ^\d+$
+                          pattern: ^\d+(-\d+)?$
                       type:
                         type: string
                         enum:
                           - guest_profile
                           - reservation
+                          - accommodation_type
+                          - room
                       propertyId:
                         type: string
                         pattern: ^\d+$
@@ -3805,11 +3852,14 @@ paths:
                       properties:
                         entityId:
                           type: string
+                          pattern: ^\d+(-\d+)?$
                         entityType:
                           type: string
                           enum:
                             - guest_profile
                             - reservation
+                            - accommodation_type
+                            - room
                         propertyId:
                           type: string
                         status:
