@@ -903,9 +903,9 @@ paths:
                       OrderTime: '18:02:58'
                       IsCancellation: 0
                       IsModification: 0
-                      OrderAdults: 2
+                      OrderAdults: 4
                       OrderChildren: 0
-                      OrderCustomers: 2
+                      OrderCustomers: 4
                       TotalCurrency: USD
                       TotalPrice: 134
                       PaymentCollect: Property
@@ -917,10 +917,10 @@ paths:
                       Rooms:
                         - ChannelRoomType: abcdef
                           Currency: USD
-                          Adults: 2
+                          Adults: 4
                           Babies: 0
                           Children: 0
-                          Occupancy: 2
+                          Occupancy: 4
                           RateDesc: Refundable Rate
                           RateId: '13649'
                           DayRates:
@@ -3711,9 +3711,14 @@ paths:
                     OrderId: '123456789'
                     OrderDate: '2018-04-22'
                     OrderTime: '18:02:58'
+                    IsModification: 0
                     IsCancellation: 0
+                    OrderAdults: 4
+                    OrderChildren: 0
+                    OrderCustomers: 4
                     TotalCurrency: USD
                     TotalPrice: 134
+                    PaymentCollect: Property
                     Customers:
                       - CustomerCountry: US
                         CustomerEmail: test@test.com
@@ -3721,7 +3726,13 @@ paths:
                         CustomerLName: Test Lastname
                     Rooms:
                       - ChannelRoomType: abcdef
+                        RateDesc: Refundable Rate
+                        RateId: '13649'
                         Currency: USD
+                        Adults: 4
+                        Babies: 0
+                        Children: 0
+                        Occupancy: 4
                         DayRates:
                           - Date: '2017-11-08'
                             Description: Refundable Rate
@@ -5038,7 +5049,7 @@ components:
           type: integer
           minimum: 0
           description: |
-            Total number of unique adults. Adult age threshold is defined by the channel. Should equal sum of Adults in each room if this breakdown is given.
+            Total number of unique adults. Adult age threshold is defined by the channel. Should equal sum of `Adults` in each room if this breakdown is given.
         OrderChildren:
           type: integer
           minimum: 0
@@ -5046,7 +5057,7 @@ components:
             Total number of unique children or babies. Child/baby age threshold is defined by the channel. Should equal sum of `Children` plus `Babies` in each room if this breakdown is given.
         OrderCustomers:
           type: integer
-          minimum: 1
+          minimum: 0
           description: |
             Total number of unique customers. Should equal sum of `Occupancy` in each room if this breakdown is given. Should also equal the sum of `OrderAdults` and `OrderChildren` if those fields are present.
         OrderDate:
@@ -5123,7 +5134,8 @@ components:
               - CustomerLName
         Rooms:
           type: array
-          description: List of rooms booked
+          description: |
+            List of rooms booked. For private rooms we recommend one entry per booked room (`Units` = 1), so that each room has its own guest counts.
           items:
             type: object
             properties:
@@ -5131,12 +5143,12 @@ components:
                 type: integer
                 minimum: 0
                 description: |
-                  Number of adults staying in this room. Adult age threshold is defined by the channel.
+                  Number of adults staying in this room, for all units (not per unit). Adult age threshold is defined by the channel.
               Babies:
                 type: integer
                 minimum: 0
                 description: |
-                  Number of babies staying in this room. Baby age threshold is defined by the channel.
+                  Number of babies staying in this room, for all units (not per unit). Baby age threshold is defined by the channel.
               ChannelRoomType:
                 type: string
                 description: The ID of the room on the OTA.
@@ -5144,7 +5156,7 @@ components:
                 type: integer
                 minimum: 0
                 description: |
-                  Number of children staying in this room. Child age threshold is defined by the channel.
+                  Number of children staying in this room, for all units (not per unit). Child age threshold is defined by the channel.
               Currency:
                 type: string
                 pattern: ^[A-Z]{3}$
@@ -5210,9 +5222,9 @@ components:
                   The date of the last night of stay (equal to departure date minus one).
               Occupancy:
                 type: integer
-                minimum: 1
+                minimum: 0
                 description: |
-                  Total number of persons staying in this room, including children and babies. Should be the sum of `Adults`, `Children` and `Babies` if those are present.
+                  Total number of persons staying in this room, for all units (not per unit), including children and babies. Should be the sum of `Adults`, `Children` and `Babies` if those are present.
               Price:
                 type: number
                 minimum: 0
@@ -5222,7 +5234,7 @@ components:
                 type: integer
                 minimum: 1
                 description: |
-                  Number of rooms booked (for private rooms) or number of beds booked (for dorms/shared rooms).
+                  Number of rooms booked (for private rooms) or number of beds booked (for dorms/shared rooms). `Price`, `Adults`, `Children`, `Babies` and `Occupancy` cover all units. For private rooms we recommend `Units` = 1, with one entry per booked room.
               RateDesc:
                 type: string
                 description: Description of the booked rate plan, as provided by the channel.
