@@ -182,7 +182,20 @@ components:
                                 type: string
                                 nullable: true
                     nullable: true
-        DeleteAdjustmentResponse:
+        PostDeleteAdjustmentRequest:
+            type: object
+            properties:
+                propertyID:
+                    description: 'Property ID'
+                    type: string
+                    nullable: true
+                reservationID:
+                    description: 'Reservation identifier'
+                    type: string
+                adjustmentID:
+                    description: 'Adjustment identifier'
+                    type: string
+        PostDeleteAdjustmentResponse:
             type: object
             properties:
                 success:
@@ -7999,6 +8012,9 @@ components:
                             isDeleted:
                                 description: ''
                                 type: boolean
+                            isImported:
+                                description: 'Whether the reservation was created through an import process.'
+                                type: boolean
                             dateCreated:
                                 description: ''
                                 type: string
@@ -9917,11 +9933,11 @@ components:
                                     - fee
                                     - tax
                             feeID:
-                                description: "Fee's unique identifier. Only exists if type = fee."
+                                description: "Fee's unique identifier. Only exists if type = fee. Not permanent: editing the fee creates a new version with a new identifier, and childId on the previous version points at the replacement."
                                 type: string
                                 nullable: true
                             taxID:
-                                description: "Tax's unique identifier. Only exists if type = tax."
+                                description: "Tax's unique identifier. Only exists if type = tax. Not permanent: editing the tax creates a new version with a new identifier, and childId on the previous version points at the replacement."
                                 type: string
                                 nullable: true
                             name:
@@ -10021,7 +10037,7 @@ components:
                                 description: 'ID of the tax or fee that replaced current one'
                                 type: string
                             externalId:
-                                description: "Partner-supplied 3rd-party identifier the property has associated with this Cloudbeds tax/fee. Used by partner-facing write endpoints (e.g. postCheck `taxId` / `feeId`) to address the tax/fee by the partner's own naming; `null` when no mapping is configured. Set via the property's tax/fee configuration UI."
+                                description: "Partner-supplied 3rd-party identifier the property has associated with this Cloudbeds tax/fee. Used by partner-facing write endpoints (e.g. the `externalId` field in postCheck `taxes[]` / `fees[]` rows) to address the tax/fee by the partner's own naming; `null` when no mapping is configured. Set via the property's tax/fee configuration UI."
                                 type: string
                                 nullable: true
                             createdAt:
@@ -10463,7 +10479,7 @@ paths:
                     required: false
                     in: query
     /deleteAdjustment:
-        delete:
+        post:
             tags:
                 - Adjustment
             summary: deleteAdjustment
@@ -10474,7 +10490,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/DeleteAdjustmentResponse'
+                                $ref: '#/components/schemas/PostDeleteAdjustmentResponse'
             security:
                 -
                     api_key:
@@ -10482,28 +10498,11 @@ paths:
                 -
                     OAuth2:
                         - 'delete:adjustment'
-            parameters:
-                -
-                    description: 'Property ID'
-                    name: propertyID
-                    schema:
-                        type: string
-                    required: false
-                    in: query
-                -
-                    description: 'Reservation identifier'
-                    name: reservationID
-                    schema:
-                        type: string
-                    required: true
-                    in: query
-                -
-                    description: 'Adjustment identifier'
-                    name: adjustmentID
-                    schema:
-                        type: string
-                    required: true
-                    in: query
+            requestBody:
+                content:
+                    application/x-www-form-urlencoded:
+                        schema:
+                            $ref: '#/components/schemas/PostDeleteAdjustmentRequest'
     /postAdjustment:
         post:
             tags:
@@ -13891,7 +13890,7 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'Filters reservation with the supplied source ID.'
+                    description: 'Filters reservations by source, using the same code returned in `sourceID`: `s-{id}` for primary sources or `ss-{id}-{0|1}` for third-party sources.'
                     name: sourceId
                     schema:
                         type: string
