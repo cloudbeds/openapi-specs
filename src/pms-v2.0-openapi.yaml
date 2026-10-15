@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: 'Cloudbeds API v2'
-  description: '<p>Welcome to the documentation for <strong>Cloudbeds API Version v2</strong>! If you are looking to learn how to use the Cloudbeds API to access guest information, reservations, or similar data for your Cloudbeds customers, then you''ve come to the right place.</p><p>In this document you will find all the API methods we provide along with explanations for parameters and response examples.</p><p>If you have questions about different implementation steps (e.g. how to implement OAuth 2.0), please refer to our <a href=''https://integrations.cloudbeds.com/hc/en-us''>Integrations Portal</a>.</p><p>Be sure to <a href=''https://go.pardot.com/l/308041/2018-07-24/qb2lg''>subscribe</a> to the monthly Cloudbeds API announcement mailing list to receive information on new additions and improvements to the Cloudbeds API and related developer tools.</p><p><strong>Endpoint:</strong> https://api.cloudbeds.com/{method}</p><p><strong>HTTPS:</strong> Our API requires HTTPS. We''ll respond with an appropriate error if you''re not using it.</p><p><strong>Request Format:</strong> HTTP GET, POST and PUT (Content-Type: application/x-www-form-urlencoded)</p><p><strong>Response Format:</strong> JSON</p><p><strong>Response Header:</strong> X-Request-ID is added to response headers in all calls to help accelerate support and troubleshooting.</p><p><strong><a href=''https://integrations.cloudbeds.com/hc/en-us/articles/14104678058267-API-Documentation#postman-collection''><img src=''https://run.pstmn.io/button.svg'' alt=''Run in Postman''></a></strong> use this link to access our Public collection in Postman.</p>'
+  description: '<p>Welcome to the documentation for <strong>Cloudbeds API Version v2</strong>! If you are looking to learn how to use the Cloudbeds API to access guest information, reservations, or similar data for your Cloudbeds customers, then you''ve come to the right place.</p><p>In this document you will find all the API methods we provide along with explanations for parameters and response examples.</p><p>If you have questions about different implementation steps (e.g. how to implement OAuth 2.0), please refer to our <a href=''https://integrations.cloudbeds.com/hc/en-us''>Integrations Portal</a>.</p><p>Be sure to <a href=''https://go.pardot.com/l/308041/2018-07-24/qb2lg''>subscribe</a> to the monthly Cloudbeds API announcement mailing list to receive information on new additions and improvements to the Cloudbeds API and related developer tools.</p><p><strong>Endpoint:</strong> https://api.cloudbeds.com/{method}</p><p><strong>HTTPS:</strong> Our API requires HTTPS. We''ll respond with an appropriate error if you''re not using it.</p><p><strong>Request Format:</strong> HTTP GET, POST, PUT, PATCH and DELETE; request bodies are JSON (Content-Type: application/json)</p><p><strong>Response Format:</strong> JSON</p><p><strong>Response Header:</strong> X-Request-ID is added to response headers in all calls to help accelerate support and troubleshooting.</p><p><strong><a href=''https://integrations.cloudbeds.com/hc/en-us/articles/14104678058267-API-Documentation#postman-collection''><img src=''https://run.pstmn.io/button.svg'' alt=''Run in Postman''></a></strong> use this link to access our Public collection in Postman.</p>'
   version: v2
 servers:
   -
@@ -729,6 +729,7 @@ paths:
                 - 'write:resourceTypes'
                 - 'write:room'
                 - 'write:roomblock'
+                - 'write:taxesAndFees'
           example:
             - 'read:reservation,write:appError'
       responses:
@@ -1927,7 +1928,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostGratuityResponseSchema'
         '400':
-          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched tax externalId, unknown recipient userId, or an unresolvable folio target. See GratuityErrorCodeEnumSchema for structured error codes.'
+          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched tax externalId/taxId, unknown recipient userId, or an unresolvable folio target. See GratuityErrorCodeEnumSchema for structured error codes.'
           content:
             application/json:
               schema:
@@ -2001,7 +2002,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostGratuityResponseSchema'
         '400':
-          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched tax externalId, unknown recipient userId, or the resolved check carries no folio target. See GratuityErrorCodeEnumSchema.'
+          description: 'Bad request — missing/oversized Idempotency-Key header, validation failure, unmatched tax externalId/taxId, unknown recipient userId, or the resolved check carries no folio target. See GratuityErrorCodeEnumSchema.'
           content:
             application/json:
               schema:
@@ -3668,15 +3669,15 @@ paths:
         -
           name: filters
           in: query
-          description: 'Filter the list. Each clause is written field:operator:value, and multiple clauses are separated by a semicolon (;) — not a comma, which the sort parameter uses. Clauses are combined with AND; grouping and OR are not supported here. Supported fields: isActive (equals), isDerived (equals), promoCode (contains).'
+          description: 'Filter the list. Each clause is written field:operator:value, and multiple clauses are separated by a semicolon (;) — not a comma, which the sort parameter uses. Clauses are combined with AND; grouping and OR are not supported here. Supported fields: isActive (equals), isDerived (equals), promoCode (contains), status (equals, in), policyId (equals, in), segmentId (equals, in), derivedRatePlanId (equals, in, is_null, is_not_null). A status filter takes one of active, expired, no-intervals, disabled; with `in`, several separated by a comma. It is applied before limit and offset, so a page and its total both describe the rate plans in those statuses. The in operator takes a comma-separated list of up to 100 IDs (policyId:in:1,2,3); is_null and is_not_null take no value (derivedRatePlanId:is_null). derivedRatePlanId takes 0 for the property base rate, alone or in a list (derivedRatePlanId:in:0,12), and 0 matches plans with no parent plan. derivedRatePlanId:is_null matches plans with no parent plan, which includes plans derived from the base rate; derivedRatePlanId:is_not_null matches plans whose parent is another rate plan. None of these checks isDerived, so add isDerived:equals:true to keep derived plans only. policyId, segmentId and derivedRatePlanId are filters only and cannot be sorted on.'
           required: false
           schema:
             type: string
-          example: 'isActive:equals:true;promoCode:contains:SUMMER'
+          example: 'isActive:equals:true;status:in:active,expired;policyId:in:1,2;derivedRatePlanId:is_null'
         -
           name: sort
           in: query
-          description: 'Sort the list. Supported fields: createdAt, updatedAt, isActive. Multiple fields are separated by a comma (,), and each may carry a direction written as field:asc or field:desc; a field given on its own sorts ascending. When omitted, the list is returned newest first (createdAt descending).'
+          description: 'Sort the list. Supported fields: createdAt, updatedAt, isActive, status. Multiple fields are separated by a comma (,), and each may carry a direction written as field:asc or field:desc; a field given on its own sorts ascending. status sorts in the order active, expired, no-intervals, disabled (reversed for desc). When omitted, the list is returned newest first (createdAt descending).'
           required: false
           schema:
             type: string
@@ -7297,12 +7298,12 @@ components:
           example: GL-4100
           nullable: true
         taxes:
-          description: 'Tax rows for this line, keyed by the property''s configured tax external ids. Cloudbeds maps each entry to an existing tax record on the property; unknown values are rejected.'
+          description: 'Tax rows for this line. Each row identifies a configured tax by exactly one of `externalId` / `taxId`; unmatched values are rejected.'
           type: array
           items:
             $ref: '#/components/schemas/TaxSchema'
         fees:
-          description: 'Fee amounts for this line, keyed by the property''s configured fee IDs.'
+          description: 'Fee amounts for this line. Each row identifies a configured fee by exactly one of `externalId` / `feeId`; unmatched values are rejected.'
           type: array
           items:
             $ref: '#/components/schemas/FeeSchema'
@@ -7855,15 +7856,21 @@ components:
       type: object
       example: "[\n        {\n            \"field\": \"checkin_date\",\n            \"direction\": \"desc\"\n        },\n        {\n            \"field\": \"checkout_date\"\n        }\n    ]"
     FeeSchema:
-      description: 'A fee row applied to a parent object (today: a check line item). Same model as `taxes` — fees are referenced by external id from the property''s configured fees catalog, not by free-text name. Multiple fee rows per parent are supported, and each fee can carry its own `taxes[]` for tax-on-fee.'
+      description: 'A fee row applied to a parent object (today: a check line item). Same model as `taxes` — fees are referenced by identifier from the property''s configured fees catalog, not by free-text name. The fee is identified by exactly one of `externalId` / `feeId` — sending both or neither is rejected. Multiple fee rows per parent are supported, and each fee can carry its own `taxes[]` for tax-on-fee.'
       required:
-        - externalId
         - amount
       properties:
         externalId:
-          description: 'The partner-owned `external_id` configured on the fee under the property''s fee settings (a 3rd-party reference the property has associated with one of its Cloudbeds fees). Must resolve to an active fee on the property; unknown or inactive values are rejected with FEE_NOT_FOUND. The internal Cloudbeds numeric fee id is not accepted as input — it is unstable across property-side fee edits.'
+          description: 'The partner-owned identifier configured on the fee under the property''s fee settings (a 3rd-party reference the property has associated with one of its Cloudbeds fees). Required unless `feeId` is sent. Must resolve to an active fee on the property; unknown or inactive values are rejected with FEE_NOT_FOUND.'
           type: string
           example: fee_resort_daily
+          nullable: true
+        feeId:
+          description: 'Cloudbeds identifier of the fee, as returned in `feeID` by getTaxesAndFees. Required unless `externalId` is sent. This identifier is not permanent: when the property edits the fee, Cloudbeds replaces it with a new identifier. A previous identifier is still accepted and is recorded as sent, against the version of the fee it names. A deleted fee is rejected with FEE_NOT_FOUND. Use `externalId` when you need a reference that stays the same across edits.'
+          type: string
+          pattern: '^(0|[1-9]\d*)$'
+          example: '9804'
+          nullable: true
         amount:
           description: 'Fee amount applied to this item. Decimal string in major units of the property currency.'
           type: string
@@ -7871,21 +7878,52 @@ components:
           example: '2.50'
           nullable: true
         taxes:
-          description: 'Taxes applied to this fee (tax-on-fee). Each externalId must match an active tax configured on the property; unknown / inactive values are rejected with TAX_NOT_FOUND.'
+          description: 'Taxes applied to this fee (tax-on-fee). Each row identifies a configured tax by exactly one of `externalId` / `taxId`; unmatched values are rejected with TAX_NOT_FOUND.'
           type: array
           items:
             $ref: '#/components/schemas/TaxSchema'
       type: object
+      oneOf:
+        -
+          required:
+            - externalId
+          properties:
+            externalId:
+              type: string
+              pattern: \S
+            feeId:
+              type: string
+              pattern: '^\s*$'
+              nullable: true
+          type: object
+        -
+          required:
+            - feeId
+          properties:
+            externalId:
+              type: string
+              pattern: '^\s*$'
+              nullable: true
+            feeId:
+              type: string
+              pattern: '^(0|[1-9]\d*)$'
+          type: object
     TaxSchema:
-      description: 'A tax row applied to a gratuity, an item, or a service charge. Multiple tax rows per parent object are supported.'
+      description: 'A tax row applied to a gratuity, an item, or a service charge. Multiple tax rows per parent object are supported. The tax is identified by exactly one of `externalId` / `taxId` — sending both or neither is rejected.'
       required:
-        - externalId
         - amount
       properties:
         externalId:
-          description: 'The partner-owned `external_id` configured on the tax under the property''s tax settings (a 3rd-party reference the property has associated with one of its Cloudbeds taxes). Must resolve to an active tax on the property; unknown or inactive values are rejected with TAX_NOT_FOUND. The internal Cloudbeds numeric tax id is not accepted as input — it is unstable across property-side tax edits.'
+          description: 'The partner-owned identifier configured on the tax under the property''s tax settings (a 3rd-party reference the property has associated with one of its Cloudbeds taxes). Required unless `taxId` is sent. Must resolve to an active tax on the property; unknown or inactive values are rejected with TAX_NOT_FOUND.'
           type: string
           example: tax_state_va_8
+          nullable: true
+        taxId:
+          description: 'Cloudbeds identifier of the tax, as returned in `taxID` by getTaxesAndFees. Required unless `externalId` is sent. This identifier is not permanent: when the property edits the tax, Cloudbeds replaces it with a new identifier. A previous identifier is still accepted and is recorded as sent, against the version of the tax it names. A deleted tax is rejected with TAX_NOT_FOUND. Use `externalId` when you need a reference that stays the same across edits.'
+          type: string
+          pattern: '^(0|[1-9]\d*)$'
+          example: '29486'
+          nullable: true
         amount:
           description: 'Tax amount applied to the parent object — item, fee, service charge or gratuity, whichever this row is nested under. Decimal string in major units of the property currency.'
           type: string
@@ -7893,6 +7931,31 @@ components:
           example: '1.60'
           nullable: true
       type: object
+      oneOf:
+        -
+          required:
+            - externalId
+          properties:
+            externalId:
+              type: string
+              pattern: \S
+            taxId:
+              type: string
+              pattern: '^\s*$'
+              nullable: true
+          type: object
+        -
+          required:
+            - taxId
+          properties:
+            externalId:
+              type: string
+              pattern: '^\s*$'
+              nullable: true
+            taxId:
+              type: string
+              pattern: '^(0|[1-9]\d*)$'
+          type: object
     AcceptedResponseSchema: {  }
     BadRequestErrorItemSchema:
       required:
@@ -7903,6 +7966,15 @@ components:
           type: string
         message:
           type: string
+        code:
+          description: 'Error code identifying the specific validation failure'
+          type: string
+          example: GROUP_CUSTOM_RATE_NOT_ALLOWED
+          nullable: true
+        details:
+          description: 'Additional details about the validation failure'
+          type: object
+          nullable: true
       type: object
     BadRequestErrorListSchema:
       type: array
@@ -9345,7 +9417,7 @@ components:
           example: '8.00'
           nullable: true
         taxes:
-          description: 'Optional tax rows applied to this gratuity. Each tax follows the item-tax pattern; an unknown externalId returns TAX_NOT_FOUND.'
+          description: 'Optional tax rows applied to this gratuity. Each tax follows the item-tax pattern — identify the tax by exactly one of `externalId` / `taxId`; an unmatched value returns TAX_NOT_FOUND.'
           type: array
           items:
             $ref: '#/components/schemas/TaxSchema'
@@ -10146,6 +10218,29 @@ components:
             - open
             - completed
           example: open
+        result:
+          description: 'Result of the integration event. When provided, description and details are replaced with the values sent (omitted ones are cleared).'
+          type: string
+          default: null
+          enum:
+            - failure
+            - success
+            - action_required
+            - warning
+          example: success
+          nullable: true
+        description:
+          description: 'Description of the integration event. Required when result is failure.'
+          type: string
+          default: null
+          example: 'Integration event description'
+          nullable: true
+        details:
+          description: 'Details of the integration event, that usually contain instructions.'
+          type: string
+          default: null
+          example: 'You need to check room mappings.'
+          nullable: true
       type: object
     IntegrationEventCollectionResponseSchema:
       required:
@@ -12023,6 +12118,8 @@ components:
           nullable: true
       type: object
     RatePlanResponseSchema:
+      required:
+        - mealPlans
       properties:
         id:
           type: string
@@ -12033,6 +12130,15 @@ components:
         isActive:
           type: boolean
           example: true
+        status:
+          description: 'Derived from isActive and the intervals'' end dates, using the property''s current date. `disabled`: isActive is false. `no-intervals`: active with no intervals. `expired`: active and every interval''s endDate is in the past. `active`: active with at least one interval whose endDate is today or later (or has no endDate).'
+          type: string
+          enum:
+            - active
+            - expired
+            - no-intervals
+            - disabled
+          example: active
         isDeleted:
           type: boolean
           example: false
@@ -12124,6 +12230,19 @@ components:
           type: string
           example: '789'
           nullable: true
+        mealPlans:
+          description: 'Meal plans carried by the add-ons listed in `addons` (any attachment setting), as raw keys (not localized labels), deduplicated. Empty when none of them is a meal plan.'
+          type: array
+          items:
+            type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - all-inclusive
+          example:
+            - breakfast
+            - dinner
       type: object
     RatePlanAvailabilityDayResponseSchema:
       required:
@@ -13984,6 +14103,22 @@ components:
           type: string
           example: '1000'
       type: object
+    FeeExternalIdSchema:
+      required:
+        - feeId
+      properties:
+        feeId:
+          description: 'Cloudbeds fee id, as returned in `feeID` by getTaxesAndFees: a positive integer without leading zeros, at most 9223372036854775807. An id replaced by a later edit of the fee is accepted and resolved to the fee''s current version.'
+          type: string
+          maxLength: 19
+          pattern: '^[1-9][0-9]*$'
+          example: '55210'
+        externalId:
+          description: 'External ID to assign, at most 64 characters after leading and trailing whitespace is trimmed. Null, an empty value or an omitted field clears the mapping.'
+          type: string
+          example: CLVR_SVC_FEE
+          nullable: true
+      type: object
     LengthOfStayRangeSchema:
       required:
         - minimumNights
@@ -14114,6 +14249,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AddonSchema'
+          nullable: true
+      type: object
+    TaxExternalIdSchema:
+      required:
+        - taxId
+      properties:
+        taxId:
+          description: 'Cloudbeds tax id, as returned in `taxID` by getTaxesAndFees: a positive integer without leading zeros, at most 9223372036854775807. An id replaced by a later edit of the tax is accepted and resolved to the tax''s current version.'
+          type: string
+          maxLength: 19
+          pattern: '^[1-9][0-9]*$'
+          example: '98123'
+        externalId:
+          description: 'External ID to assign, at most 64 characters after leading and trailing whitespace is trimmed. Null, an empty value or an omitted field clears the mapping.'
+          type: string
+          example: CLVR_TAX_8KJ2N1
           nullable: true
       type: object
     TaxFeeConfigSchema:
@@ -14267,6 +14418,20 @@ components:
           nullable: true
           description: 'Length-of-stay rules that override amounts based on the number of nights.'
       type: object
+    UpdateExternalIdsRequestSchema:
+      description: 'Taxes and fees whose External ID to set or clear. At least one entry overall, at most 100 across both lists. Taxes and fees not listed keep their External ID.'
+      properties:
+        taxes:
+          description: 'Taxes to update. Each tax may appear once.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxExternalIdSchema'
+        fees:
+          description: 'Fees to update. Each fee may appear once.'
+          type: array
+          items:
+            $ref: '#/components/schemas/FeeExternalIdSchema'
+      type: object
     CalculateTotalsResponseSchema:
       required:
         - type
@@ -14374,6 +14539,37 @@ components:
             - fee_from_total
           example: fee_on_top
       type: object
+    ExternalIdErrorCodeEnumSchema:
+      description: 'Machine-readable error code returned when updating tax and fee External IDs.'
+      type: string
+      enum:
+        - TAX_NOT_FOUND
+        - FEE_NOT_FOUND
+        - TAX_SYSTEM_MANAGED
+        - FEE_SYSTEM_MANAGED
+        - DUPLICATE_ID_IN_REQUEST
+        - DUPLICATE_EXTERNAL_ID_IN_REQUEST
+        - EXTERNAL_ID_CONFLICT
+    FeeExternalIdResponseSchema:
+      required:
+        - requestedFeeId
+        - feeId
+        - externalId
+      properties:
+        requestedFeeId:
+          description: 'Fee id as sent in the request.'
+          type: string
+          example: '55210'
+        feeId:
+          description: 'Current version of the fee the External ID was written to. Differs from requestedFeeId when the requested fee has since been edited.'
+          type: string
+          example: '55210'
+        externalId:
+          description: 'External ID now assigned; null when cleared.'
+          type: string
+          example: CLVR_SVC_FEE
+          nullable: true
+      type: object
     RoomTotalsResponseSchema:
       required:
         - totalWithoutTaxes
@@ -14389,6 +14585,26 @@ components:
           $ref: '#/components/schemas/MoneySchema'
         taxesAndFeesFirstNight:
           $ref: '#/components/schemas/MoneySchema'
+      type: object
+    TaxExternalIdResponseSchema:
+      required:
+        - requestedTaxId
+        - taxId
+        - externalId
+      properties:
+        requestedTaxId:
+          description: 'Tax id as sent in the request.'
+          type: string
+          example: '98123'
+        taxId:
+          description: 'Current version of the tax the External ID was written to. Differs from requestedTaxId when the requested tax has since been edited.'
+          type: string
+          example: '98410'
+        externalId:
+          description: 'External ID now assigned; null when cleared.'
+          type: string
+          example: CLVR_TAX_8KJ2N1
+          nullable: true
       type: object
     TaxFeeBreakdownResponseSchema:
       required:
@@ -14451,6 +14667,29 @@ components:
             - fee
           example: fee
       type: object
+    UpdateExternalIdsResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/UpdatedExternalIdsResponseSchema'
+      type: object
+    UpdatedExternalIdsResponseSchema:
+      required:
+        - taxes
+        - fees
+      properties:
+        taxes:
+          description: 'Resulting External ID of each requested tax, in request order.'
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxExternalIdResponseSchema'
+        fees:
+          description: 'Resulting External ID of each requested fee, in request order.'
+          type: array
+          items:
+            $ref: '#/components/schemas/FeeExternalIdResponseSchema'
+      type: object
   parameters:
     roomId:
       name: roomId
@@ -14492,7 +14731,6 @@ components:
             'write:allotmentBlocks': 'Write AllotmentBlock information'
             'read:allotmentBlocks': 'Read AllotmentBlock information'
             'delete:allotmentBlocks': 'Delete AllotmentBlock information'
-            'read:aiAvailability': 'Read availability and pricing for AI agents'
 tags:
   -
     name: Addons
