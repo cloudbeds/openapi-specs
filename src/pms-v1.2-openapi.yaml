@@ -9972,7 +9972,7 @@ components:
                                     -
                                         type: number
                             amountRateBased:
-                                description: 'Rules defined for Rate-Based taxes/fees. Only applicable if amountType = percentage_rate_based (Rate-based)'
+                                description: 'Rules defined for Rate-Based taxes/fees. Only applicable if amountType = percentage_rate_based (Rate-based) or fixed_per_person_rate_based. For fixed_per_person_rate_based the items are {rate, amountAdult, amountChild}, with amountAdult / amountChild null when that guest is not charged.'
                                 type: array
                                 items:
                                     type: object
@@ -9993,7 +9993,7 @@ components:
                                                     type: number
                                 nullable: true
                             amountType:
-                                description: 'Amount type. They mean:<br/> <table> <tr><th>Value</th><th>Meaning</th></tr> <tr><td>percentage</td><td>Percentage of Total Amount</td></tr> <tr><td>fixed</td><td>Fixed per Room Night / Item</td></tr> <tr><td>fixed_per_person</td><td>Fixed per Person per Night</td></tr> <tr><td>fixed_per_accomodation</td><td>Fixed per Accomodation</td></tr> <tr><td>fixed_per_reservation</td><td>Fixed per Reservation</td></tr> <tr><td>percentage_rate_based</td><td>Rate-based</td></tr> </table>'
+                                description: 'Amount type. They mean:<br/> <table> <tr><th>Value</th><th>Meaning</th></tr> <tr><td>percentage</td><td>Percentage of Total Amount</td></tr> <tr><td>fixed</td><td>Fixed per Room Night / Item</td></tr> <tr><td>fixed_per_person</td><td>Fixed per Person per Night</td></tr> <tr><td>fixed_per_accomodation</td><td>Fixed per Accomodation</td></tr> <tr><td>fixed_per_reservation</td><td>Fixed per Reservation</td></tr> <tr><td>percentage_rate_based</td><td>Rate-based</td></tr> <tr><td>fixed_per_person_rate_based</td><td>Fixed per Person per Night by rate tier</td></tr> </table>'
                                 type: string
                                 enum:
                                     - percentage
@@ -10002,6 +10002,7 @@ components:
                                     - fixed_per_accomodation
                                     - fixed_per_reservation
                                     - percentage_rate_based
+                                    - fixed_per_person_rate_based
                             availableFor:
                                 description: 'Where this tax/fee is available?<br/>They mean:<br/> <table> <tr><th>Value</th><th>Meaning</th></tr> <tr><td>product</td><td>Items</td></tr> <tr><td>rate</td><td>Reservations</td></tr> <tr><td>fee</td><td>Fees -- this tax is charged on top of some fees</td></tr> <tr><td>custom_item</td><td>Custom item - this tax was charged for a custom item</td></tr> </table>'
                                 type: array
@@ -10097,7 +10098,7 @@ components:
                                                 -
                                                     type: number
                                         amountRateBased:
-                                            description: 'Rules defined for Rate-Based taxes/fees. Only applicable if amountType = percentage_rate_based (Rate-based)'
+                                            description: 'Rules defined for Rate-Based taxes/fees. Only applicable if amountType = percentage_rate_based (Rate-based) or fixed_per_person_rate_based (items are {rate, amountAdult, amountChild})'
                                             type: array
                                             items:
                                                 type: object
