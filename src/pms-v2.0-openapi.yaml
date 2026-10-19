@@ -4603,12 +4603,16 @@ components:
               maxAge:
                 description: 'Maximum age for this age group.'
                 type: integer
+              otaGroupFallback:
+                description: 'Whether this group is used for channels that do not accept granular age groups. Exactly one child or infant group must set it when the request contains one; adult groups cannot.'
+                type: boolean
             type: object
           example:
             -
               groupType: child
               minAge: 0
               maxAge: 17
+              otaGroupFallback: true
         customLabel:
           description: 'Custom label (Adults or Guests)'
           type: string
@@ -4709,6 +4713,9 @@ components:
               applyRateFromId:
                 description: 'Apply rate from age group ID.'
                 type: string
+              otaGroupFallback:
+                description: 'Whether this group is used for channels that do not accept granular age groups. Exactly one child or infant group must set it when the request contains one; adult groups cannot.'
+                type: boolean
             type: object
           example:
             -
@@ -4717,6 +4724,7 @@ components:
               minAge: 0
               maxAge: 17
               applyRateFromId: group-1
+              otaGroupFallback: true
         customLabel:
           description: 'Custom label (Adults or Guests)'
           type: string
@@ -4814,6 +4822,7 @@ components:
         - groupType
         - minAge
         - createdAt
+        - otaGroupFallback
       properties:
         id:
           type: string
@@ -4831,6 +4840,9 @@ components:
           type: string
           format: 'Y-m-d\TH:i:sP'
           nullable: true
+        otaGroupFallback:
+          description: 'Whether this group is used for channels that do not accept granular age groups.'
+          type: boolean
       type: object
     AgePolicyResponseSchema:
       required:
@@ -7248,7 +7260,7 @@ components:
           nullable: true
       type: object
     CheckItemRequestSchema:
-      description: 'A single line on a POS check. Shared envelope fields — name, quantity, price, amount, taxes, fees, note, customTransactionCode, generalLedgerCustomCode — describe the line. quantity is the unit count; price, when supplied, is the per-unit rate but is informational metadata only. The `details` block is polymorphic: its concrete shape is selected by the `type` discriminator. Today only PRODUCT is accepted, so `details` carries product-specific fields (sku, category, sub-reservation routing). Bookable-resource details will land alongside as a second `oneOf` branch when that flow is reintroduced. amount is the financial source of truth — the server posts it verbatim without recomputing from price * quantity.'
+      description: 'A single line on a POS check. Shared envelope fields — externalLineId, name, quantity, price, amount, taxes, fees, note, customTransactionCode, generalLedgerCustomCode — describe the line. quantity is the unit count; price, when supplied, is the per-unit rate but is informational metadata only. The `details` block is polymorphic: its concrete shape is selected by the `type` discriminator. Today only PRODUCT is accepted, so `details` carries product-specific fields (sku, category, sub-reservation routing). Bookable-resource details will land alongside as a second `oneOf` branch when that flow is reintroduced. amount is the financial source of truth — the server posts it verbatim without recomputing from price * quantity.'
       required:
         - type
         - name
@@ -7266,6 +7278,11 @@ components:
           description: 'Human-readable line name displayed on the folio (dish or beverage name).'
           type: string
           example: Cheeseburger
+        externalLineId:
+          description: 'Optional partner-supplied identifier for this line occurrence on the check (the POS system''s own line reference — e.g., Clover lineItem.id, Toast Selection.guid, Square line uid, or a per-check line sequence). Per line, not per unit: a quantity-2 line carries one reference. When provided, must be unique within this check''s items[]; a duplicate is rejected with DUPLICATE_EXTERNAL_LINE_ID. When omitted, the line is stored with no reference — Cloudbeds does not generate one. Supplied values are echoed back on the response and on line events so the partner can correlate the posted line without storing any Cloudbeds identifier.'
+          type: string
+          example: ABC8903421
+          nullable: true
         quantity:
           description: 'Number of units. Informational metadata only — not used for accounting math (amount is the line total, not price * quantity).'
           type: integer
@@ -7577,6 +7594,7 @@ components:
         - RESERVATION_CHECKED_OUT
         - IDEMPOTENCY_KEY_REUSED
         - DUPLICATE_CHECK_ID
+        - DUPLICATE_EXTERNAL_LINE_ID
         - TAX_NOT_FOUND
         - FEE_NOT_FOUND
         - PRODUCT_NAME_CONFLICT
@@ -7595,11 +7613,23 @@ components:
         data:
           $ref: '#/components/schemas/PostedCheckResponseSchema'
       type: object
+    PostedCheckItemResponseSchema:
+      description: 'A posted check line echo — position-matched to the request items[] entry so the caller can correlate each accepted line to its own POS-side identity.'
+      required:
+        - externalLineId
+      properties:
+        externalLineId:
+          description: 'The partner-supplied line reference accepted on items[].externalLineId, echoed verbatim — null when the line was posted without one. Address this value (with the check''s checkId) in any future line-scoped operation such as a partial refund or partial void.'
+          type: string
+          example: ABC8903421
+          nullable: true
+      type: object
     PostedCheckResponseSchema:
       description: 'Result of a postCheck call. checkId is the public, partner-addressable handle for the posted check — use it for downstream void/reversal.'
       required:
         - checkNumber
         - checkId
+        - items
       properties:
         checkNumber:
           description: 'Resolved receipt-visible check number — either the partner-supplied value from the request, or a server-minted Cloudbeds reference (cb-<id>) when the partner omitted it. Always returned so the partner can echo it back.'
@@ -7609,6 +7639,11 @@ components:
           description: 'Public, partner-addressable check identifier (accept-or-generate): the value the partner supplied, or a Cloudbeds-generated handle when omitted. Use it to address the check for void via DELETE /folio/v1/checks/{checkId}. Always returned.'
           type: string
           example: CHK-9911283
+        items:
+          description: 'Per-line echo of the accepted items[], position-matched to the request items[] (entry i describes request line i) — each entry carries back the partner-supplied externalLineId, or null where the line supplied none, so the caller can correlate posted lines to its own POS line ids without storing any Cloudbeds identifier. Empty for totals-only postings.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PostedCheckItemResponseSchema'
         notice:
           description: 'Set when this request replayed an earlier one: the same Idempotency-Key was sent with the same body. When present, no new posting was created and the original response is returned.'
           type: string
@@ -9983,6 +10018,7 @@ components:
           type: string
           enum:
             - addon
+            - event
             - item
             - reservation
             - room_type
@@ -14059,6 +14095,12 @@ components:
               $ref: '#/components/schemas/LengthOfStaySchema'
           nullable: true
           description: 'Nested length-of-stay rules that apply within this date range.'
+        amountPerPersonRateBased:
+          description: 'Override per-person rate tiers.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PerPersonRateBasedTierSchema'
+          nullable: true
       type: object
     DepositConfigSchema:
       required:
@@ -14158,6 +14200,12 @@ components:
           type: integer
           example: 10
           nullable: true
+        amountPerPersonRateBased:
+          description: 'Override per-person rate tiers for this range.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PerPersonRateBasedTierSchema'
+          nullable: true
       type: object
     LengthOfStaySchema:
       required:
@@ -14190,6 +14238,25 @@ components:
           description: 'ISO 4217 currency code'
           type: string
           example: USD
+      type: object
+    PerPersonRateBasedTierSchema:
+      required:
+        - rate
+      properties:
+        rate:
+          description: 'Gross nightly rate floor in minor currency units. The tier with the highest rate at or below the room''s nightly rate applies (e.g. 10000 = 100.00).'
+          type: string
+          example: '10000'
+        amountAdult:
+          description: 'Charged once per adult per night, in minor currency units. Absent means adults are not charged.'
+          type: string
+          example: '100'
+          nullable: true
+        amountChild:
+          description: 'Charged once per child per night, in minor currency units. Absent means children are not charged.'
+          type: string
+          example: '50'
+          nullable: true
       type: object
     RateBasedTierSchema:
       required:
@@ -14299,6 +14366,7 @@ components:
             - percentage_rate_based
             - fixed
             - fixed_per_person
+            - fixed_per_person_rate_based
             - fixed_per_accomodation
             - fixed_per_reservation
           example: percentage
@@ -14417,6 +14485,12 @@ components:
               $ref: '#/components/schemas/LengthOfStaySchema'
           nullable: true
           description: 'Length-of-stay rules that override amounts based on the number of nights.'
+        amountPerPersonRateBased:
+          description: 'Per-person rate tiers. Required for fixed_per_person_rate_based calculation type. Each tier defines a gross nightly rate floor and the per-adult and per-child amounts charged when the room''s rate meets it.'
+          type: array
+          items:
+            $ref: '#/components/schemas/PerPersonRateBasedTierSchema'
+          nullable: true
       type: object
     UpdateExternalIdsRequestSchema:
       description: 'Taxes and fees whose External ID to set or clear. At least one entry overall, at most 100 across both lists. Taxes and fees not listed keep their External ID.'
