@@ -3078,6 +3078,7 @@ components:
             send a connection id when the values belong to a single customer account.
         options:
           type: array
+          x-valid-items: true
           description: >
             The full list for this scope, in display order; anything not listed is deactivated.
             Active options are served before retired options, with connection-scoped options
@@ -4253,7 +4254,6 @@ components:
           name:
             type: string
             description: Name of the recipient
-            nullable: true
           gender:
             $ref: "#/components/schemas/GuestGender"
           email:
@@ -4277,7 +4277,6 @@ components:
           taxId:
             type: string
             description: Tax ID / VAT number
-            nullable: true
           address:
             type: object
             nullable: true
