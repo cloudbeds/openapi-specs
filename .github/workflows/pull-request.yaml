@@ -1,0 +1,42 @@
+name: Pull request
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  safety-floor:
+    name: PR safety floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: PR safety floor
+        uses: cloudbeds/composite-actions/gh/pr-safety-floor@v2
+        with:
+          base-ref: ${{ github.event.pull_request.base.ref }}
+          mode: ${{ vars.GUARDRAILS_MODE || 'report' }}
+
+  commitlint:
+    name: Commitlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Lint commit messages
+        uses: cloudbeds/composite-actions/gh/commitlint@v2
+        continue-on-error: ${{ (vars.GUARDRAILS_MODE || 'report') != 'block' }}
+
+  check-all:
+    name: Check all
+    if: always()
+    needs: [safety-floor, commitlint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: cloudbeds/composite-actions/gh/check-all@v2
+        with:
+          needs: ${{ toJSON(needs) }}

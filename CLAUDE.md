@@ -9,7 +9,8 @@ Guest Profiles, Group Profile, Fiscal Document, Accounting, Insights, Payments V
 Attribute Tagging, OTA Build-to-Us. The same specs power <https://developers.cloudbeds.com> and the generated
 Python SDK (<https://github.com/cloudbeds/cloudbeds-api-python>). MIT licensed.
 
-There is no build, test, lint or CI here. The repository settings are managed by Terraform.
+There is no build, test or lint here. PR CI (`.github/workflows/pull-request.yaml`) runs only the PR safety floor,
+commitlint and a `Check all` gate. The repository settings are managed by Terraform.
 
 ## 🔴 `src/` is generated — do not edit it here
 
@@ -19,7 +20,7 @@ repository is overwritten on the next sync and never reaches the published docum
 
 - To change a spec, change it in `cloudbeds/developer-docs` (private) and let the sync land it here.
 - Do not open PRs against `src/` in this repository; close and redirect any that appear.
-- `README.md`, `LICENSE` and this file are the only hand-maintained content.
+- `README.md`, `LICENSE`, `.github/` and this file are the only hand-maintained content.
 
 ## Public repository rules
 
