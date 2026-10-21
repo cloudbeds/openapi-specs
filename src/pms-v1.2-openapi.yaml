@@ -5551,7 +5551,7 @@ components:
                         type: object
                         properties:
                             appItemID:
-                                description: 'Identifier of item. Future calls using the same ID will use previously sent item name and description. Item name/description sent in new request will be ignored.'
+                                description: 'Identifier of item, at most 85 characters. Future calls using the same ID will use previously sent item name and description. Item name/description sent in new request will be ignored.'
                                 type: string
                             itemSKU:
                                 description: 'Item SKU identifier'
@@ -5695,7 +5695,7 @@ components:
                         type: object
                         properties:
                             appItemID:
-                                description: 'Identifier of item. Future calls using the same ID will use previously sent item name and description. Item name/description sent in new request will be ignored.'
+                                description: 'Identifier of item, at most 85 characters. Future calls using the same ID will use previously sent item name and description. Item name/description sent in new request will be ignored.'
                                 type: string
                             itemSKU:
                                 description: 'Item SKU identifier'
@@ -8841,6 +8841,11 @@ components:
                     default: false
                 canceledByGuest:
                     description: "Marks the cancellation as initiated by the guest (self-service portal, CFAR, or a guest request relayed by the integration). Only valid together with status='canceled' — sending it with any other status returns success=false. The reservation's main guest is recorded as the cancellation actor; the caller cannot supply actor identity."
+                    type: boolean
+                    nullable: true
+                    default: false
+                modifiedByGuest:
+                    description: "Marks a reservation update as initiated by the guest. When enabled for the property, guest changes to dates, room type, rate plan and occupancy are rejected after the free-cancellation deadline. Send rooms.rateID for each room; otherwise that room is priced on its type's Base Rate."
                     type: boolean
                     nullable: true
                     default: false
@@ -15190,7 +15195,7 @@ paths:
             tags:
                 - User
             summary: getUsers
-            description: "Returns information on the properties' users ### Group account support"
+            description: "Returns information on the properties' users. For authenticated users without hotel_users permission, email, role, and last-login fields are omitted. Client tokens retain the current fields. ### Group account support"
             responses:
                 200:
                     description: '200 Response'
