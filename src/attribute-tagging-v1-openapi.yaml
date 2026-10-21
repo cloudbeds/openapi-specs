@@ -100,6 +100,13 @@ paths:
           name: x-organization-id
           required: true
           description: Organization ID
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "200":
           description: Default Response
@@ -111,11 +118,34 @@ paths:
                   type: object
                   properties:
                     id:
-                      type: string
-                      pattern: ^\d+$
+                      anyOf:
+                        - type: string
+                          pattern: ^\d+$
+                        - type: string
+                          enum:
+                            - vip
+                            - blacklisted
+                            - special_occasion
+                            - pet
+                            - late_checkout
+                            - early_checkin
+                            - upgrade
+                            - late_arrival
+                            - multi_room_reservation
+                            - room_move
+                            - parking
+                            - breakfast
                     label:
+                      nullable: true
                       type: string
                       minLength: 1
+                    name:
+                      type: string
+                      description: "The name to show: `label` when the organization set one (never
+                        translated), else the Standard Tag's default name in the
+                        `Content-Language` of the response (resolved from
+                        `Accept-Language`, falling back to `en_US`, then to
+                        `standardKey`)."
                     description:
                       nullable: true
                       type: string
@@ -138,12 +168,32 @@ paths:
                       type: integer
                       minimum: -9007199254740991
                       maximum: 9007199254740991
+                    isPinned:
+                      type: boolean
                     icon:
                       nullable: true
                       type: string
                     color:
                       nullable: true
                       type: string
+                    standardKey:
+                      nullable: true
+                      type: string
+                      enum:
+                        - vip
+                        - blacklisted
+                        - special_occasion
+                        - pet
+                        - late_checkout
+                        - early_checkin
+                        - upgrade
+                        - late_arrival
+                        - multi_room_reservation
+                        - room_move
+                        - parking
+                        - breakfast
+                    isStandard:
+                      type: boolean
                     category:
                       description: The category this attribute belongs to, or null when Uncategorized.
                         Present on `GET /attributes`, `GET /tags` and `POST
@@ -179,13 +229,17 @@ paths:
                   required:
                     - id
                     - label
+                    - name
                     - description
                     - entityTypes
                     - isEnabled
                     - categoryId
                     - position
+                    - isPinned
                     - icon
                     - color
+                    - standardKey
+                    - isStandard
                   additionalProperties: false
         "400":
           description: Default Response
@@ -287,7 +341,7 @@ paths:
               properties:
                 label:
                   type: string
-                  minLength: 1
+                  pattern: \S
                 description:
                   type: string
                 entityTypes:
@@ -332,6 +386,13 @@ paths:
                   nullable: true
                   type: string
                   pattern: ^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
+                isPinned:
+                  description: Pins the attribute organization-wide, so it always renders first in
+                    a tag row and survives truncation. At most 5 per
+                    organization; pinning a sixth answers 409
+                    PIN_LIMIT_EXCEEDED. Pinning an already-pinned attribute is a
+                    no-op.
+                  type: boolean
               required:
                 - label
                 - entityTypes
@@ -344,6 +405,13 @@ paths:
           name: x-organization-id
           required: true
           description: Organization ID
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "201":
           description: Default Response
@@ -353,11 +421,34 @@ paths:
                 type: object
                 properties:
                   id:
-                    type: string
-                    pattern: ^\d+$
+                    anyOf:
+                      - type: string
+                        pattern: ^\d+$
+                      - type: string
+                        enum:
+                          - vip
+                          - blacklisted
+                          - special_occasion
+                          - pet
+                          - late_checkout
+                          - early_checkin
+                          - upgrade
+                          - late_arrival
+                          - multi_room_reservation
+                          - room_move
+                          - parking
+                          - breakfast
                   label:
+                    nullable: true
                     type: string
                     minLength: 1
+                  name:
+                    type: string
+                    description: "The name to show: `label` when the organization set one (never
+                      translated), else the Standard Tag's default name in the
+                      `Content-Language` of the response (resolved from
+                      `Accept-Language`, falling back to `en_US`, then to
+                      `standardKey`)."
                   description:
                     nullable: true
                     type: string
@@ -380,12 +471,32 @@ paths:
                     type: integer
                     minimum: -9007199254740991
                     maximum: 9007199254740991
+                  isPinned:
+                    type: boolean
                   icon:
                     nullable: true
                     type: string
                   color:
                     nullable: true
                     type: string
+                  standardKey:
+                    nullable: true
+                    type: string
+                    enum:
+                      - vip
+                      - blacklisted
+                      - special_occasion
+                      - pet
+                      - late_checkout
+                      - early_checkin
+                      - upgrade
+                      - late_arrival
+                      - multi_room_reservation
+                      - room_move
+                      - parking
+                      - breakfast
+                  isStandard:
+                    type: boolean
                   category:
                     description: The category this attribute belongs to, or null when Uncategorized.
                       Present on `GET /attributes`, `GET /tags` and `POST
@@ -420,13 +531,17 @@ paths:
                 required:
                   - id
                   - label
+                  - name
                   - description
                   - entityTypes
                   - isEnabled
                   - categoryId
                   - position
+                  - isPinned
                   - icon
                   - color
+                  - standardKey
+                  - isStandard
                 additionalProperties: false
         "400":
           description: Default Response
@@ -584,8 +699,11 @@ paths:
               type: object
               properties:
                 label:
+                  description: Null resets a Standard Tag to its default name. A custom
+                    attribute's label can't be null.
+                  nullable: true
                   type: string
-                  minLength: 1
+                  pattern: \S
                 description:
                   type: string
                 entityTypes:
@@ -630,11 +748,33 @@ paths:
                   nullable: true
                   type: string
                   pattern: ^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
+                isPinned:
+                  description: Pins the attribute organization-wide, so it always renders first in
+                    a tag row and survives truncation. At most 5 per
+                    organization; pinning a sixth answers 409
+                    PIN_LIMIT_EXCEEDED. Pinning an already-pinned attribute is a
+                    no-op.
+                  type: boolean
               additionalProperties: false
       parameters:
         - schema:
-            type: string
-            pattern: ^\d+$
+            anyOf:
+              - type: string
+                pattern: ^\d+$
+              - type: string
+                enum:
+                  - vip
+                  - blacklisted
+                  - special_occasion
+                  - pet
+                  - late_checkout
+                  - early_checkin
+                  - upgrade
+                  - late_arrival
+                  - multi_room_reservation
+                  - room_move
+                  - parking
+                  - breakfast
           in: path
           name: id
           required: true
@@ -645,6 +785,13 @@ paths:
           name: x-organization-id
           required: true
           description: Organization ID
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "200":
           description: Default Response
@@ -654,11 +801,34 @@ paths:
                 type: object
                 properties:
                   id:
-                    type: string
-                    pattern: ^\d+$
+                    anyOf:
+                      - type: string
+                        pattern: ^\d+$
+                      - type: string
+                        enum:
+                          - vip
+                          - blacklisted
+                          - special_occasion
+                          - pet
+                          - late_checkout
+                          - early_checkin
+                          - upgrade
+                          - late_arrival
+                          - multi_room_reservation
+                          - room_move
+                          - parking
+                          - breakfast
                   label:
+                    nullable: true
                     type: string
                     minLength: 1
+                  name:
+                    type: string
+                    description: "The name to show: `label` when the organization set one (never
+                      translated), else the Standard Tag's default name in the
+                      `Content-Language` of the response (resolved from
+                      `Accept-Language`, falling back to `en_US`, then to
+                      `standardKey`)."
                   description:
                     nullable: true
                     type: string
@@ -681,12 +851,32 @@ paths:
                     type: integer
                     minimum: -9007199254740991
                     maximum: 9007199254740991
+                  isPinned:
+                    type: boolean
                   icon:
                     nullable: true
                     type: string
                   color:
                     nullable: true
                     type: string
+                  standardKey:
+                    nullable: true
+                    type: string
+                    enum:
+                      - vip
+                      - blacklisted
+                      - special_occasion
+                      - pet
+                      - late_checkout
+                      - early_checkin
+                      - upgrade
+                      - late_arrival
+                      - multi_room_reservation
+                      - room_move
+                      - parking
+                      - breakfast
+                  isStandard:
+                    type: boolean
                   category:
                     description: The category this attribute belongs to, or null when Uncategorized.
                       Present on `GET /attributes`, `GET /tags` and `POST
@@ -721,13 +911,17 @@ paths:
                 required:
                   - id
                   - label
+                  - name
                   - description
                   - entityTypes
                   - isEnabled
                   - categoryId
                   - position
+                  - isPinned
                   - icon
                   - color
+                  - standardKey
+                  - isStandard
                 additionalProperties: false
         "400":
           description: Default Response
@@ -878,8 +1072,23 @@ paths:
         - Attributes
       parameters:
         - schema:
-            type: string
-            pattern: ^\d+$
+            anyOf:
+              - type: string
+                pattern: ^\d+$
+              - type: string
+                enum:
+                  - vip
+                  - blacklisted
+                  - special_occasion
+                  - pet
+                  - late_checkout
+                  - early_checkin
+                  - upgrade
+                  - late_arrival
+                  - multi_room_reservation
+                  - room_move
+                  - parking
+                  - breakfast
           in: path
           name: id
           required: true
@@ -890,6 +1099,13 @@ paths:
           name: x-organization-id
           required: true
           description: Organization ID
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "204":
           description: Attribute successfully deleted
@@ -922,6 +1138,34 @@ paths:
                   - message
                 additionalProperties: false
         "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "409":
           description: Default Response
           content:
             application/json:
@@ -1414,8 +1658,25 @@ paths:
                     type: object
                     properties:
                       id:
-                        type: string
-                        pattern: ^\d+$
+                        anyOf:
+                          - type: string
+                            pattern: ^\d+$
+                          - type: string
+                            enum:
+                              - vip
+                              - blacklisted
+                              - special_occasion
+                              - pet
+                              - late_checkout
+                              - early_checkin
+                              - upgrade
+                              - late_arrival
+                              - multi_room_reservation
+                              - room_move
+                              - parking
+                              - breakfast
+                        description: Attribute id, or an unused Standard Tag's key (its row is created
+                          first).
                       categoryId:
                         nullable: true
                         description: The category the attribute is placed under after this reorder. Null
@@ -2257,6 +2518,13 @@ paths:
           name: x-property-id
           required: true
           description: Property ID(s) - comma-separated list
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "200":
           description: Default Response
@@ -2290,11 +2558,34 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: string
-                          pattern: ^\d+$
+                          anyOf:
+                            - type: string
+                              pattern: ^\d+$
+                            - type: string
+                              enum:
+                                - vip
+                                - blacklisted
+                                - special_occasion
+                                - pet
+                                - late_checkout
+                                - early_checkin
+                                - upgrade
+                                - late_arrival
+                                - multi_room_reservation
+                                - room_move
+                                - parking
+                                - breakfast
                         label:
+                          nullable: true
                           type: string
                           minLength: 1
+                        name:
+                          type: string
+                          description: "The name to show: `label` when the organization set one (never
+                            translated), else the Standard Tag's default name in
+                            the `Content-Language` of the response (resolved
+                            from `Accept-Language`, falling back to `en_US`,
+                            then to `standardKey`)."
                         description:
                           nullable: true
                           type: string
@@ -2317,12 +2608,32 @@ paths:
                           type: integer
                           minimum: -9007199254740991
                           maximum: 9007199254740991
+                        isPinned:
+                          type: boolean
                         icon:
                           nullable: true
                           type: string
                         color:
                           nullable: true
                           type: string
+                        standardKey:
+                          nullable: true
+                          type: string
+                          enum:
+                            - vip
+                            - blacklisted
+                            - special_occasion
+                            - pet
+                            - late_checkout
+                            - early_checkin
+                            - upgrade
+                            - late_arrival
+                            - multi_room_reservation
+                            - room_move
+                            - parking
+                            - breakfast
+                        isStandard:
+                          type: boolean
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized.
                             Present on `GET /attributes`, `GET /tags` and `POST
@@ -2358,13 +2669,17 @@ paths:
                       required:
                         - id
                         - label
+                        - name
                         - description
                         - entityTypes
                         - isEnabled
                         - categoryId
                         - position
+                        - isPinned
                         - icon
                         - color
+                        - standardKey
+                        - isStandard
                       additionalProperties: false
                   required:
                     - id
@@ -2485,8 +2800,23 @@ paths:
                 attributeIds:
                   type: array
                   items:
-                    type: string
-                    pattern: ^\d+$
+                    anyOf:
+                      - type: string
+                        pattern: ^\d+$
+                      - type: string
+                        enum:
+                          - vip
+                          - blacklisted
+                          - special_occasion
+                          - pet
+                          - late_checkout
+                          - early_checkin
+                          - upgrade
+                          - late_arrival
+                          - multi_room_reservation
+                          - room_move
+                          - parking
+                          - breakfast
               required:
                 - entityId
                 - entityType
@@ -2507,6 +2837,13 @@ paths:
           name: x-property-id
           required: true
           description: Property ID(s) - comma-separated list
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "201":
           description: Default Response
@@ -2540,11 +2877,34 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: string
-                          pattern: ^\d+$
+                          anyOf:
+                            - type: string
+                              pattern: ^\d+$
+                            - type: string
+                              enum:
+                                - vip
+                                - blacklisted
+                                - special_occasion
+                                - pet
+                                - late_checkout
+                                - early_checkin
+                                - upgrade
+                                - late_arrival
+                                - multi_room_reservation
+                                - room_move
+                                - parking
+                                - breakfast
                         label:
+                          nullable: true
                           type: string
                           minLength: 1
+                        name:
+                          type: string
+                          description: "The name to show: `label` when the organization set one (never
+                            translated), else the Standard Tag's default name in
+                            the `Content-Language` of the response (resolved
+                            from `Accept-Language`, falling back to `en_US`,
+                            then to `standardKey`)."
                         description:
                           nullable: true
                           type: string
@@ -2567,12 +2927,32 @@ paths:
                           type: integer
                           minimum: -9007199254740991
                           maximum: 9007199254740991
+                        isPinned:
+                          type: boolean
                         icon:
                           nullable: true
                           type: string
                         color:
                           nullable: true
                           type: string
+                        standardKey:
+                          nullable: true
+                          type: string
+                          enum:
+                            - vip
+                            - blacklisted
+                            - special_occasion
+                            - pet
+                            - late_checkout
+                            - early_checkin
+                            - upgrade
+                            - late_arrival
+                            - multi_room_reservation
+                            - room_move
+                            - parking
+                            - breakfast
+                        isStandard:
+                          type: boolean
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized.
                             Present on `GET /attributes`, `GET /tags` and `POST
@@ -2608,13 +2988,17 @@ paths:
                       required:
                         - id
                         - label
+                        - name
                         - description
                         - entityTypes
                         - isEnabled
                         - categoryId
                         - position
+                        - isPinned
                         - icon
                         - color
+                        - standardKey
+                        - isStandard
                       additionalProperties: false
                   required:
                     - id
@@ -2829,6 +3213,13 @@ paths:
           name: x-property-id
           required: true
           description: Property ID(s) - comma-separated list
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "204":
           description: Tags successfully deleted
@@ -3008,6 +3399,13 @@ paths:
           name: x-property-id
           required: true
           description: Property ID(s) - comma-separated list
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "200":
           description: Default Response
@@ -3041,11 +3439,34 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: string
-                          pattern: ^\d+$
+                          anyOf:
+                            - type: string
+                              pattern: ^\d+$
+                            - type: string
+                              enum:
+                                - vip
+                                - blacklisted
+                                - special_occasion
+                                - pet
+                                - late_checkout
+                                - early_checkin
+                                - upgrade
+                                - late_arrival
+                                - multi_room_reservation
+                                - room_move
+                                - parking
+                                - breakfast
                         label:
+                          nullable: true
                           type: string
                           minLength: 1
+                        name:
+                          type: string
+                          description: "The name to show: `label` when the organization set one (never
+                            translated), else the Standard Tag's default name in
+                            the `Content-Language` of the response (resolved
+                            from `Accept-Language`, falling back to `en_US`,
+                            then to `standardKey`)."
                         description:
                           nullable: true
                           type: string
@@ -3068,12 +3489,32 @@ paths:
                           type: integer
                           minimum: -9007199254740991
                           maximum: 9007199254740991
+                        isPinned:
+                          type: boolean
                         icon:
                           nullable: true
                           type: string
                         color:
                           nullable: true
                           type: string
+                        standardKey:
+                          nullable: true
+                          type: string
+                          enum:
+                            - vip
+                            - blacklisted
+                            - special_occasion
+                            - pet
+                            - late_checkout
+                            - early_checkin
+                            - upgrade
+                            - late_arrival
+                            - multi_room_reservation
+                            - room_move
+                            - parking
+                            - breakfast
+                        isStandard:
+                          type: boolean
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized.
                             Present on `GET /attributes`, `GET /tags` and `POST
@@ -3109,13 +3550,17 @@ paths:
                       required:
                         - id
                         - label
+                        - name
                         - description
                         - entityTypes
                         - isEnabled
                         - categoryId
                         - position
+                        - isPinned
                         - icon
                         - color
+                        - standardKey
+                        - isStandard
                       additionalProperties: false
                   required:
                     - id
@@ -3266,8 +3711,23 @@ paths:
                   minItems: 1
                   type: array
                   items:
-                    type: string
-                    pattern: ^\d+$
+                    anyOf:
+                      - type: string
+                        pattern: ^\d+$
+                      - type: string
+                        enum:
+                          - vip
+                          - blacklisted
+                          - special_occasion
+                          - pet
+                          - late_checkout
+                          - early_checkin
+                          - upgrade
+                          - late_arrival
+                          - multi_room_reservation
+                          - room_move
+                          - parking
+                          - breakfast
                   description: Attributes applied to every entity in every group.
               required:
                 - entities
@@ -3288,6 +3748,13 @@ paths:
           name: x-property-id
           required: true
           description: Property ID(s) - comma-separated list
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "201":
           description: Default Response
@@ -3365,11 +3832,34 @@ paths:
                           type: object
                           properties:
                             id:
-                              type: string
-                              pattern: ^\d+$
+                              anyOf:
+                                - type: string
+                                  pattern: ^\d+$
+                                - type: string
+                                  enum:
+                                    - vip
+                                    - blacklisted
+                                    - special_occasion
+                                    - pet
+                                    - late_checkout
+                                    - early_checkin
+                                    - upgrade
+                                    - late_arrival
+                                    - multi_room_reservation
+                                    - room_move
+                                    - parking
+                                    - breakfast
                             label:
+                              nullable: true
                               type: string
                               minLength: 1
+                            name:
+                              type: string
+                              description: "The name to show: `label` when the organization set one (never
+                                translated), else the Standard Tag's default
+                                name in the `Content-Language` of the response
+                                (resolved from `Accept-Language`, falling back
+                                to `en_US`, then to `standardKey`)."
                             description:
                               nullable: true
                               type: string
@@ -3392,12 +3882,32 @@ paths:
                               type: integer
                               minimum: -9007199254740991
                               maximum: 9007199254740991
+                            isPinned:
+                              type: boolean
                             icon:
                               nullable: true
                               type: string
                             color:
                               nullable: true
                               type: string
+                            standardKey:
+                              nullable: true
+                              type: string
+                              enum:
+                                - vip
+                                - blacklisted
+                                - special_occasion
+                                - pet
+                                - late_checkout
+                                - early_checkin
+                                - upgrade
+                                - late_arrival
+                                - multi_room_reservation
+                                - room_move
+                                - parking
+                                - breakfast
+                            isStandard:
+                              type: boolean
                             category:
                               description: The category this attribute belongs to, or null when Uncategorized.
                                 Present on `GET /attributes`, `GET /tags` and
@@ -3433,13 +3943,17 @@ paths:
                           required:
                             - id
                             - label
+                            - name
                             - description
                             - entityTypes
                             - isEnabled
                             - categoryId
                             - position
+                            - isPinned
                             - icon
                             - color
+                            - standardKey
+                            - isStandard
                           additionalProperties: false
                       required:
                         - id
@@ -3530,11 +4044,34 @@ paths:
                           type: object
                           properties:
                             id:
-                              type: string
-                              pattern: ^\d+$
+                              anyOf:
+                                - type: string
+                                  pattern: ^\d+$
+                                - type: string
+                                  enum:
+                                    - vip
+                                    - blacklisted
+                                    - special_occasion
+                                    - pet
+                                    - late_checkout
+                                    - early_checkin
+                                    - upgrade
+                                    - late_arrival
+                                    - multi_room_reservation
+                                    - room_move
+                                    - parking
+                                    - breakfast
                             label:
+                              nullable: true
                               type: string
                               minLength: 1
+                            name:
+                              type: string
+                              description: "The name to show: `label` when the organization set one (never
+                                translated), else the Standard Tag's default
+                                name in the `Content-Language` of the response
+                                (resolved from `Accept-Language`, falling back
+                                to `en_US`, then to `standardKey`)."
                             description:
                               nullable: true
                               type: string
@@ -3557,12 +4094,32 @@ paths:
                               type: integer
                               minimum: -9007199254740991
                               maximum: 9007199254740991
+                            isPinned:
+                              type: boolean
                             icon:
                               nullable: true
                               type: string
                             color:
                               nullable: true
                               type: string
+                            standardKey:
+                              nullable: true
+                              type: string
+                              enum:
+                                - vip
+                                - blacklisted
+                                - special_occasion
+                                - pet
+                                - late_checkout
+                                - early_checkin
+                                - upgrade
+                                - late_arrival
+                                - multi_room_reservation
+                                - room_move
+                                - parking
+                                - breakfast
+                            isStandard:
+                              type: boolean
                             category:
                               description: The category this attribute belongs to, or null when Uncategorized.
                                 Present on `GET /attributes`, `GET /tags` and
@@ -3598,13 +4155,17 @@ paths:
                           required:
                             - id
                             - label
+                            - name
                             - description
                             - entityTypes
                             - isEnabled
                             - categoryId
                             - position
+                            - isPinned
                             - icon
                             - color
+                            - standardKey
+                            - isStandard
                           additionalProperties: false
                       required:
                         - id
@@ -3813,8 +4374,23 @@ paths:
                   minItems: 1
                   type: array
                   items:
-                    type: string
-                    pattern: ^\d+$
+                    anyOf:
+                      - type: string
+                        pattern: ^\d+$
+                      - type: string
+                        enum:
+                          - vip
+                          - blacklisted
+                          - special_occasion
+                          - pet
+                          - late_checkout
+                          - early_checkin
+                          - upgrade
+                          - late_arrival
+                          - multi_room_reservation
+                          - room_move
+                          - parking
+                          - breakfast
                   description: Attributes removed from every entity in every group. An entity that
                     does not carry a listed attribute is left alone rather than
                     reported as an error, so repeating the request is safe.
@@ -3837,6 +4413,13 @@ paths:
           name: x-property-id
           required: true
           description: Property ID(s) - comma-separated list
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "200":
           description: Default Response
@@ -3949,34 +4532,6 @@ paths:
                   - code
                   - message
                 additionalProperties: false
-        "404":
-          description: Default Response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: string
-                  message:
-                    type: string
-                  errors:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        field:
-                          type: string
-                        message:
-                          type: string
-                      required:
-                        - field
-                        - message
-                      additionalProperties: false
-                required:
-                  - code
-                  - message
-                additionalProperties: false
         "421":
           description: The property or organization in the headers is hosted in another
             region; the message names the base URL to use.
@@ -4062,6 +4617,13 @@ paths:
           name: x-property-id
           required: true
           description: Property ID(s) - comma-separated list
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
       responses:
         "204":
           description: Tag successfully deleted
