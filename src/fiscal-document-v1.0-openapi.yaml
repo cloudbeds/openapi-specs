@@ -1691,7 +1691,7 @@ paths:
     get:
       summary: Get property-level document settings
       operationId: getPropertySettings
-      description: Registry facts printed under the issuer on fiscal documents (e.g. Spain's tourism classification and registry code). Property-level, shared by every document kind.
+      description: Registry facts printed under the issuer on fiscal documents (e.g. Spain's tourism classification and registry code), and whether folio exports print the footer disclaimers. Property-level, shared by every document kind.
       security:
         - bearerAuth: [ ]
         - oauth2: [ read:reservation ]
@@ -5609,16 +5609,37 @@ components:
         tourismRegistryCode:
           type: string
           nullable: true
+    FolioStatementUpdate:
+      type: object
+      required:
+        - showFooterDisclaimers
+      properties:
+        showFooterDisclaimers:
+          type: boolean
+          description: Whether folio exports print the footer disclaimers ("folio statement - not a receipt" and "not valid for tax purposes or as proof of payment"). Turning them off is rejected unless the property is allowed to hide them.
+    FolioStatementResponse:
+      type: object
+      required:
+        - showFooterDisclaimers
+      properties:
+        showFooterDisclaimers:
+          type: boolean
+          description: The property's choice. Folio exports print the footer disclaimers regardless while the property is not allowed to hide them.
     PropertySettingsResponse:
       type: object
       properties:
         issuerRegistry:
           $ref: '#/components/schemas/IssuerRegistryResponse'
+        folioStatement:
+          $ref: '#/components/schemas/FolioStatementResponse'
     PropertySettingsUpdateRequest:
       type: object
       properties:
         issuerRegistry:
           $ref: '#/components/schemas/IssuerRegistryUpdate'
+          nullable: false
+        folioStatement:
+          $ref: '#/components/schemas/FolioStatementUpdate'
           nullable: false
     CropLogoRequest:
       type: object
