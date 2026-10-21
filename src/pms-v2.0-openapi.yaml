@@ -95,6 +95,78 @@ paths:
         -
           default:
             - 'read:addon'
+  '/addons/v1/reservations/{reservationId}/addons/{soldAddonId}':
+    delete:
+      tags:
+        - Addons
+      summary: 'Void an add-on on a reservation'
+      description: 'Voids one add-on on a reservation, with its charge, taxes and fees, the same way the MFD UI does. Idempotent: voiding an already-voided add-on returns 204.'
+      operationId: 'AddonController::deleteReservationAddon'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+        -
+          name: reservationId
+          in: path
+          description: 'The reservation ID, as returned by getReservation.'
+          required: true
+          schema:
+            type: string
+        -
+          name: soldAddonId
+          in: path
+          description: 'The add-on''s soldProductID from reservationAddOnProducts in getReservation.'
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]{0,17}$'
+      responses:
+        '204':
+          description: 'Add-on voided (or already voided - idempotent).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoContentResponseSchema'
+        '400':
+          description: 'Bad Request - soldAddonId is not a positive whole number'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '401':
+          description: 'Unauthorized - Invalid or missing authentication'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '403':
+          description: 'Forbidden - Missing the write:item scope or access to the property'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '404':
+          description: 'Not found - no add-on with this ID on this reservation and property (ADDON_NOT_FOUND)'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal Server Error'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:item'
   /amenities/v1/catalogs/amenities:
     get:
       tags:
@@ -704,6 +776,7 @@ paths:
                 - 'read:resourceTypes'
                 - 'read:room'
                 - 'read:roomblock'
+                - 'read:tag'
                 - 'read:taxesAndFees'
                 - 'read:user'
                 - 'write:adjustment'
@@ -729,6 +802,8 @@ paths:
                 - 'write:resourceTypes'
                 - 'write:room'
                 - 'write:roomblock'
+                - 'write:tag'
+                - 'write:tagDefinition'
                 - 'write:taxesAndFees'
           example:
             - 'read:reservation,write:appError'
@@ -4509,6 +4584,20 @@ paths:
             - 'write:rate'
 components:
   schemas:
+    DeleteReservationAddonRequestSchema:
+      required:
+        - reservationId
+        - soldAddonId
+      properties:
+        reservationId:
+          description: 'The reservation ID, as returned by getReservation.'
+          type: string
+          example: '4207311534285'
+        soldAddonId:
+          description: 'The add-on''s soldProductID from reservationAddOnProducts in getReservation.'
+          type: string
+          example: '5002'
+      type: object
     GetAddonsRequestSchema:
       allOf:
         -
@@ -4761,7 +4850,7 @@ components:
                 description: 'Rate interval ID.'
                 type: integer
               isExtraGuestsPricing:
-                description: 'Whether this is extra guests pricing.'
+                description: 'Whether this is extra guests pricing. Only the adult age group can have base pricing (false); child and infant age groups take extra guests pricing only, and a base pricing entry for one is ignored.'
                 type: boolean
               extraGuestsType:
                 description: 'Extra guests pricing type.'
@@ -12789,6 +12878,37 @@ components:
           minimum: 1
           example: 1
       type: object
+    DeletedUnitItem:
+      description: 'A unit (room) that has been deleted.'
+      required:
+        - id
+        - propertyId
+        - roomTypeId
+        - name
+        - archivedAt
+      properties:
+        id:
+          description: 'Unit ID'
+          type: string
+          example: 12345-0
+        propertyId:
+          description: 'Property ID'
+          type: integer
+          example: 12345
+        roomTypeId:
+          description: 'Room type (accommodation) ID'
+          type: integer
+          example: 67890
+        name:
+          description: 'Unit name at the time it was deleted'
+          type: string
+          example: 'Room 101'
+        archivedAt:
+          description: 'When the unit was archived.'
+          type: string
+          format: date-time
+          example: '2026-01-01T01:00:00+00:00'
+      type: object
     GetRoomLabelsResponseSchema:
       required:
         - labels
@@ -14485,6 +14605,14 @@ components:
               $ref: '#/components/schemas/LengthOfStaySchema'
           nullable: true
           description: 'Length-of-stay rules that override amounts based on the number of nights.'
+        exclusiveBase:
+          description: 'Base an exclusive percentage tax/fee multiplies when exclusiveTaxesOnTotal is on: "net" carves inclusive taxes and fees out first, "gross" multiplies the quoted price. Meaningful only for exclusive percentage rows; absent defaults to net.'
+          type: string
+          enum:
+            - net
+            - gross
+          example: gross
+          nullable: true
         amountPerPersonRateBased:
           description: 'Per-person rate tiers. Required for fixed_per_person_rate_based calculation type. Each tier defines a gross nightly rate floor and the per-adult and per-child amounts charged when the room''s rate meets it.'
           type: array
