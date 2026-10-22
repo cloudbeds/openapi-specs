@@ -1180,6 +1180,14 @@ paths:
 
         We cannot guarantee that all of the following request fields will always be
         filled in, as many are optional within Cloudbeds.
+
+        Property creation can take a while (for example when many images have to be
+        processed), and the property may send `CreateProperty` again before the
+        first request has finished. Answer such a repeat request with error `4140`
+        while the first creation is still in progress. The property is then told
+        that setup is still running and should wait, instead of seeing a failure.
+        Reserve `1251` for a property that already exists on your side, and `4100`
+        for a creation that actually failed.
       requestBody:
         content:
           application/json:
@@ -1809,6 +1817,13 @@ paths:
                     errors:
                       - id: 3
                         msg: Property already exists
+                Creation still in progress:
+                  summary: Earlier CreateProperty request still running
+                  value:
+                    success: false
+                    errors:
+                      - id: 4140
+                        msg: Property creation from an earlier request is still in progress
                 Success with room mapping:
                   summary: Success
                   value:
