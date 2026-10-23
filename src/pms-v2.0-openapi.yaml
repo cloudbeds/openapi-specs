@@ -931,7 +931,7 @@ paths:
         -
           name: Idempotency-Key
           in: header
-          description: 'Required per-request idempotency key and the sole dedup key for this endpoint: a retry carrying the same key and the same payload replays the original posting (notice populated); the same key with a different payload is rejected with IDEMPOTENCY_KEY_REUSED. Absent, empty, or whitespace-only → 400.'
+          description: 'Required per-request idempotency key and the sole dedup key for this endpoint: a retry carrying the same key and the same payload replays the original posting (notice populated); the same key with a different payload is rejected with IDEMPOTENCY_KEY_REUSED, which means a check under this key is already stored. The account target is validated before the replay, so a retry whose target has since become invalid (e.g. RESERVATION_CHECKED_OUT) gets that error rather than the original posting. Absent, empty, or whitespace-only → 400.'
           required: true
           schema:
             type: string
@@ -970,7 +970,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NotFoundResponseSchema'
         '409':
-          description: 'Conflict — see CheckErrorCodeEnumSchema for the structured codes: IDEMPOTENCY_KEY_REUSED (Idempotency-Key header reused with a different payload), PRODUCT_NAME_CONFLICT (line''s name collides with an existing active product that has a different SKU).'
+          description: 'Conflict — see CheckErrorCodeEnumSchema for the structured codes: IDEMPOTENCY_KEY_REUSED (Idempotency-Key header reused with a different payload), DUPLICATE_CHECK_ID (an active check on the property already has this checkId), PRODUCT_NAME_CONFLICT (line''s name collides with an existing active product that has a different SKU).'
           content:
             application/json:
               schema:
@@ -4658,7 +4658,7 @@ components:
         - groups
       properties:
         config:
-          description: Configuration.
+          description: 'Configuration. A `single` policy holds only the adult group: child and infant groups sent with it are ignored. A `multiple` policy whose only group is the adult group is stored as `single`.'
           type: string
           enum:
             - single
@@ -4672,7 +4672,7 @@ components:
             - per_each_guest
           example: per_age_group
         groups:
-          description: 'List of age groups.'
+          description: 'List of age groups. The adult group requires a minimum age. With a `multiple` config, child and infant groups must not overlap each other, and each must start and end below the adult minimum age.'
           type: array
           items:
             required:
@@ -4724,7 +4724,7 @@ components:
           type: string
           example: 1-b
         config:
-          description: Configuration.
+          description: 'Configuration. Changing a `multiple` policy to `single` is rejected while it has a child or infant group; remove those groups with a PUT instead. `multiple` on a policy whose only group is the adult group is stored as `single`.'
           type: string
           enum:
             - single
@@ -4762,7 +4762,7 @@ components:
           type: string
           example: 1-b
         config:
-          description: Configuration.
+          description: 'Configuration. A `single` policy holds only the adult group: child and infant groups sent with it are ignored, and on an update the stored ones are removed. A `multiple` policy whose only group is the adult group is stored as `single`.'
           type: string
           enum:
             - single
@@ -4776,7 +4776,7 @@ components:
             - per_each_guest
           example: per_age_group
         groups:
-          description: 'List of age groups.'
+          description: 'List of age groups. The adult group requires a minimum age. With a `multiple` config, child and infant groups must not overlap each other, and each must start and end below the adult minimum age. An update removes every stored group it does not list.'
           type: array
           items:
             required:
@@ -7754,6 +7754,13 @@ components:
             -
               key: balance_due
               severity: block
+              requireSkipReason: false
+            -
+              key: guest_required_fields
+              severity: block
+              requirePrimaryGuests: true
+              requireAdditionalGuests: true
+              roomScope: all_rooms
         checkOut:
           description: 'Items guarding check-out, in the order they should appear.'
           type: array
@@ -7805,6 +7812,29 @@ components:
         severityIsFixed:
           description: 'True when the severity is a property of the platform rather than a choice. The settings page must not offer a severity control for these items: the value cannot be changed, and showing a control implies otherwise.'
           type: boolean
+        requireSkipReason:
+          description: 'Whether a reason is required to skip a warn balance at check-in. A required balance always needs a reason.'
+          type: boolean
+          example: false
+          nullable: true
+        requirePrimaryGuests:
+          description: 'Whether guest details are required for primary guests.'
+          type: boolean
+          example: true
+          nullable: true
+        requireAdditionalGuests:
+          description: 'Whether guest details are required for additional guests.'
+          type: boolean
+          example: true
+          nullable: true
+        roomScope:
+          description: 'The rooms where guest details are required.'
+          type: string
+          enum:
+            - all_rooms
+            - first_room
+          example: all_rooms
+          nullable: true
       type: object
     DynamicFilterFieldSchema:
       description: 'Represents a single filter condition'
@@ -11298,6 +11328,11 @@ components:
           type: string
           example: 'https://static.cloudbeds.com/img/seaside-logo.png'
           nullable: true
+        mainPhoto:
+          description: 'URL of the property''s main profile photo, the first photo in the property''s profile gallery. Null when the property has no profile photo.'
+          type: string
+          example: 'https://h-img3.cloudbeds.com/uploads/1/hotel_front~~abc.png'
+          nullable: true
         amenities:
           type: array
           items:
@@ -11348,6 +11383,22 @@ components:
           type: string
           example: Deposit
           nullable: true
+      type: object
+    DuplicatePrecheckRequestSchema:
+      description: "Mirrors the `/connect/payment/add` envelope field-for-field: both values are the\nJSON strings the frontend already builds for that call, so the precheck sees exactly\nwhat the payment submission will see."
+      required:
+        - payment
+        - inventory_object
+        - propertyId
+      properties:
+        payment:
+          description: 'JSON-encoded payment params, identical to the `payment` field posted to `/connect/payment/add`.'
+          type: string
+          example: '{"amount":100,"payment_method":"cards","transaction_type":"Purchase","credit_card_id":123,"payment_date":"2026-01-15"}'
+        inventory_object:
+          description: 'JSON-encoded inventory object, identical to the `inventory_object` field posted to `/connect/payment/add`.'
+          type: string
+          example: '{"type":"reservation","id":456}'
       type: object
     ExecuteScheduledPaymentRequestSchema:
       required:
@@ -11429,6 +11480,81 @@ components:
               $ref: '#/components/schemas/NextActionResponseSchema'
           nullable: true
           description: 'Next action required, such as a redirect for 3D Secure'
+      type: object
+    DuplicatePrecheckMatchSchema:
+      description: 'A recent money-moving payment that looks like the one about to be submitted.'
+      required:
+        - paymentId
+        - total
+        - paymentMethod
+        - status
+        - description
+        - paymentDate
+        - createdAt
+      properties:
+        paymentId:
+          type: integer
+          example: 987654
+        total:
+          $ref: '#/components/schemas/MoneySchema'
+        paymentMethod:
+          type: string
+          example: cards
+        paymentMethodDetails:
+          oneOf:
+            -
+              $ref: '#/components/schemas/PaymentMethodDetailsResponseSchema'
+          nullable: true
+          description: 'Payment method details'
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        description:
+          type: string
+          example: Deposit
+        paymentDate:
+          description: 'Business date of the payment.'
+          type: string
+          format: date
+          example: '2026-01-15'
+        createdAt:
+          description: 'When the payment row was created (UTC).'
+          type: string
+          format: date-time
+          example: '2026-01-15T14:02:11+00:00'
+      type: object
+    DuplicatePrecheckResponseSchema:
+      description: 'Advisory verdict for a payment about to be submitted. `action` is `confirm` exactly when `latestMatch` is non-null; every other outcome (disabled, not eligible, storage error) is `proceed`.'
+      required:
+        - action
+        - latestMatch
+        - matchCount
+        - reason
+      properties:
+        action:
+          type: string
+          enum:
+            - proceed
+            - confirm
+          example: confirm
+        latestMatch:
+          oneOf:
+            -
+              $ref: '#/components/schemas/DuplicatePrecheckMatchSchema'
+          nullable: true
+          description: 'Most recent matching payment in the lookback window; null unless `action` is `confirm`.'
+        matchCount:
+          description: 'Total matching payments in the lookback window, including `latestMatch`.'
+          type: integer
+          example: 3
+        reason:
+          type: string
+          enum:
+            - matches_found
+            - no_matches
+            - not_eligible
+            - disabled
+            - error
+          example: matches_found
       type: object
     NextActionType:
       description: 'The type of next action required'
