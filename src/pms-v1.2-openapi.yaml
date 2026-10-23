@@ -5799,6 +5799,100 @@ components:
                         transactionID:
                             description: 'Transaction identifier'
                             type: string
+        GetCustomItemResponse:
+            type: object
+            properties:
+                success:
+                    description: 'Returns if the request could be completed'
+                    type: boolean
+                data:
+                    description: 'Posting details'
+                    type: object
+                    properties:
+                        referenceID:
+                            description: 'The referenceID sent with the posting. Null if none was sent'
+                            type: string
+                        items:
+                            description: 'Items of the posting, in the order they were posted'
+                            type: array
+                            items:
+                                type: object
+                                properties:
+                                    soldProductID:
+                                        description: 'Sold product identifier, as returned by postCustomItem'
+                                        type: string
+                                    externalRelationID:
+                                        description: "The soldProductID without its prefix: the externalRelationId of the item's Accounting API transactions"
+                                        type: string
+                                    externalRelationKind:
+                                        description: "The externalRelationKind of the item's Accounting API transactions"
+                                        type: string
+                                        enum:
+                                            - ITEM_POS
+                                    sourceKind:
+                                        description: 'The Accounting API sourceKind the item was posted to'
+                                        type: string
+                                        enum:
+                                            - RESERVATION
+                                            - HOUSE_ACCOUNT
+                                            - GROUP_PROFILE
+                                    sourceID:
+                                        description: 'The Accounting API sourceId the item was posted to: the internal reservation, house account or group profile identifier'
+                                        type: string
+                                    itemName:
+                                        description: 'Item name'
+                                        type: string
+                                    itemQuantity:
+                                        description: 'Items quantity'
+                                        type: integer
+                                    itemAmount:
+                                        description: 'Item total amount, without taxes and fees'
+                                        type: number
+                                    isVoided:
+                                        description: 'Whether the item was voided'
+                                        type: boolean
+                        payments:
+                            description: 'Payments sent with the posting'
+                            type: array
+                            items:
+                                type: object
+                                properties:
+                                    paymentID:
+                                        description: 'Payment identifier'
+                                        type: string
+                                    externalRelationID:
+                                        description: "The paymentID: the externalRelationId of the payment's Accounting API transaction"
+                                        type: string
+                                    externalRelationKind:
+                                        description: "The externalRelationKind of the payment's Accounting API transaction"
+                                        type: string
+                                        enum:
+                                            - PAYMENT
+                                    sourceKind:
+                                        description: 'The Accounting API sourceKind the payment was posted to'
+                                        type: string
+                                        enum:
+                                            - RESERVATION
+                                            - HOUSE_ACCOUNT
+                                            - GROUP_PROFILE
+                                    sourceID:
+                                        description: 'The Accounting API sourceId the payment was posted to'
+                                        type: string
+                                    paymentType:
+                                        description: 'Payment method'
+                                        type: string
+                                    amount:
+                                        description: 'Payment amount'
+                                        type: number
+                                    currency:
+                                        description: 'Payment currency'
+                                        type: string
+                                    status:
+                                        description: 'Payment status'
+                                        type: string
+                                    isVoided:
+                                        description: 'Whether the payment was voided'
+                                        type: boolean
         PostVoidItemRequest:
             type: object
             properties:
@@ -9578,6 +9672,47 @@ components:
                             childrenIncluded:
                                 description: 'Number of children included on the basic room rate'
                                 type: integer
+                            occupancyBeds:
+                                description: 'The number of beds for per-bed occupancy calculations'
+                                type: integer
+                            roomTypePhotos:
+                                description: 'List of photos for the room type'
+                                type: array
+                                items:
+                                    type: string
+                            roomTypeFeatures:
+                                description: 'List of features for the room type'
+                                type: array
+                                items:
+                                    type: string
+                            roomsAvailable:
+                                description: 'Number of rooms available, based on the parameters provided.'
+                                type: integer
+                                nullable: true
+                            roomRate:
+                                description: 'Basic rate for the room, based on the parameters provided. Does not return if roomsAvailable = 0.'
+                                type: number
+                                nullable: true
+                            roomTypeUnits:
+                                description: 'Number of rooms of a particular type'
+                                type: integer
+                            roomTypeUnitDormBeds:
+                                description: 'Number of beds per Shared Dorm Room type'
+                                type: integer
+                            archivedAt:
+                                description: 'RFC 3339 UTC archive time; present only when includeArchived=true; null on live rows'
+                                type: string
+                                nullable: true
+                count:
+                    description: 'Number of results in this page'
+                    type: integer
+                total:
+                    description: 'Total number of results'
+                    type: integer
+                message:
+                    description: 'To be used in case any error occurs (if success = false). If success = true, it does not exist.'
+                    type: string
+                    nullable: true
         GetAvailableRoomTypesResponse:
             type: object
             properties:
@@ -9803,6 +9938,10 @@ components:
                                         roomTypeNameShort:
                                             description: 'Room type Short Name'
                                             type: string
+                                        archivedAt:
+                                            description: 'RFC 3339 UTC archive time; null on live rows when opted in and enabled'
+                                            type: string
+                                            nullable: true
                                         doorlockID:
                                             description: 'The doorlock ID for the room'
                                             type: string
@@ -9905,6 +10044,10 @@ components:
                                         roomTypeNameShort:
                                             description: 'Room type Short Name'
                                             type: string
+                                        archivedAt:
+                                            description: 'RFC 3339 UTC archive time; null on live rows when opted in and enabled'
+                                            type: string
+                                            nullable: true
                 count:
                     description: 'Number of results (properties) returned'
                     type: integer
@@ -13121,6 +13264,48 @@ paths:
                     application/x-www-form-urlencoded:
                         schema:
                             $ref: '#/components/schemas/PostAppendCustomItemRequest'
+    /getCustomItem:
+        get:
+            tags:
+                - Item
+            summary: getCustomItem
+            description: 'Returns every item and payment of one posting made with [postCustomItem](#api-Item-postCustomItem), including the items and payments added to it later with [appendCustomItem](#api-Item-appendCustomItem). Look the posting up by any of its items or any of its payments. Only postings made by the calling application are returned.<br> Every item and payment carries the keys of its Accounting API transactions: query the Accounting API by its `sourceKind` and `sourceID`, then match `externalRelationKind` and `externalRelationID`.'
+            responses:
+                200:
+                    description: '200 Response'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetCustomItemResponse'
+            security:
+                -
+                    api_key:
+                        - 'read:item'
+                -
+                    OAuth2:
+                        - 'read:item'
+            parameters:
+                -
+                    description: 'Property ID'
+                    name: propertyID
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Sold product identifier of any item of the posting, as returned by postCustomItem (with or without the `p_` prefix). Required if no paymentID is provided.'
+                    name: soldProductID
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Identifier of any payment sent with the posting. Required if no soldProductID is provided.'
+                    name: paymentID
+                    schema:
+                        type: string
+                    required: false
+                    in: query
     /postVoidItem:
         post:
             tags:
@@ -14823,6 +15008,13 @@ paths:
                     required: false
                     in: query
                 -
+                    description: "Include archived inventory (removed from the property's inventory)"
+                    name: includeArchived
+                    schema:
+                        type: boolean
+                    required: false
+                    in: query
+                -
                     description: 'Sorting rules, semicolon-separated. Format: `field[:direction]`, where `direction` is `asc` or `desc`, defaults to `asc` if not provided. Valid fields: `sorting_position`. Examples: - `sort=sorting_position` - `sort=sorting_position:desc`'
                     name: sort
                     schema:
@@ -15055,6 +15247,13 @@ paths:
                     required: false
                     in: query
                 -
+                    description: 'Include archived units unless startDate/endDate are sent; live rows get archivedAt=null'
+                    name: includeArchived
+                    schema:
+                        type: boolean
+                    required: false
+                    in: query
+                -
                     description: 'Sorting rules, semicolon-separated. Format: `field[:direction]`, where `direction` is `asc` or `desc`, defaults to `asc` if not provided. Valid fields: `room_position`, `sorting_position`. Examples: - `sort=room_position;sorting_position` - `sort=room_position:asc;sorting_position:desc`'
                     name: sort
                     schema:
@@ -15087,6 +15286,13 @@ paths:
                     name: propertyIDs
                     schema:
                         type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Archived units are never returned (dates always apply); opted-in live rows get archivedAt=null'
+                    name: includeArchived
+                    schema:
+                        type: boolean
                     required: false
                     in: query
     /getTaxesAndFees:
