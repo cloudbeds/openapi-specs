@@ -3657,6 +3657,193 @@ paths:
                   - code
                   - message
                 additionalProperties: false
+  /attribute-tagging/v1/tags/counts:
+    post:
+      summary: Returns how many tags each entity has (counts only, no tag content)
+      tags:
+        - Tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entities:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      ids:
+                        minItems: 1
+                        type: array
+                        items:
+                          type: string
+                          pattern: ^\d+(-\d+)?$
+                      type:
+                        type: string
+                        enum:
+                          - guest_profile
+                          - reservation
+                          - accommodation_type
+                    required:
+                      - ids
+                      - type
+                    additionalProperties: false
+                  description: "Entities to count tags for, grouped by type: a list of `{ ids,
+                    type }` groups, as for `POST /tags/query`. Only types whose
+                    ids are unique across properties are accepted
+                    (`guest_profile`, `reservation`, `accommodation_type`). The
+                    total number of ids across all groups must not exceed 1000
+                    (enforced in the handler)."
+              required:
+                - entities
+              additionalProperties: false
+      parameters:
+        - schema:
+            type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: true
+          description: Organization ID
+        - schema:
+            type: string
+            pattern: ^\d+(,\d+)*$
+          in: header
+          name: x-property-id
+          required: true
+          description: Property ID(s) - comma-separated list
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
+      responses:
+        "200":
+          description: "One entry per distinct requested entity, in request order, zeros
+            included. Counts only: no tag, attribute or label is returned."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    entityId:
+                      type: string
+                      pattern: ^\d+(-\d+)?$
+                    entityType:
+                      type: string
+                      enum:
+                        - guest_profile
+                        - reservation
+                        - accommodation_type
+                        - room
+                    count:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                      description: Tags the entity carries that a `POST /tags/query` for it would
+                        return. Zero when it has none.
+                  required:
+                    - entityId
+                    - entityType
+                    - count
+                  additionalProperties: false
+                description: "One entry per distinct requested entity, in request order, zeros
+                  included. Counts only: no tag, attribute or label is
+                  returned."
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
   /attribute-tagging/v1/tags/bulk:
     post:
       summary: Attach attributes to multiple entities (bulk)
