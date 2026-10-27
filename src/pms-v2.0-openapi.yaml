@@ -5074,6 +5074,13 @@ components:
               description: 'Preferred language. A hint, not a filter: translatable fields always carry the property''s default language and English, and add this language when a translation exists.'
               type: string
               example: pt-BR
+            ratePlans:
+              description: 'Which rate plans each room type offers. `cheapest` (the default) returns one priced offer per room type; `all` also lists every other rate plan, in-stock ones cheapest first, then any sold out, without a price. Price a listed plan by asking for it with the `rateId` filter.'
+              type: string
+              enum:
+                - cheapest
+                - all
+              example: all
           type: object
     AiAvailabilityErrorResponseSchema:
       description: 'An error, in the same schema.org vocabulary as a successful response, carrying the standard `code` and per-field `errors` alongside.'
@@ -5133,7 +5140,7 @@ components:
             type: object
       type: object
     AiAvailabilityResponseSchema:
-      description: 'A schema.org `LodgingBusiness` whose `containsPlace` lists every room type that can host the stay, each with one tax-inclusive `Offer`. Room types with no unit left are omitted rather than marked out of stock. Money is expressed as schema.org `price` (a decimal number) plus `priceCurrency`, not as the Public API minor-unit `amount` object: the document has to validate against the vocabulary AI agents already parse. Decimal places follow the currency (JPY 0, USD 2, BHD 3).'
+      description: 'A schema.org `LodgingBusiness` whose `containsPlace` lists every room type that can host the stay, each with an `Offer` per rate plan: the cheapest one, tax-inclusive, plus the other plans unpriced when `ratePlans=all`, or exactly the plans a `rateId` filter names, each priced. Room types with no unit left are omitted rather than marked out of stock. Money is expressed as schema.org `price` (a decimal number) plus `priceCurrency`, not as the Public API minor-unit `amount` object: the document has to validate against the vocabulary AI agents already parse. Decimal places follow the currency (JPY 0, USD 2, BHD 3).'
       required:
         - '@context'
         - '@type'
@@ -5275,7 +5282,10 @@ components:
     AiAvailabilityOfferSchema:
       required:
         - '@type'
+        - identifier
+        - name
         - availability
+        - inventoryLevel
         - priceSpecification
         - validFrom
         - validThrough
@@ -5284,13 +5294,35 @@ components:
         '@type':
           type: string
           example: Offer
+        identifier:
+          description: 'The rate plan. Pass it as `rate_id` in the Booking Engine `cart` to book exactly this rate plan.'
+          type: string
+          example: '987'
+        name:
+          description: 'Guest-facing rate plan name; null for the room type''s base rate.'
+          type: string
+          example: 'Breakfast included'
+          nullable: true
         availability:
           type: string
           enum:
             - 'https://schema.org/InStock'
             - 'https://schema.org/OutOfStock'
+        inventoryLevel:
+          description: 'Units of this rate plan bookable for the stay. A cart may ask for at most this many.'
+          required:
+            - '@type'
+            - value
+          properties:
+            '@type':
+              type: string
+              example: QuantitativeValue
+            value:
+              type: integer
+              example: 3
+          type: object
         priceSpecification:
-          description: 'Tax-inclusive total for the whole stay, itemized in `priceComponent`. Components always sum to `price`.'
+          description: 'Tax-inclusive total for the whole stay, itemized in `priceComponent`. Components always sum to `price`. Null for a rate plan `ratePlans=all` lists without pricing it; ask for it with the `rateId` filter to get its price.'
           required:
             - '@type'
             - price
@@ -5344,6 +5376,7 @@ components:
                   priceComponentType: { description: 'Absent on the base rate.', type: string, enum: [GenericTax, ResortFee, ServiceFee] }
                 type: object
           type: object
+          nullable: true
         validFrom:
           type: string
           format: date
@@ -5356,6 +5389,21 @@ components:
           description: 'Deep link into the booking engine with the stay pre-filled.'
           type: string
           format: uri
+        potentialAction:
+          description: 'Present only while the offer is InStock: a Booking Engine link whose cart already holds one unit of this rate plan. Fill `{ai_source}` with the agent''s name.'
+          properties:
+            '@type':
+              type: string
+              example: ReserveAction
+            target:
+              properties:
+                '@type':
+                  type: string
+                  example: EntryPoint
+                urlTemplate:
+                  type: string
+              type: object
+          type: object
       type: object
     AllotmentBlockAutoReleaseScheduleCreateRequestSchema:
       required:
@@ -7348,6 +7396,19 @@ components:
           example: 'Manager comp'
           nullable: true
       type: object
+    CheckItemModifierRequestSchema:
+      required:
+        - modifierOptionId
+      properties:
+        modifierOptionId:
+          description: 'Modifier option identifier'
+          type: string
+          example: '970011'
+        quantity:
+          description: 'How many times the option is applied per item unit'
+          type: integer
+          example: 1
+      type: object
     CheckItemRequestSchema:
       description: 'A single line on a POS check. Shared envelope fields — externalLineId, name, quantity, price, amount, taxes, fees, note, customTransactionCode, generalLedgerCustomCode — describe the line. quantity is the unit count; price, when supplied, is the per-unit rate but is informational metadata only. The `details` block is polymorphic: its concrete shape is selected by the `type` discriminator. Today only PRODUCT is accepted, so `details` carries product-specific fields (sku, category, sub-reservation routing). Bookable-resource details will land alongside as a second `oneOf` branch when that flow is reintroduced. amount is the financial source of truth — the server posts it verbatim without recomputing from price * quantity.'
       required:
@@ -7418,6 +7479,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CheckItemDiscountRequestSchema'
+        modifiers:
+          description: 'Modifier options selected for this product line.'
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckItemModifierRequestSchema'
         details:
           oneOf:
             -
@@ -7670,7 +7736,7 @@ components:
               example: Food
               nullable: true
             subReservationId:
-              description: 'Sub-reservation identifier. If provided, this item is routed to the specified sub-reservation within the parent reservation (request-level reservationId). Has no effect when the request-level target is houseAccountId or eventCode.'
+              description: 'Sub-reservation identifier. If provided, this item is routed to the specified sub-reservation within the parent reservation (request-level reservationId). If omitted on a reservation with a single stay and no item in the request carries a subReservationId, the item is attributed to the room assigned to that stay; when the stay is split across rooms because of an in-stay move, the room assigned on the sale date is used. Multi-stay reservations, and requests that set subReservationId on only some items, need an explicit identifier on each item for room attribution. Has no effect when the request-level target is houseAccountId or eventCode.'
               type: string
               example: SUB123
               nullable: true
@@ -7695,6 +7761,12 @@ components:
         - CHECK_NOT_FOUND
         - CHECK_VOID_UNAVAILABLE
         - PAYMENT_VOID_FAILED
+        - MODIFIERS_NOT_ENABLED
+        - MODIFIER_OPTION_NOT_FOUND
+        - MODIFIER_OPTION_KITCHEN_ONLY
+        - MODIFIER_OPTION_NOT_ATTACHED
+        - MODIFIER_QUANTITY_INVALID
+        - MODIFIER_GROUP_SELECTION_INVALID
     PostCheckResponseSchema:
       required:
         - data
@@ -9591,7 +9663,7 @@ components:
           example: GL-2410
           nullable: true
         subReservationId:
-          description: 'Sub-reservation identifier. If provided, this gratuity entry is routed to the specified sub-reservation within the parent reservation (request-level reservationId). Has no effect when the request-level target is houseAccountId or eventCode.'
+          description: 'Sub-reservation identifier. If provided, this gratuity entry is routed to the specified sub-reservation within the parent reservation (request-level reservationId). If omitted on a reservation with a single stay and no gratuity entry in the request carries a subReservationId, the gratuity is attributed to the room assigned to that stay; when the stay is split across rooms because of an in-stay move, the room assigned on the sale date is used. Multi-stay reservations, and requests that set subReservationId on only some gratuities, need an explicit identifier on each gratuity for room attribution. Has no effect when the request-level target is houseAccountId or eventCode.'
           type: string
           example: SUB123
           nullable: true
@@ -10500,6 +10572,19 @@ components:
           $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
         -
           $ref: '#/components/schemas/QueryParameterSortSchema'
+    ItemModifierRequestSchema:
+      required:
+        - modifierOptionId
+      properties:
+        modifierOptionId:
+          description: 'Modifier option identifier'
+          type: string
+          example: '9102'
+        quantity:
+          description: 'How many times the option is applied per item unit'
+          type: integer
+          example: 1
+      type: object
     ItemRequestSchema:
       required:
         - itemId
@@ -10514,7 +10599,7 @@ components:
           type: integer
           example: 2
         itemPrice:
-          description: 'Custom item price in the smallest currency unit (e.g., cents for USD). If not provided, the item''s registered price will be used. For example, $10.50 should be sent as ''1050''.'
+          description: 'Custom item price in the smallest currency unit (e.g., cents for USD). If not provided, the item''s registered price plus selected modifier options will be used. For example, $10.50 should be sent as ''1050''.'
           type: string
           example: '1050'
           nullable: true
@@ -10535,6 +10620,146 @@ components:
             $ref: '#/components/schemas/PaymentRequestSchema'
         itemPaid:
           description: 'If true, a cash payment will be automatically registered for the total value of the item including taxes and fees. Ignored if payments array is provided.'
+          type: boolean
+          example: false
+        modifiers:
+          description: 'Modifier options selected for this item.'
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemModifierRequestSchema'
+      type: object
+    ModifierAssignmentItemRequestSchema:
+      required:
+        - itemId
+      properties:
+        categoryId:
+          description: 'Informational; the item''s category is resolved server-side.'
+          type: string
+          example: '771'
+          nullable: true
+        itemId:
+          type: string
+          example: '920001'
+      type: object
+    ModifierAssignmentsRequestSchema:
+      required:
+        - groupId
+      properties:
+        groupId:
+          type: string
+          example: '812001'
+        categories:
+          type: array
+          items:
+            type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierAssignmentItemRequestSchema'
+      type: object
+    ModifierBulkAssignRequestSchema:
+      required:
+        - itemIds
+      properties:
+        itemIds:
+          type: array
+          items:
+            type: string
+        addGroupIds:
+          type: array
+          items:
+            type: string
+        removeGroupIds:
+          type: array
+          items:
+            type: string
+      type: object
+    ModifierGroupIdRequestSchema:
+      required:
+        - groupId
+      properties:
+        groupId:
+          type: string
+          example: '812001'
+      type: object
+    ModifierGroupListRequestSchema: {  }
+    ModifierGroupOrderRequestSchema:
+      required:
+        - groupIds
+      properties:
+        groupIds:
+          description: 'Every modifier group id of the property, active and inactive, in the new order.'
+          type: array
+          items:
+            type: string
+      type: object
+    ModifierGroupWriteRequestSchema:
+      required:
+        - name
+        - options
+      properties:
+        groupId:
+          description: 'Group id from the path on PUT; ignored on POST.'
+          type: string
+        name:
+          description: 'Multilang name, keyed by language code.'
+          type: object
+          example:
+            en: Milk
+        minSelections:
+          description: '0 means optional; 1 or more means required.'
+          type: integer
+          example: 1
+        maxSelections:
+          description: 'Null means unlimited; 1 means pick one.'
+          type: integer
+          example: 1
+          nullable: true
+        allowRepeat:
+          description: 'Whether one option may be chosen more than once.'
+          type: boolean
+          example: false
+        guestVisible:
+          description: 'False means kitchen-only: never shown to the guest and every option must be free.'
+          type: boolean
+          example: true
+        isActive:
+          description: 'Switch the group on or off. Inactive groups stay editable here but are not offered at the point of sale and are rejected at posting.'
+          type: boolean
+          example: true
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierOptionRequestSchema'
+          minItems: 1
+      type: object
+    ModifierOptionRequestSchema:
+      required:
+        - name
+        - price
+      properties:
+        id:
+          description: 'Existing option id to update. Omit for a new option.'
+          type: string
+          example: '812003'
+          nullable: true
+        name:
+          description: 'Multilang name, keyed by language code.'
+          type: object
+          example:
+            en: 'Oat milk'
+            es: 'Leche de avena'
+        info:
+          description: 'Optional multilang description.'
+          type: object
+          example:
+            en: 'Barista blend'
+          nullable: true
+        price:
+          description: 'Add-on charge, decimal string with no more decimals than the property currency allows (at most 4).'
+          type: string
+          example: '0.50'
+        isDefault:
           type: boolean
           example: false
       type: object
@@ -10663,6 +10888,256 @@ components:
           type: string
           example: 'Fresh brewed coffee'
           nullable: true
+      type: object
+    ModifierAssignmentItemResponseSchema:
+      required:
+        - categoryId
+        - itemId
+      properties:
+        categoryId:
+          description: 'Category of the item.'
+          type: string
+          example: '3001'
+          nullable: true
+        itemId:
+          type: string
+          example: '4001'
+      type: object
+    ModifierAssignmentSummaryResponseSchema:
+      required:
+        - categories
+        - items
+      properties:
+        categories:
+          description: 'Number of assigned categories.'
+          type: integer
+          example: 1
+        items:
+          description: 'Number of directly assigned items.'
+          type: integer
+          example: 2
+      type: object
+    ModifierAssignmentsResponseSchema:
+      required:
+        - categories
+        - items
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+          example:
+            - '3001'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierAssignmentItemResponseSchema'
+      type: object
+    ModifierBulkAssignGroupResponseSchema:
+      required:
+        - groupId
+        - categories
+        - items
+      properties:
+        groupId:
+          type: string
+          example: '812001'
+        categories:
+          type: array
+          items:
+            type: string
+          example:
+            - '3001'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierAssignmentItemResponseSchema'
+      type: object
+    ModifierBulkAssignResponseSchema:
+      required:
+        - groups
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierBulkAssignGroupResponseSchema'
+      type: object
+    ModifierCoverageGroupResponseSchema:
+      required:
+        - id
+        - name
+        - isActive
+        - source
+      properties:
+        id:
+          type: string
+          example: '812001'
+        name:
+          type: string
+          example: Milk
+        isActive:
+          type: boolean
+          example: true
+        source:
+          type: string
+          enum:
+            - category
+            - item
+          example: category
+      type: object
+    ModifierCoverageItemResponseSchema:
+      required:
+        - itemId
+        - itemName
+        - categoryId
+        - categoryName
+        - groups
+      properties:
+        itemId:
+          type: string
+          example: '4001'
+        itemName:
+          type: string
+          example: Latte
+        categoryId:
+          type: string
+          example: '3001'
+          nullable: true
+        categoryName:
+          type: string
+          example: Drinks
+          nullable: true
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierCoverageGroupResponseSchema'
+      type: object
+    ModifierCoverageResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierCoverageItemResponseSchema'
+      type: object
+    ModifierGroupListResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierGroupResponseSchema'
+      type: object
+    ModifierGroupResponseSchema:
+      required:
+        - id
+        - name
+        - minSelections
+        - maxSelections
+        - allowRepeat
+        - guestVisible
+        - sortOrder
+        - isActive
+        - options
+        - assignmentSummary
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: '812001'
+        name:
+          type: object
+          example:
+            en: Milk
+        minSelections:
+          type: integer
+          example: 1
+        maxSelections:
+          type: integer
+          example: 1
+          nullable: true
+        allowRepeat:
+          type: boolean
+          example: false
+        guestVisible:
+          type: boolean
+          example: true
+        sortOrder:
+          type: integer
+          example: 0
+        isActive:
+          description: 'Whether staff have the group switched on. Inactive groups are listed here but hidden from the point of sale.'
+          type: boolean
+          example: true
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierOptionResponseSchema'
+        assignmentSummary:
+          $ref: '#/components/schemas/ModifierAssignmentSummaryResponseSchema'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-10-19T10:41:02Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-10-19T10:41:02Z'
+      type: object
+    ModifierOptionResponseSchema:
+      required:
+        - id
+        - name
+        - info
+        - price
+        - isDefault
+        - sortOrder
+      properties:
+        id:
+          type: string
+          example: '812101'
+        name:
+          type: object
+          example:
+            en: 'Oat milk'
+        info:
+          type: object
+          example:
+            en: 'Barista blend'
+          nullable: true
+        price:
+          description: 'Add-on charge with at least two decimals, and more when the currency uses them.'
+          type: string
+          example: '0.50'
+        isDefault:
+          type: boolean
+          example: false
+        sortOrder:
+          type: integer
+          example: 0
+      type: object
+    ModifierRuleViolationResponseSchema:
+      description: 'A modifier write that is well-formed but breaks a group rule. Same envelope as 400, status 422.'
+      required:
+        - message
+        - code
+      properties:
+        message:
+          type: string
+          example: 'Kitchen-only groups cannot have priced options.'
+        errors:
+          oneOf:
+            -
+              $ref: '#/components/schemas/BadRequestErrorListSchema'
+          nullable: true
+          description: 'Field-level details, when the rule points at one field.'
+        code:
+          description: 'Stable code naming the rule.'
+          type: string
+          example: modifier_group.kitchen_only_priced_option
       type: object
     PostItemsResponseSchema:
       required:
@@ -14224,9 +14699,10 @@ components:
           example: 0
           nullable: true
         exclusiveTaxesOnTotal:
-          description: 'Whether exclusive taxes are calculated on the net rate (after inclusive extraction). Defaults to true.'
+          description: 'Deprecated. Whether exclusive taxes are calculated on the net rate (after inclusive extraction). Defaults to true. Use per-row typeSettings.exclusiveBase instead, which always wins when set.'
           type: boolean
           example: true
+          deprecated: true
         amount:
           oneOf:
             -
@@ -14732,7 +15208,7 @@ components:
           nullable: true
           description: 'Length-of-stay rules that override amounts based on the number of nights.'
         exclusiveBase:
-          description: 'Base an exclusive percentage tax/fee multiplies when exclusiveTaxesOnTotal is on: "net" carves inclusive taxes and fees out first, "gross" multiplies the quoted price. Meaningful only for exclusive percentage rows; absent defaults to net.'
+          description: 'Base an exclusive percentage tax/fee multiplies: "net" carves inclusive taxes and fees out first, "gross" multiplies the quoted price. An explicit value always wins. When unset the row is charged on net — unless the deprecated request-level exclusiveTaxesOnTotal is false on a non-room_revenue calculation, where unset means gross. Meaningful only for exclusive percentage rows.'
           type: string
           enum:
             - net
