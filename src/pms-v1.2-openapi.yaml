@@ -10179,6 +10179,13 @@ components:
                                 enum:
                                     - inclusive
                                     - exclusive
+                            exclusiveBase:
+                                description: 'Base an exclusive percentage tax/fee is charged on for room rates, products and adjustments: net = price without inclusive taxes and fees, gross = full price. Add-ons and manually posted taxes/fees are always charged on gross, whatever this value says. null when the tax/fee is not exclusive percentage or percentage rate-based.'
+                                type: string
+                                enum:
+                                    - net
+                                    - gross
+                                nullable: true
                             isDeleted:
                                 description: 'Flag indicating if tax was deleted from the system'
                                 type: boolean
@@ -13269,7 +13276,7 @@ paths:
             tags:
                 - Item
             summary: getCustomItem
-            description: 'Returns every item and payment of one posting made with [postCustomItem](#api-Item-postCustomItem), including the items and payments added to it later with [appendCustomItem](#api-Item-appendCustomItem). Look the posting up by any of its items or any of its payments. Only postings made by the calling application are returned.<br> Every item and payment carries the keys of its Accounting API transactions: query the Accounting API by its `sourceKind` and `sourceID`, then match `externalRelationKind` and `externalRelationID`.'
+            description: 'Returns every item and payment of one posting made with [postCustomItem](#api-Item-postCustomItem), including the items and payments added to it later with [appendCustomItem](#api-Item-appendCustomItem). Look the posting up by any of its items or any of its payments. Postings made by any application on the property are returned.<br> Every item and payment carries the keys of its Accounting API transactions: query the Accounting API by its `sourceKind` and `sourceID`, then match `externalRelationKind` and `externalRelationID`.'
             responses:
                 200:
                     description: '200 Response'
