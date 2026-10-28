@@ -370,10 +370,11 @@ paths:
                   minimum: 0
                   maximum: 500000
                 icon:
-                  description: Icon name for this tag, from the Nebula icon set. Null defers to
-                    the icon on the category this attribute belongs to, then to
-                    the default tag glyph. Not validated against the icon set —
-                    an unknown name falls back the same way.
+                  description: Icon for this tag, as a @cloudbeds/ui-library icon export name
+                    (e.g. `StarSolidIcon`). Null defers to the icon on the
+                    category this attribute belongs to, then to the default tag
+                    glyph. Not validated against the icon set — an unknown name
+                    falls back the same way.
                   nullable: true
                   type: string
                   minLength: 1
@@ -732,10 +733,11 @@ paths:
                   minimum: 0
                   maximum: 500000
                 icon:
-                  description: Icon name for this tag, from the Nebula icon set. Null defers to
-                    the icon on the category this attribute belongs to, then to
-                    the default tag glyph. Not validated against the icon set —
-                    an unknown name falls back the same way.
+                  description: Icon for this tag, as a @cloudbeds/ui-library icon export name
+                    (e.g. `StarSolidIcon`). Null defers to the icon on the
+                    category this attribute belongs to, then to the default tag
+                    glyph. Not validated against the icon set — an unknown name
+                    falls back the same way.
                   nullable: true
                   type: string
                   minLength: 1
@@ -1109,6 +1111,525 @@ paths:
       responses:
         "204":
           description: Attribute successfully deleted
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "409":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+  /attribute-tagging/v1/attributes/{id}/duplicate:
+    post:
+      summary: Create a custom attribute from an attribute's current name, category,
+        icon and colour
+      tags:
+        - Attributes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type:
+                - object
+                - "null"
+              properties:
+                label:
+                  description: The copy's name. Omitted, it is the source's name as shown in the
+                    request's language.
+                  type: string
+                  pattern: \S
+              additionalProperties: false
+      parameters:
+        - schema:
+            anyOf:
+              - type: string
+                pattern: ^\d+$
+              - type: string
+                enum:
+                  - vip
+                  - blacklisted
+                  - special_occasion
+                  - pet
+                  - late_checkout
+                  - early_checkin
+                  - upgrade
+                  - late_arrival
+                  - multi_room_reservation
+                  - room_move
+                  - parking
+                  - breakfast
+          in: path
+          name: id
+          required: true
+        - schema:
+            type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: true
+          description: Organization ID
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
+      responses:
+        "201":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    anyOf:
+                      - type: string
+                        pattern: ^\d+$
+                      - type: string
+                        enum:
+                          - vip
+                          - blacklisted
+                          - special_occasion
+                          - pet
+                          - late_checkout
+                          - early_checkin
+                          - upgrade
+                          - late_arrival
+                          - multi_room_reservation
+                          - room_move
+                          - parking
+                          - breakfast
+                  label:
+                    nullable: true
+                    type: string
+                    minLength: 1
+                  name:
+                    type: string
+                    description: "The name to show: `label` when the organization set one (never
+                      translated), else the Standard Tag's default name in the
+                      `Content-Language` of the response (resolved from
+                      `Accept-Language`, falling back to `en_US`, then to
+                      `standardKey`)."
+                  description:
+                    nullable: true
+                    type: string
+                  entityTypes:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - guest_profile
+                        - reservation
+                        - accommodation_type
+                        - room
+                  isEnabled:
+                    type: boolean
+                  categoryId:
+                    nullable: true
+                    type: string
+                    pattern: ^\d+$
+                  position:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  isPinned:
+                    type: boolean
+                  icon:
+                    nullable: true
+                    type: string
+                  color:
+                    nullable: true
+                    type: string
+                  standardKey:
+                    nullable: true
+                    type: string
+                    enum:
+                      - vip
+                      - blacklisted
+                      - special_occasion
+                      - pet
+                      - late_checkout
+                      - early_checkin
+                      - upgrade
+                      - late_arrival
+                      - multi_room_reservation
+                      - room_move
+                      - parking
+                      - breakfast
+                  isStandard:
+                    type: boolean
+                  category:
+                    description: The category this attribute belongs to, or null when Uncategorized.
+                      Present on `GET /attributes`, `GET /tags` and `POST
+                      /tags/query`; omitted on `POST`/`PATCH /attributes` and on
+                      tag write responses (`POST /tags`, `POST /tags/bulk`).
+                    nullable: true
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        pattern: ^\d+$
+                      key:
+                        nullable: true
+                        type: string
+                      label:
+                        nullable: true
+                        type: string
+                        minLength: 1
+                      icon:
+                        nullable: true
+                        type: string
+                      color:
+                        nullable: true
+                        type: string
+                    required:
+                      - id
+                      - key
+                      - label
+                      - icon
+                      - color
+                    additionalProperties: false
+                required:
+                  - id
+                  - label
+                  - name
+                  - description
+                  - entityTypes
+                  - isEnabled
+                  - categoryId
+                  - position
+                  - isPinned
+                  - icon
+                  - color
+                  - standardKey
+                  - isStandard
+                additionalProperties: false
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "409":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+  /attribute-tagging/v1/attributes/{id}/reset:
+    post:
+      summary: Restore a Standard Tag's default name, category, icon and colour, and
+        enable it
+      tags:
+        - Attributes
+      parameters:
+        - schema:
+            anyOf:
+              - type: string
+                pattern: ^\d+$
+              - type: string
+                enum:
+                  - vip
+                  - blacklisted
+                  - special_occasion
+                  - pet
+                  - late_checkout
+                  - early_checkin
+                  - upgrade
+                  - late_arrival
+                  - multi_room_reservation
+                  - room_move
+                  - parking
+                  - breakfast
+          in: path
+          name: id
+          required: true
+        - schema:
+            type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: true
+          description: Organization ID
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
+      responses:
+        "204":
+          description: The Standard Tag is at its default
         "400":
           description: Default Response
           content:
@@ -2496,6 +3017,9 @@ paths:
 
 
             Notes:
+
+            - `entityId:in` needs exactly one `entityType:in`; an ID list with
+            no type or several types returns `400 AMBIGUOUS_ENTITY_FILTER`.
 
             - To look up several entity types in one request, use `POST
             /tags/query`.
