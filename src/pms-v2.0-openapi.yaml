@@ -4630,6 +4630,13 @@ components:
           example: '12345'
         price:
           $ref: '#/components/schemas/MoneySchema'
+        availabilityWindow:
+          description: 'Dates a nightly add-on is charged for. `all` charges each stay night; `all_except_arrival` charges the day after each stay night, ending on the checkout date. Always `all` for charge types that are not nightly.'
+          type: string
+          enum:
+            - all
+            - all_except_arrival
+          example: all
       type: object
     AddonsResponseSchema:
       required:
@@ -4702,11 +4709,6 @@ components:
               minAge: 0
               maxAge: 17
               otaGroupFallback: true
-        customLabel:
-          description: 'Custom label (Adults or Guests)'
-          type: string
-          example: Adults
-          nullable: true
         countsTowardBaseOccupancy:
           description: 'Whether guests under this age policy count toward base occupancy.'
           type: boolean
@@ -4738,11 +4740,6 @@ components:
             - per_age_group
             - per_each_guest
           example: per_age_group
-          nullable: true
-        customLabel:
-          description: 'Custom label (Adults or Guests)'
-          type: string
-          example: Adults
           nullable: true
         countsTowardBaseOccupancy:
           description: 'Whether guests under this age policy count toward base occupancy.'
@@ -4814,11 +4811,6 @@ components:
               maxAge: 17
               applyRateFromId: group-1
               otaGroupFallback: true
-        customLabel:
-          description: 'Custom label (Adults or Guests)'
-          type: string
-          example: Adults
-          nullable: true
         countsTowardBaseOccupancy:
           description: 'Whether guests under this age policy count toward base occupancy.'
           type: boolean
@@ -4946,9 +4938,6 @@ components:
           type: string
         extraGuestsConfig:
           type: string
-        customLabel:
-          type: string
-          nullable: true
         countsTowardBaseOccupancy:
           description: 'Whether guests under this age policy count toward base occupancy.'
           type: boolean
@@ -11672,6 +11661,11 @@ components:
         slug:
           type: string
           example: beach-hotels
+        logo:
+          description: 'URL of the organization''s main logo. Null when the organization has no logo.'
+          type: string
+          example: 'https://static.cloudbeds.com/img/beach-hotels-logo.png'
+          nullable: true
         properties:
           type: array
           items:
@@ -11879,6 +11873,15 @@ components:
       required:
         - id
         - propertyId
+    GetPaymentReferenceNumberRequestSchema:
+      required:
+        - paymentId
+      properties:
+        paymentId:
+          description: 'Payment ID.'
+          type: string
+          example: '900001'
+      type: object
     InventoryObjectSchema:
       required:
         - type
@@ -12105,6 +12108,32 @@ components:
               $ref: '#/components/schemas/CardDetailsResponseSchema'
           nullable: true
           description: 'Card details when the payment method is a card'
+      type: object
+    PaymentReferenceNumberResponseSchema:
+      required:
+        - status
+        - referenceNumber
+        - updatedAt
+      properties:
+        status:
+          description: 'Whether the card network has issued a reference number for this refund, whatever the refund''s own status; "unavailable" means no reference exists or will exist.'
+          type: string
+          enum:
+            - available
+            - pending
+            - unavailable
+          example: available
+        referenceNumber:
+          description: 'The card network reference number; present only when status is "available".'
+          type: string
+          example: '138327253516763'
+          nullable: true
+        updatedAt:
+          description: 'When the reference number status was last updated (ISO-8601); null when nothing has been reported yet.'
+          type: string
+          format: date-time
+          example: '2026-10-06T14:02:11+00:00'
+          nullable: true
       type: object
     RedirectResponseSchema:
       required:
@@ -12782,7 +12811,7 @@ components:
           example: 5
           nullable: true
         agePolicyPricing:
-          description: 'Age-group pricing for this interval, one entry per priced age group — or, under per_each_guest pricing, one entry per extra-guest position within a group, so several entries can share an ageGroupId and differ by guestNumber. Null when the property does not use age-group pricing, or when this interval''s rate still prices guests with the adultDays / childDays model — in which case those two fields carry the pricing. An empty array means age-group pricing applies to this interval but nothing is priced on it yet. Infant groups are absent while infant support is off for the property. Join ageGroupId against GET /age-policy/v1/policies for each group''s name and age range.'
+          description: 'Age-group pricing for this interval, one entry per priced age group — or, under per_each_guest pricing, one entry per extra-guest position within a group, so several entries can share an ageGroupId and differ by guestNumber. Null when the property does not use age-group pricing, or when this interval''s rate still prices guests with the adultDays / childDays model — in which case those two fields carry the pricing. An empty array means age-group pricing applies to this interval but nothing is priced on it yet. Join ageGroupId against GET /age-policy/v1/policies for each group''s name and age range.'
           type: array
           items:
             required:
