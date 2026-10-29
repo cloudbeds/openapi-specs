@@ -6912,7 +6912,7 @@ components:
                                         type: boolean
                                         nullable: true
                                     isMainGuest:
-                                        description: 'If the guest is the main guest of the reservation or not'
+                                        description: 'If the guest is the main guest of the reservation or not. This is the guest who holds the reservation, who may not stay in any room. The main guest of each room is data.assigned.guestID or data.unassigned.guestID'
                                         type: boolean
                                     guestRequirements:
                                         description: 'Guest requirements data. Only included if `includeGuestRequirements=true`.'
@@ -7115,6 +7115,12 @@ components:
                                     isRoomLocked:
                                         description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
                                         type: boolean
+                                    guestID:
+                                        description: 'ID of the main guest assigned to the room'
+                                        type: string
+                                    guestName:
+                                        description: 'Name of the main guest assigned to the room. Empty string when the room has no guest name'
+                                        type: string
                                     roomName:
                                         description: 'Name of the specific assigned room'
                                         type: string
@@ -7181,6 +7187,12 @@ components:
                                     isRoomLocked:
                                         description: 'Whether the reservation room assignment is locked. Locked reservations cannot be reassigned via the calendar UI.'
                                         type: boolean
+                                    guestID:
+                                        description: 'ID of the main guest assigned to the room'
+                                        type: string
+                                    guestName:
+                                        description: 'Name of the main guest assigned to the room. Empty string when the room has no guest name'
+                                        type: string
                                     startDate:
                                         description: 'Check-In date of the room'
                                         type: string
