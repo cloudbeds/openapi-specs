@@ -1691,7 +1691,7 @@ paths:
     get:
       summary: Get property-level document settings
       operationId: getPropertySettings
-      description: Registry facts printed under the issuer on fiscal documents (e.g. Spain's tourism classification and registry code), and whether folio exports print the footer disclaimers. Property-level, shared by every document kind.
+      description: Registry facts printed under the issuer on fiscal documents (e.g. Spain's tourism classification and registry code), the payment IBAN (used for the Swiss QR-bill), and whether folio exports print the footer disclaimers. Property-level, shared by every document kind.
       security:
         - bearerAuth: [ ]
         - oauth2: [ read:reservation ]
@@ -1774,6 +1774,9 @@ paths:
         Returns a map of feature flags enabled for the authenticated user in the context of the current property.
         `HAS_LEGACY_INVOICES` is true when the property holds invoices issued by MFD before it moved to fiscal
         documents, whose lines and PDF still live in legacy reporting.
+        `MULTI_INVOICE_PAYMENT_ALLOCATION` is false when a payment's receipt may be allocated to one invoice
+        only; the receipt endpoint then rejects allocations that span several invoices, so payment forms must
+        not offer them.
       operationId: getPropertyFeatures
       security:
         - bearerAuth: [ ]
@@ -1795,8 +1798,10 @@ paths:
                   INTEGRATION_INVOICING: true
                   HANDWRITTEN_RECEIPTS: false
                   DOCUMENT_PREVIEW: true
+                  PAYMENT_WITHOUT_CHARGES: true
                   HAS_LEGACY_INVOICES: false
                   INVOICE_REPLACES_RECEIPTS: false
+                  MULTI_INVOICE_PAYMENT_ALLOCATION: true
   "/fiscal-document/v1/fiscal-documents/rules":
     get:
       summary: Get document creation rules for a given document kind
@@ -4383,6 +4388,14 @@ components:
           items:
             $ref: "#/components/schemas/ReceiptTransactionAllocation"
           nullable: true
+        checkId:
+          type: string
+          nullable: true
+          description: Public MFD POS check id (the checkId returned by the MFD Check API and carried on the pos_line_dimensions topic). When set, FDS allocates the payment to that check's posted transactions; mutually exclusive with allocations; requires paymentId.
+        checkTotal:
+          type: number
+          nullable: true
+          description: Total posted for the check by the caller (items, taxes, fees, service charge, gratuities, minus check discounts), in the same units as allocation amounts. When set, FDS allocates only once the check's posted lines add up to it (409 until then) and rejects payments above the open balance of a complete check. Requires checkId.
         transactionId:
           type: integer
           format: int64
@@ -5189,6 +5202,10 @@ components:
           items:
             $ref: "#/components/schemas/FolioExportSort"
           nullable: true
+        groupBy:
+          $ref: "#/components/schemas/FolioExportGroupByField"
+        subGroupBy:
+          $ref: "#/components/schemas/FolioExportGroupByField"
         format:
           $ref: "#/components/schemas/ExportFormat"
         recipient:
@@ -5206,6 +5223,38 @@ components:
         direction:
           type: string
           enum: [ASC, DESC]
+    FolioExportGroupByField:
+      type: string
+      description: >
+        Field to group the rendered transactions by. As groupBy, each group is followed by a
+        subtotal row, a single group included, and the final row is the grand total. Groups keep the order in which they first
+        appear under the requested sort, and transaction_date groups by the posting date.
+        As subGroupBy, rows are ordered by this field inside each group (ignored without groupBy).
+        Both are ignored for properties without the feature.accounting.folio-export-grouping flag.
+        The plain names mirror the groupBy of POST /accounting/v1.0/folios/transactions and group as that
+        folio table does: every pending row goes into one leading group.
+        The *_legacy names group as the legacy folio screens do: pending rows stay in their groups,
+        room_name_legacy puts a reservation payment under N/A unless the reservation has exactly one assigned
+        room, description_filter_legacy groups by transaction type (so "Room rate - Queen" and
+        "Room rate - King" both fall under "rate"), and transaction_datetime_legacy groups by the posting time
+        to the second, as the group profile folio does. Whether pending rows are lifted follows groupBy.
+      enum:
+        - transaction_date
+        - service_date
+        - description
+        - sub_source_identifier
+        - user_id
+        - reservation_name
+        - room_name
+        - transaction_date_legacy
+        - transaction_datetime_legacy
+        - service_date_legacy
+        - description_legacy
+        - description_filter_legacy
+        - sub_source_identifier_legacy
+        - user_id_legacy
+        - reservation_name_legacy
+        - room_name_legacy
     ExportFormat:
       type: string
       description: Export file format
@@ -5609,6 +5658,19 @@ components:
         tourismRegistryCode:
           type: string
           nullable: true
+    PaymentDetailsUpdate:
+      type: object
+      properties:
+        iban:
+          type: string
+          nullable: true
+          description: "Bank account guests pay documents to. Validated per property country (CH: a CH or LI IBAN that is not a QR-IBAN)."
+    PaymentDetailsResponse:
+      type: object
+      properties:
+        iban:
+          type: string
+          nullable: true
     FolioStatementUpdate:
       type: object
       required:
@@ -5630,6 +5692,8 @@ components:
       properties:
         issuerRegistry:
           $ref: '#/components/schemas/IssuerRegistryResponse'
+        paymentDetails:
+          $ref: '#/components/schemas/PaymentDetailsResponse'
         folioStatement:
           $ref: '#/components/schemas/FolioStatementResponse'
     PropertySettingsUpdateRequest:
@@ -5637,6 +5701,9 @@ components:
       properties:
         issuerRegistry:
           $ref: '#/components/schemas/IssuerRegistryUpdate'
+          nullable: false
+        paymentDetails:
+          $ref: '#/components/schemas/PaymentDetailsUpdate'
           nullable: false
         folioStatement:
           $ref: '#/components/schemas/FolioStatementUpdate'
