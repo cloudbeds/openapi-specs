@@ -121,11 +121,16 @@ paths:
         - Set government integration details (series, number, external ID, QR codes)
         - Record failure reasons for failed integrations
         
-        **Invoice Cancellation (Spanish Properties Only):**
+        **Invoice Cancellation:**
         - Set status to CANCEL_REQUESTED to cancel invoices
         - Only invoices in OPEN, PAID, PARTIALLY_PAID or CORRECTION_NEEDED status can be canceled
         - Invoices with rectifying documents cannot be canceled
         - Integration partners must handle CANCEL_REQUESTED and update to CANCELED (success) or revert to previous status (failure)
+        - For a fiscalized Mexico invoice (CFDI tipo I), provide `reason` as SAT motivo "02" or "03"; it defaults to "03"
+        - For a Mexico invoice fiscalized through Fonoa, the service sends the cancellation to SAT itself: the invoice
+          stays CANCEL_REQUESTED until SAT's verdict, then becomes CANCELED or returns to its previous status, and
+          setting CANCELED manually is rejected
+        - Such an invoice cannot be canceled while it has active payment complements or credit notes
       operationId: putFiscalDocument
       security:
         - bearerAuth: [ ]
@@ -5119,6 +5124,12 @@ components:
       properties:
         status:
           $ref: '#/components/schemas/FiscalDocumentStatus'
+        reason:
+          type: string
+          description: >
+            SAT cancellation motive when cancelling a fiscalized Mexico invoice (CFDI tipo I):
+            "02" (issued with errors, no substitute) or "03" (operation not carried out).
+            Defaults to "03" when omitted and is ignored elsewhere.
         failReason:
           type: string
         governmentIntegration:
@@ -5428,6 +5439,11 @@ components:
           type: string
         cancellationFailedFallbackStatus:
           $ref: "#/components/schemas/FiscalDocumentStatus"
+        cancellationStatus:
+          type: string
+          readOnly: true
+          enum: [PENDING, CANCELLED, FAILED]
+          description: Outcome of the latest cancellation request sent to the tax authority.
         pdfFileBase64:
           type: string
           format: byte
