@@ -3213,7 +3213,7 @@ components:
         id: {type: string}
         code:
           type: string
-          enum: [invopop, fonoa, fiskaly, fiscaltrust, moloni, epson, protel, fact]
+          enum: [invopop, fonoa, fiskaly, fiscaltrust, moloni, epson, protel, fact, hostkit]
         name: {type: string}
         description: {type: string}
         channel:
@@ -3523,6 +3523,8 @@ components:
           type: integer
           format: int64
           minimum: 0
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
           nullable: true
         method:
           $ref: "#/components/schemas/CreationMethod"
@@ -3571,12 +3573,14 @@ components:
           maxLength: 255
     CreateSettlementInvoiceRequest:
       type: object
-      required: [userId]
       properties:
         userId:
           type: integer
           format: int64
           minimum: 0
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
+          nullable: true
         transactionIds:
           deprecated: true
           description: Include transactions with the specified IDs (deprecated, use `includeTransactionIds` instead)
@@ -3652,6 +3656,8 @@ components:
           type: integer
           format: int64
           minimum: 0
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
           nullable: true
         method:
           $ref: "#/components/schemas/CreationMethod"
@@ -3706,7 +3712,9 @@ components:
         userId:
           type: integer
           format: int64
-          description: ID of the user creating the rectification
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
+          nullable: true
         method:
           $ref: "#/components/schemas/CreationMethod"
         transactionIds:
@@ -3768,7 +3776,9 @@ components:
         userId:
           type: integer
           format: int64
-          description: ID of the user creating the rectification
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
+          nullable: true
         method:
           $ref: "#/components/schemas/CreationMethod"
         transactionIds:
@@ -3858,6 +3868,8 @@ components:
           type: integer
           format: int64
           minimum: 0
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
           nullable: true
         currency:
           type: string
@@ -4001,6 +4013,8 @@ components:
           type: integer
           format: int64
           minimum: 0
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
           nullable: true
         currency:
           type: string
@@ -4089,6 +4103,8 @@ components:
           type: integer
           format: int64
           minimum: 0
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
           nullable: true
         recipient:
           $ref: "#/components/schemas/RecipientRequest"
@@ -4165,6 +4181,8 @@ components:
           type: integer
           format: int64
           minimum: 0
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
           nullable: true
         recipient:
           $ref: "#/components/schemas/RecipientRequest"
@@ -4351,7 +4369,7 @@ components:
 
     CreateSimpleReceiptRequest:
       type: object
-      required: [ transactionIds, sourceId, sourceKind, userId, recipient ]
+      required: [ transactionIds, sourceId, sourceKind, recipient ]
       properties:
         transactionIds:
           description: Ids of the transactions associated to payments
@@ -4368,7 +4386,9 @@ components:
         userId:
           type: integer
           format: int64
-          nullable: false
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
+          nullable: true
         sourceId:
           type: integer
           format: int64
@@ -4385,7 +4405,7 @@ components:
           description: Indicates this is a handwritten receipt created during POS unavailability. Only allowed for properties with Fiskaltrust integration enabled.
     CreateReceiptRequest:
       type: object
-      required: [ sourceId, sourceKind, userId ]
+      required: [ sourceId, sourceKind ]
       properties:
         allocations:
           type: array
@@ -4433,7 +4453,9 @@ components:
         userId:
           type: integer
           format: int64
-          nullable: false
+          deprecated: true
+          description: Ignored. The document is attributed to the authenticated user.
+          nullable: true
         sourceId:
           type: integer
           format: int64
