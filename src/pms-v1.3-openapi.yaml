@@ -8955,7 +8955,7 @@ components:
                     nullable: true
                     default: false
                 modifiedByGuest:
-                    description: "Marks a reservation update as initiated by the guest. When enabled for the property, guest changes to dates, room type, rate plan and occupancy are rejected after the free-cancellation deadline. Send rooms.rateID for each room; otherwise that room is priced on its type's Base Rate."
+                    description: "Marks a reservation update as initiated by the guest. When enabled for the property, guest changes to dates, room type, rate plan and occupancy are rejected after the free-cancellation deadline. A change that would place the stay under a different policy than the booked one (another rate plan, or dates covered by a policy exception) is rejected before the deadline too. Send rooms.rateID for each room; otherwise that room is priced on its type's Base Rate."
                     type: boolean
                     nullable: true
                     default: false
