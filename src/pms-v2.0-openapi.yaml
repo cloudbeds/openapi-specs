@@ -1075,6 +1075,13 @@ paths:
           schema:
             type: string
           example: '1,2,3'
+        -
+          name: reservationIds
+          in: query
+          description: 'Comma separated list of reservation ids, max 100. Cannot be combined with reservationId or subReservationId.'
+          schema:
+            type: string
+          example: 'reservation-1,reservation-2'
       responses:
         '200':
           description: 'List of door lock keys.'
@@ -1113,7 +1120,13 @@ paths:
               $ref: '#/components/schemas/DoorLockKeyCreateRequestSchema'
       responses:
         '201':
-          description: 'A key that was just created.'
+          description: 'The key is completed: it was created with status completed, or the integration completed it while this request waited.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoorLockKeyResponseSchema'
+        '202':
+          description: 'The key was created but the integration has not completed it within the wait. The body is the key with status processing; fetch it by keyId until it is completed or failed. Do not create it again.'
           content:
             application/json:
               schema:
@@ -1130,6 +1143,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundResponseSchema'
+        '422':
+          description: 'The integration reported that it could not issue the key. message carries the integration''s errorMessage.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoorLockKeyFailedToGenerateResponseSchema'
         '500':
           description: 'Internal server error'
           content:
@@ -2273,6 +2292,14 @@ paths:
           schema:
             $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
           example: 'field1:value;field2:operator:value'
+        -
+          name: search
+          in: query
+          description: 'Returns only events whose objectId, description or details contain this text.'
+          required: false
+          schema:
+            type: string
+            maxLength: 255
         -
           name: x-property-id
           in: header
@@ -4027,57 +4054,6 @@ paths:
         -
           default:
             - 'write:rate'
-  /smart-policies/v1/payments/preview-adjustment:
-    post:
-      tags:
-        - 'Smart Policies'
-      summary: 'Preview how a folio adjustment (tax/fee/rate/room-revenue) would affect Smart Policy scheduled payments.'
-      operationId: 'AdjustmentPreviewController::preview'
-      parameters:
-        -
-          name: x-property-id
-          in: header
-          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
-          required: true
-          schema:
-            type: string
-            example: '1,2,3'
-      requestBody:
-        description: 'Adjustment preview input.'
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PreviewAdjustmentRequestSchema'
-      responses:
-        '200':
-          description: 'Adjustment preview result.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PreviewAdjustmentResponseSchema'
-        '400':
-          description: 'Bad request response.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BadRequestResponseSchema'
-        '403':
-          description: 'Forbidden response.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForbiddenResponseSchema'
-        '500':
-          description: 'Internal server error.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
-      security:
-        -
-          default:
-            - 'read:rate'
   '/smart-policies/v1/reservations/{reservationId}/policy-information':
     get:
       tags:
@@ -4631,10 +4607,13 @@ components:
         price:
           $ref: '#/components/schemas/MoneySchema'
         availabilityWindow:
-          description: 'Dates a nightly add-on is charged for. `all` charges each stay night; `all_except_arrival` charges the day after each stay night, ending on the checkout date. Always `all` for charge types that are not nightly.'
+          description: 'Dates of the stay the add-on is sold for. Arrival is the first night; departure is the checkout date, after the last night. `all` covers every night.'
           type: string
           enum:
             - all
+            - arrival_only
+            - departure_only
+            - arrival_and_departure
             - all_except_arrival
           example: all
       type: object
@@ -6203,6 +6182,161 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AmenityItemSchema'
+      type: object
+    DmsAttributedBookingsRequestSchema:
+      description: 'Request body for the attributed-bookings export.'
+      required:
+        - propertyIDs
+        - startDate
+        - endDate
+      properties:
+        propertyIDs:
+          description: 'Property IDs to export, as integers or integer strings.'
+          type: array
+          items:
+            anyOf:
+              -
+                type: integer
+              -
+                type: string
+          example:
+            - '123'
+            - 456
+        startDate:
+          description: 'First booking date (property-local).'
+          type: string
+          format: date
+          example: '2026-10-01'
+        endDate:
+          description: 'Last booking date (property-local), at most 92 days after startDate.'
+          type: string
+          format: date
+          example: '2026-10-14'
+      type: object
+    DmsEntitlementInputsRequestSchema:
+      description: 'Properties to export entitlement inputs for: 1 to 50 positive property IDs, as integers or integer strings. The limit counts duplicates; duplicate IDs are then returned once, and rows come back in request order. If any ID is not found, the whole request fails with 400.'
+      required:
+        - propertyIDs
+      properties:
+        propertyIDs:
+          description: 'Property IDs to export, as positive integers or integer strings.'
+          type: array
+          items:
+            anyOf:
+              -
+                type: integer
+              -
+                type: string
+          maxItems: 50
+          minItems: 1
+          example:
+            - '123'
+            - 456
+      type: object
+    DmsAttributedBookingRowSchema:
+      description: 'One attributed-bookings row.'
+      required:
+        - propertyID
+        - date
+        - campaignType
+        - bookings
+        - revenue
+        - currency
+      properties:
+        propertyID:
+          description: 'Property ID.'
+          type: string
+          example: '123'
+        date:
+          description: 'Local booking date.'
+          type: string
+          format: date
+          example: '2026-10-01'
+        campaignType:
+          description: 'Campaign type.'
+          type: string
+          example: metasearch
+        bookings:
+          description: 'Attributed bookings.'
+          type: integer
+          example: 2
+        revenue:
+          description: 'Attributed revenue in the property currency.'
+          type: number
+          example: 410.5
+        currency:
+          description: 'Property currency (ISO 4217).'
+          type: string
+          example: EUR
+      type: object
+    DmsAttributedBookingsResponseSchema:
+      description: 'Attributed bookings grouped by property, local date and campaign type. The rows array is always present and is empty when nothing is attributed.'
+      required:
+        - rows
+      properties:
+        rows:
+          description: 'Attributed bookings grouped by property, local booking date and campaign type.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DmsAttributedBookingRowSchema'
+      type: object
+    DmsEntitlementFeaturesSchema:
+      description: 'Whether each product is enabled for the property. Every key is always present; a product that was never set is false.'
+      required:
+        - cb_demand_meta
+        - metasearch_ads
+        - retargeting
+        - hotel_pmax
+        - ota_travel_ads
+      properties:
+        cb_demand_meta:
+          description: 'True when CB Demand Meta is enabled for the property.'
+          type: boolean
+        metasearch_ads:
+          description: 'True when Metasearch Ads is enabled for the property.'
+          type: boolean
+        retargeting:
+          description: 'True when Retargeting is enabled for the property.'
+          type: boolean
+        hotel_pmax:
+          description: 'True when Hotel PMax is enabled for the property.'
+          type: boolean
+        ota_travel_ads:
+          description: 'True when OTA Travel Ads is enabled for the property.'
+          type: boolean
+      type: object
+    DmsEntitlementInputsResponseSchema:
+      description: 'Entitlement inputs for the requested properties, one row per property in request order.'
+      required:
+        - rows
+      properties:
+        rows:
+          description: 'Raw billing-package and property-feature inputs for each requested property.'
+          type: array
+          items:
+            $ref: '#/components/schemas/DmsEntitlementInputsRowSchema'
+      type: object
+    DmsEntitlementInputsRowSchema:
+      description: 'Entitlement inputs for one property: the billing package IDs enabled for it and which products are enabled. billingPackagesEnabled is empty when no billing package is enabled, including when the property''s billing-package settings are missing or cannot be read.'
+      required:
+        - propertyID
+        - billingPackagesEnabled
+        - features
+      properties:
+        propertyID:
+          description: 'Property ID.'
+          type: string
+          example: '123'
+        billingPackagesEnabled:
+          description: 'Billing package IDs enabled for the property.'
+          type: array
+          items:
+            type: integer
+          example:
+            - 7
+            - 11
+        features:
+          $ref: '#/components/schemas/DmsEntitlementFeaturesSchema'
       type: object
     ConnectedApplicationListRequestSchema:
       type: object
@@ -10198,6 +10332,7 @@ components:
           type: string
           enum:
             - addon
+            - allotment_block
             - event
             - item
             - reservation
@@ -10415,6 +10550,7 @@ components:
           nullable: true
       type: object
     IntegrationEventListRequestSchema:
+      type: object
       allOf:
         -
           $ref: '#/components/schemas/LimitOffsetPaginationSchema'
@@ -10422,6 +10558,14 @@ components:
           $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
         -
           $ref: '#/components/schemas/QueryParameterSortSchema'
+        -
+          properties:
+            search:
+              description: 'Text to look for in the objectId, description and details of each event.'
+              type: string
+              maxLength: 255
+              nullable: true
+          type: object
     IntegrationEventRetryRequestSchema: {  }
     IntegrationEventUpdateRequestSchema:
       required:
@@ -13742,6 +13886,38 @@ components:
           example: DL-8842
           nullable: true
       type: object
+    AddedRoomRevenuePreviewInputSchema:
+      required:
+        - amount
+        - taxIds
+        - feeIds
+        - bookingRoomId
+        - isAutoDate
+        - dateTime
+      properties:
+        amount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/SmartPolicyMoneyInputSchema'
+          nullable: true
+        taxIds:
+          type: array
+          items:
+            type: integer
+        feeIds:
+          type: array
+          items:
+            type: integer
+        bookingRoomId:
+          type: string
+          example: '555'
+        isAutoDate:
+          type: boolean
+          nullable: true
+        dateTime:
+          type: string
+          example: '2026-07-09 13:30'
+      type: object
     CreatePolicyExceptionRequestSchema:
       required:
         - name
@@ -14020,12 +14196,12 @@ components:
           nullable: true
       type: object
     PreviewAdjustmentRequestSchema:
+      description: 'Provide exactly one of adjustment or addedRoomRevenue.'
       required:
         - reservationId
-        - adjustment
       properties:
         reservationId:
-          description: 'Reservation ID to preview the adjustment for.'
+          description: 'Reservation ID to preview an adjustment or added room revenue for.'
           type: string
           example: '12345'
         adjustment:
@@ -14033,7 +14209,27 @@ components:
             -
               $ref: '#/components/schemas/PreviewAdjustmentInputSchema'
           nullable: true
+          description: 'Existing adjustment preview input.'
+        addedRoomRevenue:
+          oneOf:
+            -
+              $ref: '#/components/schemas/AddedRoomRevenuePreviewInputSchema'
+          nullable: true
+          description: 'Room-revenue preview input.'
       type: object
+      example:
+        reservationId: '12345'
+        addedRoomRevenue:
+          amount:
+            amount: '5000'
+            currencyCode: EUR
+          taxIds:
+            - 12
+          feeIds:
+            - 34
+          bookingRoomId: '555'
+          isAutoDate: true
+          dateTime: '2026-07-09 13:30'
     SmartPolicyMoneyInputSchema:
       description: "Money input as per the REST API Modeling Specification: amount in the smallest representable units\nof the currency, paired with an ISO 4217 currency code."
       required:
@@ -14460,15 +14656,17 @@ components:
     PreviewAdjustmentResponseSchema:
       properties:
         resultType:
-          description: 'The outcome of the adjustment preview.'
+          description: 'The outcome of the preview.'
           type: string
           enum:
             - SCHEDULED_PAYMENT_REDUCED
+            - SCHEDULED_PAYMENT_INCREASED
             - SCHEDULED_PAYMENT_CANCELLED
+            - NEW_PAYMENT_SCHEDULED
             - REFUND_REQUIRED
             - NO_SCHEDULE_CHANGE
             - NO_SMART_POLICY
-          example: SCHEDULED_PAYMENT_REDUCED
+          example: SCHEDULED_PAYMENT_INCREASED
         newReservationTotal:
           $ref: '#/components/schemas/MoneySchema'
         alreadyPaid:
@@ -14479,24 +14677,34 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PreviewScheduledPaymentSchema'
+        cardLast4:
+          description: 'Last four digits of the card when a newly scheduled payment charges soon.'
+          type: string
+          example: '4242'
+          nullable: true
       type: object
     PreviewScheduledPaymentSchema:
       properties:
         id:
           type: string
           example: '1001'
+          nullable: true
         originalAmount:
           $ref: '#/components/schemas/MoneySchema'
         newAmount:
           $ref: '#/components/schemas/MoneySchema'
         status:
-          description: 'Status of the scheduled payment after the adjustment.'
+          description: 'Status of the scheduled payment after the preview input.'
           type: string
           enum:
             - REDUCED
+            - INCREASED
             - CANCELLED
-            - UNCHANGED
+            - NEW
           example: REDUCED
+        chargesSoon:
+          description: 'Whether this created payment would be moved to now or the 15-minute grace period.'
+          type: boolean
       type: object
     ScheduledPaymentDisplayItemSchema:
       required:
