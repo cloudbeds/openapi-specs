@@ -2480,6 +2480,10 @@ components:
                                 description: 'Market segment name (null if none assigned)'
                                 type: string
                                 nullable: true
+                            eventProfileID:
+                                description: 'GPS (Group Profile Service) external event profile ID the event is linked to. Same value as the eventProfileID filter. Null if not linked.'
+                                type: string
+                                nullable: true
                             taxDocumentType:
                                 description: 'Tax document type'
                                 type: string
@@ -3180,6 +3184,10 @@ components:
                 total:
                     description: 'Total number of results'
                     type: integer
+                nextPageToken:
+                    description: 'Only returned when the request sends `pageToken`. Send it as `pageToken` to get the next page. It is null on the last page. A page can hold fewer than `pageSize` guests while more follow, so keep paging until it is null.'
+                    type: string
+                    nullable: true
                 message:
                     description: 'To be used in case any error occurs (if success = false). If success = true, it does not exist.'
                     type: string
@@ -4268,6 +4276,7 @@ components:
                         propertyBookingUrl:
                             description: 'Full booking-engine base URL for the property, or null if not set'
                             type: string
+                            nullable: true
         PostFileRequest:
             type: object
             properties:
@@ -6537,8 +6546,8 @@ components:
                                         - Fri
                                         - Sat
                                 nullable: true
-                            addOns:
-                                description: 'addOns information on the rates'
+                            ratePlanAddOns:
+                                description: 'Add-ons attached to the rate plan (only if rate depends on plan)'
                                 type: array
                                 items:
                                     type: object
@@ -6555,6 +6564,7 @@ components:
                                         itemName:
                                             description: itemName
                                             type: string
+                                nullable: true
                             roomRateDetailed:
                                 description: 'Detailed information on the rates, if requested'
                                 type: array
@@ -8168,6 +8178,9 @@ components:
                             guestID:
                                 description: 'Main guest ID'
                                 type: string
+                            guestName:
+                                description: 'Main guest name'
+                                type: string
                             profileID:
                                 description: 'Main guest profile ID'
                                 type: string
@@ -8202,6 +8215,10 @@ components:
                                 nullable: true
                             sourceReservationID:
                                 description: 'Reservation ID on the source'
+                                type: string
+                                nullable: true
+                            allotmentBlockCode:
+                                description: 'Code of the allotment block linked to the reservation, null if not linked'
                                 type: string
                                 nullable: true
                             propertyCurrency:
@@ -8298,6 +8315,9 @@ components:
                                                 - not_checked_in
                                         detailedRoomRates:
                                             description: 'A map of dates to rates (key is date). It contains an entry for each reserved date.'
+                                            type: object
+                                        detailedRoomRateNames:
+                                            description: 'A map of dates to rate names (key is date). Dates without a rate name are omitted; when no date has one, an empty array is returned.'
                                             type: object
                                         marketName:
                                             description: 'Market segmentation name'
@@ -9684,9 +9704,13 @@ components:
                             childrenIncluded:
                                 description: 'Number of children included on the basic room rate'
                                 type: integer
+                            infantsIncluded:
+                                description: 'Number of infants included on the basic room rate'
+                                type: integer
                             occupancyBeds:
                                 description: 'The number of beds for per-bed occupancy calculations'
                                 type: integer
+                                nullable: true
                             roomTypePhotos:
                                 description: 'List of photos for the room type'
                                 type: array
@@ -9711,6 +9735,7 @@ components:
                             roomTypeUnitDormBeds:
                                 description: 'Number of beds per Shared Dorm Room type'
                                 type: integer
+                                nullable: true
                             archivedAt:
                                 description: 'RFC 3339 UTC archive time; present only when includeArchived=true; null on live rows'
                                 type: string
@@ -11808,6 +11833,13 @@ paths:
                         default: 100
                     required: false
                     in: query
+                -
+                    description: 'Pages through the list by guest ID instead of page number, so every page takes about the same time. Send `start` for the first page, then the `nextPageToken` of the previous response, with the same filters on every page. Results are ordered by guestID ascending. Cannot be combined with `pageNumber` or `sortBy`. Available only for properties where page tokens are enabled.'
+                    name: pageToken
+                    schema:
+                        type: string
+                    required: false
+                    in: query
     /getGuestsModified:
         get:
             tags:
@@ -12609,7 +12641,7 @@ paths:
             tags:
                 - Housekeeping
             summary: getHousekeepingStatus
-            description: "Returns the current date's housekeeping information The housekeeping status is calculated basing on the set of fields roomOccupied | roomCondition | roomBlocked | vacantPickup | roomBlocked | refusedService The available statuses are: - Vacant and Dirty (VD): false | “dirty” | false | false | false | false - Occupied and Dirty (OD): true | “dirty” | false | false | false | false - Vacant and Clean (VC): false | “clean” | false | false | false | false - Occupied and Clean (OC): true | “clean” | false | false | false | false - Occupied and Clean Inspected (OCI): true | “inspected” | false | false | false | false - Vacant and Clean Inspected (VCI): false | “inspected” | false | false | false | false - Do Not Disturb (DND): if doNotDisturb is true - Refused Service (RS): if refusedService is true - Out of Order (OOO): if roomBlocked is true - Vacant and Pickup (VP): if vacantPickup is true"
+            description: 'Returns the current date''s housekeeping information The housekeeping status is calculated based on the set of fields The available statuses are: <table> <thead> <tr><th>Status</th><th>roomOccupied</th><th>roomCondition</th><th>roomBlocked</th><th>vacantPickup</th><th>doNotDisturb</th><th>refusedService</th></tr> </thead> <tbody> <tr><td>Vacant and Dirty (VD)</td><td>false</td><td>“dirty”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Occupied and Dirty (OD)</td><td>true</td><td>“dirty”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Vacant and Clean (VC)</td><td>false</td><td>“clean”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Occupied and Clean (OC)</td><td>true</td><td>“clean”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Occupied and Clean Inspected (OCI)</td><td>true</td><td>“inspected”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Vacant and Clean Inspected (VCI)</td><td>false</td><td>“inspected”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Do Not Disturb (DND)</td><td colspan="6">if doNotDisturb is true</td></tr> <tr><td>Refused Service (RS)</td><td colspan="6">if refusedService is true</td></tr> <tr><td>Out of Order (OOO)</td><td colspan="6">if roomBlocked is true</td></tr> <tr><td>Vacant and Pickup (VP)</td><td colspan="6">if vacantPickup is true</td></tr> </tbody> </table>'
             responses:
                 200:
                     description: '200 Response'
@@ -12691,7 +12723,7 @@ paths:
             tags:
                 - Housekeeping
             summary: postHousekeepingStatus
-            description: "Switches the current date's housekeeping status for a specific room ID to either clean or dirty The housekeeping status is calculated basing on the set of fields roomOccupied | roomCondition | roomBlocked | vacantPickup | roomBlocked | refusedService The available statuses are: - Vacant and Dirty (VD): false | “dirty” | false | false | false | false - Occupied and Dirty (OD): true | “dirty” | false | false | false | false - Vacant and Clean (VC): false | “clean” | false | false | false | false - Occupied and Clean (OC): true | “clean” | false | false | false | false - Occupied and Clean Inspected (OCI): true | “inspected” | false | false | false | false - Vacant and Clean Inspected (VCI): false | “inspected” | false | false | false | false - Do Not Disturb (DND): if doNotDisturb is true - Refused Service (RS): if refusedService is true - Out of Order (OOO): if roomBlocked is true - Vacant and Pickup (VP): if vacantPickup is true"
+            description: 'Switches the current date''s housekeeping status for a specific room ID to either clean or dirty The housekeeping status is calculated based on the set of fields The available statuses are: <table> <thead> <tr><th>Status</th><th>roomOccupied</th><th>roomCondition</th><th>roomBlocked</th><th>vacantPickup</th><th>doNotDisturb</th><th>refusedService</th></tr> </thead> <tbody> <tr><td>Vacant and Dirty (VD)</td><td>false</td><td>“dirty”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Occupied and Dirty (OD)</td><td>true</td><td>“dirty”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Vacant and Clean (VC)</td><td>false</td><td>“clean”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Occupied and Clean (OC)</td><td>true</td><td>“clean”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Occupied and Clean Inspected (OCI)</td><td>true</td><td>“inspected”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Vacant and Clean Inspected (VCI)</td><td>false</td><td>“inspected”</td><td>false</td><td>false</td><td>false</td><td>false</td></tr> <tr><td>Do Not Disturb (DND)</td><td colspan="6">if doNotDisturb is true</td></tr> <tr><td>Refused Service (RS)</td><td colspan="6">if refusedService is true</td></tr> <tr><td>Out of Order (OOO)</td><td colspan="6">if roomBlocked is true</td></tr> <tr><td>Vacant and Pickup (VP)</td><td colspan="6">if vacantPickup is true</td></tr> </tbody> </table>'
             responses:
                 200:
                     description: '200 Response'
