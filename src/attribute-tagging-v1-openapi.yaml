@@ -194,6 +194,13 @@ paths:
                         - breakfast
                     isStandard:
                       type: boolean
+                    archivedAt:
+                      nullable: true
+                      description: When the attribute was archived, or null. An archived attribute is
+                        always disabled and stays on its tagged records.
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                     category:
                       description: The category this attribute belongs to, or null when Uncategorized.
                         Present on `GET /attributes`, `GET /tags` and `POST
@@ -240,6 +247,7 @@ paths:
                     - color
                     - standardKey
                     - isStandard
+                    - archivedAt
                   additionalProperties: false
         "400":
           description: Default Response
@@ -498,6 +506,13 @@ paths:
                       - breakfast
                   isStandard:
                     type: boolean
+                  archivedAt:
+                    nullable: true
+                    description: When the attribute was archived, or null. An archived attribute is
+                      always disabled and stays on its tagged records.
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                   category:
                     description: The category this attribute belongs to, or null when Uncategorized.
                       Present on `GET /attributes`, `GET /tags` and `POST
@@ -543,6 +558,7 @@ paths:
                   - color
                   - standardKey
                   - isStandard
+                  - archivedAt
                 additionalProperties: false
         "400":
           description: Default Response
@@ -879,6 +895,13 @@ paths:
                       - breakfast
                   isStandard:
                     type: boolean
+                  archivedAt:
+                    nullable: true
+                    description: When the attribute was archived, or null. An archived attribute is
+                      always disabled and stays on its tagged records.
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                   category:
                     description: The category this attribute belongs to, or null when Uncategorized.
                       Present on `GET /attributes`, `GET /tags` and `POST
@@ -924,6 +947,7 @@ paths:
                   - color
                   - standardKey
                   - isStandard
+                  - archivedAt
                 additionalProperties: false
         "400":
           description: Default Response
@@ -1396,6 +1420,13 @@ paths:
                       - breakfast
                   isStandard:
                     type: boolean
+                  archivedAt:
+                    nullable: true
+                    description: When the attribute was archived, or null. An archived attribute is
+                      always disabled and stays on its tagged records.
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                   category:
                     description: The category this attribute belongs to, or null when Uncategorized.
                       Present on `GET /attributes`, `GET /tags` and `POST
@@ -1441,6 +1472,7 @@ paths:
                   - color
                   - standardKey
                   - isStandard
+                  - archivedAt
                 additionalProperties: false
         "400":
           description: Default Response
@@ -1687,6 +1719,353 @@ paths:
                   - message
                 additionalProperties: false
         "409":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+  /attribute-tagging/v1/attributes/{id}/archive:
+    post:
+      summary: "Archive an attribute: disable it and mark it archived, keeping its
+        tags on their records"
+      tags:
+        - Attributes
+      parameters:
+        - schema:
+            anyOf:
+              - type: string
+                pattern: ^\d+$
+              - type: string
+                enum:
+                  - vip
+                  - blacklisted
+                  - special_occasion
+                  - pet
+                  - late_checkout
+                  - early_checkin
+                  - upgrade
+                  - late_arrival
+                  - multi_room_reservation
+                  - room_move
+                  - parking
+                  - breakfast
+          in: path
+          name: id
+          required: true
+        - schema:
+            type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: true
+          description: Organization ID
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
+      responses:
+        "204":
+          description: The attribute is archived and disabled
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "409":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "421":
+          description: The property or organization in the headers is hosted in another
+            region; the message names the base URL to use.
+          content:
+            application/json:
+              schema:
+                description: The property or organization in the headers is hosted in another
+                  region; the message names the base URL to use.
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+  /attribute-tagging/v1/attributes/{id}/unarchive:
+    post:
+      summary: Restore an archived attribute and enable it
+      tags:
+        - Attributes
+      parameters:
+        - schema:
+            anyOf:
+              - type: string
+                pattern: ^\d+$
+              - type: string
+                enum:
+                  - vip
+                  - blacklisted
+                  - special_occasion
+                  - pet
+                  - late_checkout
+                  - early_checkin
+                  - upgrade
+                  - late_arrival
+                  - multi_room_reservation
+                  - room_move
+                  - parking
+                  - breakfast
+          in: path
+          name: id
+          required: true
+        - schema:
+            type: string
+            pattern: ^\d+$
+          in: header
+          name: x-organization-id
+          required: true
+          description: Organization ID
+        - schema:
+            type: string
+          in: header
+          name: accept-language
+          required: false
+          description: Language of a Standard Tag's default `name`, e.g. `de-DE`; falls
+            back to `en_US`
+      responses:
+        "204":
+          description: The attribute is active and enabled
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                      additionalProperties: false
+                required:
+                  - code
+                  - message
+                additionalProperties: false
+        "404":
           description: Default Response
           content:
             application/json:
@@ -3158,6 +3537,13 @@ paths:
                             - breakfast
                         isStandard:
                           type: boolean
+                        archivedAt:
+                          nullable: true
+                          description: When the attribute was archived, or null. An archived attribute is
+                            always disabled and stays on its tagged records.
+                          type: string
+                          format: date-time
+                          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized.
                             Present on `GET /attributes`, `GET /tags` and `POST
@@ -3204,6 +3590,7 @@ paths:
                         - color
                         - standardKey
                         - isStandard
+                        - archivedAt
                       additionalProperties: false
                   required:
                     - id
@@ -3477,6 +3864,13 @@ paths:
                             - breakfast
                         isStandard:
                           type: boolean
+                        archivedAt:
+                          nullable: true
+                          description: When the attribute was archived, or null. An archived attribute is
+                            always disabled and stays on its tagged records.
+                          type: string
+                          format: date-time
+                          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized.
                             Present on `GET /attributes`, `GET /tags` and `POST
@@ -3523,6 +3917,7 @@ paths:
                         - color
                         - standardKey
                         - isStandard
+                        - archivedAt
                       additionalProperties: false
                   required:
                     - id
@@ -4039,6 +4434,13 @@ paths:
                             - breakfast
                         isStandard:
                           type: boolean
+                        archivedAt:
+                          nullable: true
+                          description: When the attribute was archived, or null. An archived attribute is
+                            always disabled and stays on its tagged records.
+                          type: string
+                          format: date-time
+                          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                         category:
                           description: The category this attribute belongs to, or null when Uncategorized.
                             Present on `GET /attributes`, `GET /tags` and `POST
@@ -4085,6 +4487,7 @@ paths:
                         - color
                         - standardKey
                         - isStandard
+                        - archivedAt
                       additionalProperties: false
                   required:
                     - id
@@ -4619,6 +5022,13 @@ paths:
                                 - breakfast
                             isStandard:
                               type: boolean
+                            archivedAt:
+                              nullable: true
+                              description: When the attribute was archived, or null. An archived attribute is
+                                always disabled and stays on its tagged records.
+                              type: string
+                              format: date-time
+                              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                             category:
                               description: The category this attribute belongs to, or null when Uncategorized.
                                 Present on `GET /attributes`, `GET /tags` and
@@ -4665,6 +5075,7 @@ paths:
                             - color
                             - standardKey
                             - isStandard
+                            - archivedAt
                           additionalProperties: false
                       required:
                         - id
@@ -4831,6 +5242,13 @@ paths:
                                 - breakfast
                             isStandard:
                               type: boolean
+                            archivedAt:
+                              nullable: true
+                              description: When the attribute was archived, or null. An archived attribute is
+                                always disabled and stays on its tagged records.
+                              type: string
+                              format: date-time
+                              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
                             category:
                               description: The category this attribute belongs to, or null when Uncategorized.
                                 Present on `GET /attributes`, `GET /tags` and
@@ -4877,6 +5295,7 @@ paths:
                             - color
                             - standardKey
                             - isStandard
+                            - archivedAt
                           additionalProperties: false
                       required:
                         - id
