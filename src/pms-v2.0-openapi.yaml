@@ -766,6 +766,7 @@ paths:
                 - 'read:houseAccount'
                 - 'read:housekeeping'
                 - 'read:item'
+                - 'read:marketingPerformance'
                 - 'read:marketsegment'
                 - 'read:nightAudit'
                 - 'read:package'
@@ -1027,6 +1028,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundResponseSchema'
+        '400':
+          description: 'Bad request — the check''s reservation is already checked out (RESERVATION_CHECKED_OUT).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
         '409':
           description: 'Conflict — the check''s folio target was never persisted (pre-feature posting) (CHECK_VOID_UNAVAILABLE).'
           content:
@@ -3618,6 +3625,117 @@ paths:
         -
           default:
             - 'write:marketsegment'
+  /digital-marketing/v1/performance/daily:
+    get:
+      tags:
+        - 'Marketing Performance'
+      summary: 'Get daily Digital Marketing (Amplify) performance.'
+      description: 'Returns Digital Marketing (Amplify) performance per property, day and campaign type: impressions, clicks, spend, attributed bookings and revenue. Covers every requested property or none: if the API key or app cannot access a requested property, the property''s account status does not allow API access, or the export is not enabled for it, the whole call fails with HTTP 403, listing the rejected property IDs when the denial can be attributed to specific properties. The token must carry the read:marketingPerformance scope, whatever other access it has: select "Read Digital Marketing performance (clicks, spend, bookings, revenue)" under Marketing Performance when creating the API key, or request the scope in the OAuth app. Up to 50 properties and 93 days per call, and 20 calls per minute per API client (HTTP 429 with a Retry-After header above that). Spend is converted from USD with the daily exchange rate of each row''s date, so for past dates it can differ from the Performance Dashboard cards, which use today''s rate. Rows of the last 14 days are provisional.'
+      operationId: 'MarketingPerformanceController::daily'
+      parameters:
+        -
+          name: propertyIDs
+          in: query
+          description: 'Comma-separated property IDs, at most 50. When omitted, defaults to every property the API key or app can access, provided it can access at most 50; otherwise propertyIDs is required (HTTP 400).'
+          required: false
+          schema:
+            type: string
+          example: '123,456'
+        -
+          name: startDate
+          in: query
+          description: 'First date (YYYY-MM-DD, property-local).'
+          required: true
+          schema:
+            type: string
+            format: date
+        -
+          name: endDate
+          in: query
+          description: 'Last date (YYYY-MM-DD, property-local), at most 92 days after startDate.'
+          required: true
+          schema:
+            type: string
+            format: date
+        -
+          name: campaignTypes
+          in: query
+          description: 'Comma-separated campaign types: metasearch, metasearch_managed, pmax, retargeting, ota_travel_ads. Defaults to every campaign type the property is subscribed to, plus any campaign type with activity in the date range (for example a product the property has since cancelled).'
+          required: false
+          schema:
+            type: string
+          example: 'metasearch,retargeting'
+        -
+          name: format
+          in: query
+          description: 'csv returns the same rows as a CSV document with a header row (Content-Type: text/csv).'
+          required: false
+          schema:
+            type: string
+            default: json
+            enum:
+              - json
+              - csv
+      responses:
+        '200':
+          description: 'Daily marketing performance rows.'
+          content:
+            text/csv:
+              schema:
+                description: 'The same rows as a CSV document with a header row.'
+                type: string
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketingPerformanceResponseSchema'
+        '400':
+          description: 'Invalid query: bad or reversed dates, more than 93 days or 50 properties, unknown campaign type or format.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema'
+        '401':
+          description: 'Missing, invalid or expired access token.'
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - { $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema' }
+                  - { $ref: '#/components/schemas/MarketingPerformanceOAuthErrorResponseSchema' }
+        '403':
+          description: 'The whole request is rejected: the token lacks read:marketingPerformance, or a requested property is not accessible, has an account status without API access, or does not have the export enabled. The body is {success, message}, plus rejectedPropertyIDs when the denial can be attributed to specific properties; a partner app or any other client type without the scope gets a body with only message.'
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - { $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema' }
+                  - { $ref: '#/components/schemas/ForbiddenResponseSchema' }
+        '429':
+          description: 'Rate limit exceeded: more than 20 calls per minute for the API client.'
+          headers:
+            Retry-After:
+              description: 'Seconds until the API client can call again.'
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema'
+        '502':
+          description: 'The marketing data service failed or returned an invalid response; no partial data is returned.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema'
+        '500':
+          description: 'Unexpected server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'read:marketingPerformance'
   /payments/v1/payments:
     post:
       tags:
@@ -3771,7 +3889,7 @@ paths:
         -
           name: filters
           in: query
-          description: 'Filter the list. Each clause is written field:operator:value, and multiple clauses are separated by a semicolon (;) — not a comma, which the sort parameter uses. Clauses are combined with AND; grouping and OR are not supported here. Supported fields: isActive (equals), isDerived (equals), promoCode (contains), status (equals, in), policyId (equals, in), segmentId (equals, in), derivedRatePlanId (equals, in, is_null, is_not_null). A status filter takes one of active, expired, no-intervals, disabled; with `in`, several separated by a comma. It is applied before limit and offset, so a page and its total both describe the rate plans in those statuses. The in operator takes a comma-separated list of up to 100 IDs (policyId:in:1,2,3); is_null and is_not_null take no value (derivedRatePlanId:is_null). derivedRatePlanId takes 0 for the property base rate, alone or in a list (derivedRatePlanId:in:0,12), and 0 matches plans with no parent plan. derivedRatePlanId:is_null matches plans with no parent plan, which includes plans derived from the base rate; derivedRatePlanId:is_not_null matches plans whose parent is another rate plan. None of these checks isDerived, so add isDerived:equals:true to keep derived plans only. policyId, segmentId and derivedRatePlanId are filters only and cannot be sorted on.'
+          description: 'Filter the list. Each clause is written field:operator:value, and multiple clauses are separated by a semicolon (;) — not a comma, which the sort parameter uses. Clauses are combined with AND; grouping and OR are not supported here. Supported fields: isActive (equals), isDerived (equals), promoCode (contains), code (contains), category (equals, in), status (equals, in), policyId (equals, in), segmentId (equals, in), derivedRatePlanId (equals, in, is_null, is_not_null). A status filter takes one of active, expired, no-intervals, disabled; with `in`, several separated by a comma. It is applied before limit and offset, so a page and its total both describe the rate plans in those statuses. The in operator takes a comma-separated list of up to 100 IDs (policyId:in:1,2,3); is_null and is_not_null take no value (derivedRatePlanId:is_null). derivedRatePlanId takes 0 for the property base rate, alone or in a list (derivedRatePlanId:in:0,12), and 0 matches plans with no parent plan. derivedRatePlanId:is_null matches plans with no parent plan, which includes plans derived from the base rate; derivedRatePlanId:is_not_null matches plans whose parent is another rate plan. None of these checks isDerived, so add isDerived:equals:true to keep derived plans only. policyId, segmentId and derivedRatePlanId are filters only and cannot be sorted on.'
           required: false
           schema:
             type: string
@@ -3779,7 +3897,7 @@ paths:
         -
           name: sort
           in: query
-          description: 'Sort the list. Supported fields: createdAt, updatedAt, isActive, status. Multiple fields are separated by a comma (,), and each may carry a direction written as field:asc or field:desc; a field given on its own sorts ascending. status sorts in the order active, expired, no-intervals, disabled (reversed for desc). When omitted, the list is returned newest first (createdAt descending).'
+          description: 'Sort the list. Supported fields: createdAt, updatedAt, isActive, code, category, status. Multiple fields are separated by a comma (,), and each may carry a direction written as field:asc or field:desc; a field given on its own sorts ascending. status sorts in the order active, expired, no-intervals, disabled (reversed for desc). category sorts alphabetically by its value. When omitted, the list is returned newest first (createdAt descending).'
           required: false
           schema:
             type: string
@@ -4607,13 +4725,10 @@ components:
         price:
           $ref: '#/components/schemas/MoneySchema'
         availabilityWindow:
-          description: 'Dates of the stay the add-on is sold for. Arrival is the first night; departure is the checkout date, after the last night. `all` covers every night.'
+          description: 'Dates a nightly add-on is charged for. `all` charges each stay night; `all_except_arrival` charges the day after each stay night, ending on the checkout date. Always `all` for charge types that are not nightly.'
           type: string
           enum:
             - all
-            - arrival_only
-            - departure_only
-            - arrival_and_departure
             - all_except_arrival
           example: all
       type: object
@@ -7552,7 +7667,7 @@ components:
           type: string
           example: Cheeseburger
         externalLineId:
-          description: 'Optional partner-supplied identifier for this line occurrence on the check (the POS system''s own line reference — e.g., Clover lineItem.id, Toast Selection.guid, Square line uid, or a per-check line sequence). Per line, not per unit: a quantity-2 line carries one reference. When provided, must be unique within this check''s items[]; a duplicate is rejected with DUPLICATE_EXTERNAL_LINE_ID. When omitted, the line is stored with no reference — Cloudbeds does not generate one. Supplied values are echoed back on the response and on line events so the partner can correlate the posted line without storing any Cloudbeds identifier.'
+          description: 'Optional partner-supplied identifier for this line occurrence on the check (the POS system''s own line reference — e.g., Clover lineItem.id, Toast Selection.guid, Square line uid, or a per-check line sequence). Per line, not per unit: a quantity-2 line carries one reference. When provided, must be unique among this check''s items and service charges; a duplicate is rejected with DUPLICATE_EXTERNAL_LINE_ID. When omitted, the line is stored with no reference — Cloudbeds does not generate one. Supplied values are echoed back on the response and on line events so the partner can correlate the posted line without storing any Cloudbeds identifier.'
           type: string
           example: ABC8903421
           nullable: true
@@ -7661,6 +7776,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TaxSchema'
+          maxItems: 20
         customTransactionCode:
           description: 'Override the property''s default service-charge Custom Transaction Code for this posting. If omitted, the property''s configured default applies.'
           type: string
@@ -7674,11 +7790,18 @@ components:
         note:
           description: 'Optional free-text note attached to the service charge line item.'
           type: string
+          maxLength: 255
           example: '20% mandatory service charge'
+          nullable: true
+        externalLineId:
+          description: 'Optional partner-supplied identifier for this service charge on the check (the POS system''s own line reference — e.g., Clover''s order-fee lineItem.id). Shares one namespace with items[].externalLineId: when provided, must be unique among this check''s items and service charges; a duplicate is rejected with DUPLICATE_EXTERNAL_LINE_ID. A service charge posted with one can later be refunded on its own by that reference.'
+          type: string
+          maxLength: 255
+          example: 3J9PBSGJHDZ6C
           nullable: true
       type: object
     CheckTotalsSchema:
-      description: 'Partner-supplied check totals broken out by component. Used for two purposes: (1) totals-only postings — when items[] is empty, totalItems carries the items subtotal and the server posts a single synthetic items folio line; inline serviceCharge / discounts[] continue to write their own rows; (2) cross-validation — when items[] is also supplied, each total field cross-validates against the corresponding server-computed sum (items / SC / gratuity / discount / tax / fees). Mismatches surface as INVALID_TOTAL_MISMATCH with the failing component identified. totalTax / totalFee are cross-cutting aggregates: in items mode they cross-validate the sum across the whole check; in totals-only mode the partner amount routes to the per-property "Default POS tax" / "Default POS fee" catch-all catalog records (lazy-created), keeping the ledger invariant that every tax_id / fee_id reference resolves to a real row.'
+      description: 'Partner-supplied check totals broken out by component. Used for two purposes: (1) totals-only postings — when items[] is empty, totalItems carries the items subtotal and the server posts a single synthetic items folio line; inline serviceCharges[] / discounts[] continue to write their own rows; (2) cross-validation — when items[] is also supplied, each total field cross-validates against the corresponding server-computed sum (items / SC / gratuity / discount / tax / fees). Mismatches surface as INVALID_TOTAL_MISMATCH with the failing component identified. totalTax / totalFee are cross-cutting aggregates: in items mode they cross-validate the sum across the whole check; in totals-only mode totalTax is whole-check tax and only its remainder after inline service-charge / gratuity taxes routes to the lazily-created "Default POS tax" catch-all, while totalFee routes to the "Default POS fee" catch-all. Both ensure every catch-all tax / fee line references a real catalog record.'
       required:
         - totalItems
       properties:
@@ -7689,7 +7812,7 @@ components:
           example: '24.30'
           nullable: true
         totalServiceCharge:
-          description: 'Service-charge subtotal — serviceCharge.amount + sum(serviceCharge.taxes). Optional; cross-validates against the inline serviceCharge data ONLY when both are supplied. In totals-only mode without inline serviceCharge, this value is the partner-declared SC aggregate (validation deferred to the persistence layer).'
+          description: 'Service-charge subtotal — sum of each serviceCharges[].amount and its taxes. Optional; cross-validates against the inline serviceCharges[] data ONLY when both are supplied. In totals-only mode without inline serviceCharges[], this value is the partner-declared SC aggregate (validation deferred to the persistence layer).'
           type: string
           pattern: '^\d+(\.\d{1,4})?$'
           example: '24.30'
@@ -7707,13 +7830,13 @@ components:
           example: '24.30'
           nullable: true
         totalTax:
-          description: 'Total tax across the check — sum of every tax line (items[].taxes, items[].fees[].taxes, serviceCharge.taxes, gratuities[].taxes). Optional. When items[] is supplied, the partner value cross-validates against the server-computed sum (INVALID_TOTAL_MISMATCH on drift). In totals-only mode (items[] empty), the partner value is persisted as a single tax line on the synthetic POS-sale item, linked to the property''s lazily-created "Default POS tax" catalog record. Zero or omitted skips the synthesis.'
+          description: 'Total tax across the check — sum of every tax line (items[].taxes, items[].fees[].taxes, serviceCharges[].taxes, gratuities[].taxes). Optional. When items[] is supplied, the partner value cross-validates against the server-computed sum (INVALID_TOTAL_MISMATCH on drift). In totals-only mode (items[] empty), this is whole-check tax; only the positive remainder after inline service-charge and gratuity taxes is posted as a catch-all tax line on the synthetic POS-sale item, linked to the property''s lazily-created "Default POS tax" catalog record. Zero or omitted skips the synthesis.'
           type: string
           pattern: '^\d+(\.\d{1,4})?$'
           example: '24.30'
           nullable: true
         totalFee:
-          description: 'Total fees across the check — sum of items[].fees[].amount. Fees only attach to items in the postCheck data model, so the sum is items-scoped. Optional. Same items-mode cross-validation and totals-only synthesis semantics as totalTax, routed through the property''s "Default POS fee" catalog record. Zero or omitted skips the synthesis.'
+          description: 'Total fees across the check — sum of items[].fees[].amount. Fees only attach to items in the postCheck data model, so the sum is items-scoped. Optional. In items mode, cross-validates against the server-computed sum. In totals-only mode, the declared amount is routed through the property''s "Default POS fee" catalog record. Zero or omitted skips the synthesis.'
           type: string
           pattern: '^\d+(\.\d{1,4})?$'
           example: '24.30'
@@ -7728,7 +7851,7 @@ components:
           type: string
       type: object
     PostCheckRequestSchema:
-      description: 'Posts a completed POS check (e.g., F&B) to a guest folio, house account, or group profile. Replaces postCustomItem with first-class folio transactions enriched with hospitality POS context (check identity, revenue center, meal period, gratuity, service charge). All items, taxes, fees, gratuities, service charge, discounts, and payments in this request belong to the single check identified by checkNumber/checkId. Multi-check batching is not supported — issue a separate postCheck call per check.'
+      description: 'Posts a completed POS check (e.g., F&B) to a guest folio, house account, or group profile. Replaces postCustomItem with first-class folio transactions enriched with hospitality POS context (check identity, revenue center, meal period, gratuity, service charge). All items, taxes, fees, gratuities, service charges, discounts, and payments in this request belong to the single check identified by checkNumber/checkId. Multi-check batching is not supported — issue a separate postCheck call per check.'
       properties:
         checkNumber:
           description: 'Partner-assigned check number visible on the customer receipt (e.g., POS terminal display number). Stored on each posted folio line and visible in the folio UI. Optional — when omitted, the server mints a Cloudbeds reference (cb-<id>) and returns it in the response so the partner can echo it back.'
@@ -7812,7 +7935,13 @@ components:
             -
               $ref: '#/components/schemas/CheckServiceChargeRequestSchema'
           nullable: true
-          description: 'Optional service charge for the check. Posted as a separate folio line item, distinct from gratuity.'
+          description: 'Optional single service charge for the check. Equivalent to serviceCharges with one entry; must not be combined with serviceCharges.'
+        serviceCharges:
+          description: 'Optional list of service charges on the check. Each entry posts as its own service-charge folio line with its own taxes and accounting event, distinct from gratuity.'
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckServiceChargeRequestSchema'
+          maxItems: 20
         discounts:
           description: 'Optional discounts applied to the check. Each entry becomes a distinct (negative) folio line item.'
           type: array
@@ -11662,6 +11791,131 @@ components:
         canDisable:
           type: boolean
       type: object
+    MarketingPerformanceErrorResponseSchema:
+      description: 'Error response. rejectedPropertyIDs is present only when the call was rejected for specific requested properties.'
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        rejectedPropertyIDs:
+          description: 'Requested property IDs the call was rejected for.'
+          type: array
+          items:
+            type: string
+          nullable: true
+      type: object
+    MarketingPerformanceOAuthErrorResponseSchema:
+      description: 'Authentication error: the Authorization header is missing, or the access token is invalid or expired.'
+      required:
+        - error
+        - message
+      properties:
+        error:
+          description: 'OAuth error code.'
+          type: string
+          example: access_denied
+        message:
+          description: 'Human-readable error description.'
+          type: string
+        error_description:
+          description: 'Human-readable error description.'
+          type: string
+          nullable: true
+        hint:
+          description: 'Additional detail about the error.'
+          type: string
+          nullable: true
+      type: object
+    MarketingPerformanceResponseSchema:
+      description: 'Daily marketing performance rows.'
+      required:
+        - success
+        - data
+      properties:
+        data:
+          description: 'One row per property, date and campaign type.'
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketingPerformanceRowSchema'
+        success:
+          type: boolean
+          example: true
+      type: object
+    MarketingPerformanceRowSchema:
+      description: 'Marketing performance of one property, date and campaign type. Every field is always present; nullable fields are null when there is no value.'
+      required:
+        - propertyID
+        - date
+        - campaignType
+        - impressions
+        - clicks
+        - spendUsd
+        - exchangeRate
+        - spend
+        - bookings
+        - revenue
+        - currency
+        - dataStatus
+        - updatedAt
+      properties:
+        propertyID:
+          description: 'Property ID.'
+          type: string
+          example: '123'
+        date:
+          description: 'Date (YYYY-MM-DD, property-local).'
+          type: string
+          format: date
+        campaignType:
+          description: 'Campaign type. Known values: metasearch (includes Search Booster), metasearch_managed, pmax, retargeting, ota_travel_ads. Other values may appear, so do not treat the list as closed.'
+          type: string
+        impressions:
+          description: 'Impressions (null when the platform does not report them).'
+          type: integer
+          nullable: true
+        clicks:
+          description: Clicks.
+          type: integer
+        spendUsd:
+          description: 'Spend in USD including the Cloudbeds markup (null when the campaign type has no spend).'
+          type: number
+          nullable: true
+        exchangeRate:
+          description: 'USD to property currency rate of the date (null when no rate is available).'
+          type: number
+          nullable: true
+        spend:
+          description: 'Spend in the property currency, spendUsd × exchangeRate (null when either is null).'
+          type: number
+          nullable: true
+        bookings:
+          description: 'Attributed reservations.'
+          type: integer
+        revenue:
+          description: 'Attributed revenue in the property currency (null only for ota_travel_ads rows when no exchange rate exists for the date).'
+          type: number
+          nullable: true
+        currency:
+          description: 'Property currency (ISO 4217; null when no currency is configured for the property and the row has no source data).'
+          type: string
+          nullable: true
+        dataStatus:
+          description: 'provisional for the last 14 days in the property''s time zone, otherwise final.'
+          type: string
+          enum:
+            - provisional
+            - final
+        updatedAt:
+          description: 'Latest source update for the row (null when the row has no source data).'
+          type: string
+          format: date-time
+          nullable: true
+      type: object
     OrganizationAvailabilityRequestSchema:
       properties:
         id:
@@ -12407,6 +12661,27 @@ components:
           maxLength: 50
           example: SUMMER2023
           nullable: true
+        code:
+          description: 'Rate plan code, up to 5 uppercase letters or digits. Unique per property. An empty string is stored as null.'
+          type: string
+          maxLength: 5
+          pattern: '^[A-Z0-9]{0,5}$'
+          example: BAR1
+          nullable: true
+        category:
+          description: 'Rate plan category. An empty string is stored as null.'
+          type: string
+          enum:
+            - RACK
+            - BAR
+            - CORP
+            - GOV
+            - NEG
+            - PROMO
+            - PACKAGE
+            - COMP
+            - HOUSE
+          nullable: true
         sources:
           description: 'List of sources for the rate plan.'
           type: array
@@ -12649,6 +12924,27 @@ components:
           type: string
           maxLength: 50
           example: SUMMER2023
+          nullable: true
+        code:
+          description: 'Rate plan code, up to 5 uppercase letters or digits. Unique per property. An empty string is stored as null.'
+          type: string
+          maxLength: 5
+          pattern: '^[A-Z0-9]{0,5}$'
+          example: BAR1
+          nullable: true
+        category:
+          description: 'Rate plan category. An empty string is stored as null.'
+          type: string
+          enum:
+            - RACK
+            - BAR
+            - CORP
+            - GOV
+            - NEG
+            - PROMO
+            - PACKAGE
+            - COMP
+            - HOUSE
           nullable: true
         sources:
           description: 'List of sources for the rate plan.'
@@ -13142,6 +13438,23 @@ components:
           example:
             - breakfast
             - dinner
+        code:
+          type: string
+          example: BAR1
+          nullable: true
+        category:
+          type: string
+          enum:
+            - RACK
+            - BAR
+            - CORP
+            - GOV
+            - NEG
+            - PROMO
+            - PACKAGE
+            - COMP
+            - HOUSE
+          nullable: true
       type: object
     RatePlanAvailabilityDayResponseSchema:
       required:
@@ -13918,6 +14231,41 @@ components:
           type: string
           example: '2026-07-09 13:30'
       type: object
+    AddedTaxFeePreviewInputSchema:
+      required:
+        - target
+        - taxFeeId
+        - amount
+        - bookingRoomId
+        - isAutoDate
+        - dateTime
+      properties:
+        target:
+          description: 'Whether a tax or a fee is added.'
+          type: string
+          enum:
+            - TAX
+            - FEE
+        taxFeeId:
+          description: 'Id of the tax or fee that is added.'
+          type: string
+          example: '34'
+        amount:
+          oneOf:
+            -
+              $ref: '#/components/schemas/SmartPolicyMoneyInputSchema'
+          nullable: true
+          description: 'Amount entered in the drawer, before the taxes charged on it.'
+        bookingRoomId:
+          type: string
+          example: '555'
+        isAutoDate:
+          type: boolean
+          nullable: true
+        dateTime:
+          type: string
+          example: '2026-07-09 13:30'
+      type: object
     CreatePolicyExceptionRequestSchema:
       required:
         - name
@@ -14196,7 +14544,7 @@ components:
           nullable: true
       type: object
     PreviewAdjustmentRequestSchema:
-      description: 'Provide exactly one of adjustment or addedRoomRevenue.'
+      description: 'Provide exactly one of adjustment, addedRoomRevenue or addedTaxFee.'
       required:
         - reservationId
       properties:
@@ -14216,6 +14564,12 @@ components:
               $ref: '#/components/schemas/AddedRoomRevenuePreviewInputSchema'
           nullable: true
           description: 'Room-revenue preview input.'
+        addedTaxFee:
+          oneOf:
+            -
+              $ref: '#/components/schemas/AddedTaxFeePreviewInputSchema'
+          nullable: true
+          description: 'Manual tax or fee preview input.'
       type: object
       example:
         reservationId: '12345'
@@ -15809,6 +16163,9 @@ tags:
   -
     name: 'Market Segmentation'
     description: 'Market Segmentation'
+  -
+    name: 'Marketing Performance'
+    description: 'Marketing Performance'
   -
     name: Payments
     description: Payments
