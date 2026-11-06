@@ -8,12 +8,16 @@ info:
     Public API base path: `/attribute-tagging/v1`
 
 
-    ## Base URL — pick your region
+    ## Base URL
 
 
-    Cloudbeds hosts every property in one region (island), `us1` or `us2`, and
-    this API answers only for the region it runs in. Use the base URL of the
-    region that hosts your property:
+    Use `https://api.cloudbeds.com/attribute-tagging/v1` for every property and
+    organization. Cloudbeds hosts each property in one region (island), `us1` or
+    `us2`, and the gateway sends each request to the region that hosts the
+    property or organization it names, so one base URL works for all of them.
+
+
+    The regional base URLs keep working and route the same way:
 
 
     - `https://api.us1.cloudbeds.com/attribute-tagging/v1` (us1)
@@ -21,17 +25,10 @@ info:
     - `https://api.us2.cloudbeds.com/attribute-tagging/v1` (us2)
 
 
-    The general (non-island) host
-    `https://api.cloudbeds.com/attribute-tagging/v1` is served by the us1 region
-    only, so a property hosted in us2 gets no data from it.
-
-
-    To find your region, send any request to one of the regional URLs above: a
-    request that reaches a region other than the one hosting your property is
-    rejected with `421 WRONG_REGION`, and the error message names the base URL
-    to use instead. A property that genuinely has no tags gets a `200` with an
-    empty list, never a `421`. Your Cloudbeds contact can also tell you the
-    region.
+    Send one region per request: when `x-property-id` lists properties from both
+    regions, a property hosted in another region than the one serving the
+    request is rejected with `421 WRONG_REGION`, and the error message names the
+    base URL to use for it.
 
 
     Both regions accept partner API keys (`cbat_…`) and Okta JWTs as
@@ -5900,23 +5897,22 @@ paths:
                   - message
                 additionalProperties: false
 servers:
+  - url: https://api.{environment}.com
+    description: "General host: serves properties and organizations in every region"
+    variables:
+      environment:
+        default: cloudbeds
+        enum: &a1
+          - cloudbeds-stage
+          - cloudbeds
   - url: https://api.{island}.{environment}.com
-    description: Regional gateway — use the island that hosts your property
+    description: "Regional gateway: also routes to the region that hosts the tenant"
     variables:
       island:
         default: us1
         enum:
           - us1
           - us2
-      environment:
-        default: cloudbeds
-        enum: &a1
-          - cloudbeds-stage
-          - cloudbeds
-  - url: https://api.{environment}.com
-    description: General (non-island) host — served by us1 only; a request for a us2
-      property is misdirected
-    variables:
       environment:
         default: cloudbeds
         enum: *a1
