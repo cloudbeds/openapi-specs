@@ -135,6 +135,7 @@ paths:
                             - room_move
                             - parking
                             - breakfast
+                            - do_not_move
                     label:
                       nullable: true
                       type: string
@@ -192,6 +193,7 @@ paths:
                         - room_move
                         - parking
                         - breakfast
+                        - do_not_move
                     isStandard:
                       type: boolean
                     archivedAt:
@@ -447,6 +449,7 @@ paths:
                           - room_move
                           - parking
                           - breakfast
+                          - do_not_move
                   label:
                     nullable: true
                     type: string
@@ -504,6 +507,7 @@ paths:
                       - room_move
                       - parking
                       - breakfast
+                      - do_not_move
                   isStandard:
                     type: boolean
                   archivedAt:
@@ -793,6 +797,7 @@ paths:
                   - room_move
                   - parking
                   - breakfast
+                  - do_not_move
           in: path
           name: id
           required: true
@@ -836,6 +841,7 @@ paths:
                           - room_move
                           - parking
                           - breakfast
+                          - do_not_move
                   label:
                     nullable: true
                     type: string
@@ -893,6 +899,7 @@ paths:
                       - room_move
                       - parking
                       - breakfast
+                      - do_not_move
                   isStandard:
                     type: boolean
                   archivedAt:
@@ -1115,6 +1122,7 @@ paths:
                   - room_move
                   - parking
                   - breakfast
+                  - do_not_move
           in: path
           name: id
           required: true
@@ -1289,9 +1297,7 @@ paths:
         content:
           application/json:
             schema:
-              type:
-                - object
-                - "null"
+              type: object
               properties:
                 label:
                   description: The copy's name. Omitted, it is the source's name as shown in the
@@ -1299,6 +1305,7 @@ paths:
                   type: string
                   pattern: \S
               additionalProperties: false
+              nullable: true
       parameters:
         - schema:
             anyOf:
@@ -1318,6 +1325,7 @@ paths:
                   - room_move
                   - parking
                   - breakfast
+                  - do_not_move
           in: path
           name: id
           required: true
@@ -1361,6 +1369,7 @@ paths:
                           - room_move
                           - parking
                           - breakfast
+                          - do_not_move
                   label:
                     nullable: true
                     type: string
@@ -1418,6 +1427,7 @@ paths:
                       - room_move
                       - parking
                       - breakfast
+                      - do_not_move
                   isStandard:
                     type: boolean
                   archivedAt:
@@ -1642,6 +1652,7 @@ paths:
                   - room_move
                   - parking
                   - breakfast
+                  - do_not_move
           in: path
           name: id
           required: true
@@ -1830,6 +1841,7 @@ paths:
                   - room_move
                   - parking
                   - breakfast
+                  - do_not_move
           in: path
           name: id
           required: true
@@ -2017,6 +2029,7 @@ paths:
                   - room_move
                   - parking
                   - breakfast
+                  - do_not_move
           in: path
           name: id
           required: true
@@ -2575,6 +2588,7 @@ paths:
                               - room_move
                               - parking
                               - breakfast
+                              - do_not_move
                         description: Attribute id, or an unused Standard Tag's key (its row is created
                           first).
                       categoryId:
@@ -3478,6 +3492,7 @@ paths:
                                 - room_move
                                 - parking
                                 - breakfast
+                                - do_not_move
                         label:
                           nullable: true
                           type: string
@@ -3535,6 +3550,7 @@ paths:
                             - room_move
                             - parking
                             - breakfast
+                            - do_not_move
                         isStandard:
                           type: boolean
                         archivedAt:
@@ -3728,6 +3744,7 @@ paths:
                           - room_move
                           - parking
                           - breakfast
+                          - do_not_move
               required:
                 - entityId
                 - entityType
@@ -3805,6 +3822,7 @@ paths:
                                 - room_move
                                 - parking
                                 - breakfast
+                                - do_not_move
                         label:
                           nullable: true
                           type: string
@@ -3862,6 +3880,7 @@ paths:
                             - room_move
                             - parking
                             - breakfast
+                            - do_not_move
                         isStandard:
                           type: boolean
                         archivedAt:
@@ -4375,6 +4394,7 @@ paths:
                                 - room_move
                                 - parking
                                 - breakfast
+                                - do_not_move
                         label:
                           nullable: true
                           type: string
@@ -4432,6 +4452,7 @@ paths:
                             - room_move
                             - parking
                             - breakfast
+                            - do_not_move
                         isStandard:
                           type: boolean
                         archivedAt:
@@ -4842,6 +4863,7 @@ paths:
                           - room_move
                           - parking
                           - breakfast
+                          - do_not_move
                   description: Attributes applied to every entity in every group.
               required:
                 - entities
@@ -4963,6 +4985,7 @@ paths:
                                     - room_move
                                     - parking
                                     - breakfast
+                                    - do_not_move
                             label:
                               nullable: true
                               type: string
@@ -5020,6 +5043,7 @@ paths:
                                 - room_move
                                 - parking
                                 - breakfast
+                                - do_not_move
                             isStandard:
                               type: boolean
                             archivedAt:
@@ -5183,6 +5207,7 @@ paths:
                                     - room_move
                                     - parking
                                     - breakfast
+                                    - do_not_move
                             label:
                               nullable: true
                               type: string
@@ -5240,6 +5265,7 @@ paths:
                                 - room_move
                                 - parking
                                 - breakfast
+                                - do_not_move
                             isStandard:
                               type: boolean
                             archivedAt:
@@ -5521,6 +5547,7 @@ paths:
                           - room_move
                           - parking
                           - breakfast
+                          - do_not_move
                   description: Attributes removed from every entity in every group. An entity that
                     does not carry a listed attribute is left alone rather than
                     reported as an error, so repeating the request is safe.
