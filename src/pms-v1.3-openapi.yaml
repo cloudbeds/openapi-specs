@@ -1235,7 +1235,7 @@ components:
                                     type: object
                                     properties:
                                         blockAllotted:
-                                            description: 'Total number of units available for the room type for this day. Note: this value is ignored for based_on_availability allotment types, which always use full property availability.'
+                                            description: 'Total number of units available for the room type for this day. Saved as sent: rooms released from the block are not added back, so send the value returned by getAllotmentBlocks with forUpdate=true, not the default view. Note: this value is ignored for based_on_availability allotment types, which always use full property availability.'
                                             type: integer
                                             nullable: true
                                         date:
@@ -1472,7 +1472,7 @@ components:
                                                     description: 'Number of units remaining for the room type for this day'
                                                     type: integer
                                                 blockAllotted:
-                                                    description: 'Total number of units available for the room type for this day. Note: this value is ignored for based_on_availability allotment types, which always use full property availability.'
+                                                    description: 'Total number of units available for the room type for this day, net of rooms released from the block (the getAllotmentBlocks default view). Note: this value is ignored for based_on_availability allotment types, which always use full property availability.'
                                                     type: integer
                                                 blockConfirmed:
                                                     description: 'Number of units booked for the room type for this day'
@@ -10891,7 +10891,7 @@ paths:
                     required: false
                     in: query
                 -
-                    description: 'If false (default) this will show the effective availability on each date. If true, will read raw availability from the allotment intervals.'
+                    description: "If false (default), shows the effective availability on each date. This is the availability enforced for booking. If true, shows the block's allotment as set, before releases are applied. On a night with rooms released from the block, that blockAllotted still includes them, so it is higher than the default value by the released quantity. To change a block with updateAllotmentBlock, read it with forUpdate=true and post those blockAllotted values back unchanged: posting the default value lowers the block's allotment, and the release is then subtracted from it again. To make released rooms available again, remove the release in Cloudbeds PMS."
                     name: forUpdate
                     schema:
                         type: boolean
