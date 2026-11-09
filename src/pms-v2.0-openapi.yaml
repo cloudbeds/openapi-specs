@@ -3625,19 +3625,19 @@ paths:
         -
           default:
             - 'write:marketsegment'
-  /digital-marketing/v1/performance/daily:
+  /digital-marketing/v1/daily-performance:
     get:
       tags:
         - 'Marketing Performance'
       summary: 'Get daily Digital Marketing (Amplify) performance.'
-      description: 'Returns Digital Marketing (Amplify) performance per property, day and campaign type: impressions, clicks, spend, attributed bookings and revenue. Covers every requested property or none: if the API key or app cannot access a requested property, the property''s account status does not allow API access, or the export is not enabled for it, the whole call fails with HTTP 403, listing the rejected property IDs when the denial can be attributed to specific properties. The token must carry the read:marketingPerformance scope, whatever other access it has: select "Read Digital Marketing performance (clicks, spend, bookings, revenue)" under Marketing Performance when creating the API key, or request the scope in the OAuth app. Up to 50 properties and 93 days per call, and 20 calls per minute per API client (HTTP 429 with a Retry-After header above that). Spend is converted from USD with the daily exchange rate of each row''s date, so for past dates it can differ from the Performance Dashboard cards, which use today''s rate. Rows of the last 14 days are provisional.'
+      description: 'Returns Digital Marketing (Amplify) performance per property, day and campaign type: impressions, clicks, spend, attributed reservations and revenue, for the properties named in the required x-property-id header. Covers every requested property or none: if the API key or app cannot access a requested property, the property''s account status does not allow API access, or the export is not enabled for it, the whole call fails with HTTP 403, listing the rejected property IDs when the denial can be attributed to specific properties. The token must carry the read:marketingPerformance scope, whatever other access it has: select "Read Digital Marketing performance (clicks, spend, bookings, revenue)" under Marketing Performance when creating the API key, or request the scope in the OAuth app. Up to 50 properties and 90 days per call, and 20 calls per minute per API client (HTTP 429 with a Retry-After header above that). JSON responses are paged with limit and offset over rows sorted by propertyId (as a number), date and campaignType in the order METASEARCH, METASEARCH_MANAGED, PMAX, PMAX_MANAGED, RETARGETING, OTA_TRAVEL_ADS; keep paging until a page has fewer than limit rows. Spend is converted from USD with the daily exchange rate of each row''s date, so for past dates it can differ from the Performance Dashboard cards, which use today''s rate. Rows of the last 14 days are PROVISIONAL. Accept: text/csv returns the same fields for the whole date range as one CSV document, not paged, with a header row naming each field, where spendUsd, spend and revenue are plain decimal amounts in major currency units (spendUsd in USD, spend and revenue in the currency named by currencyCode) and an omitted field is an empty cell; application/json or an omitted Accept returns JSON; anything else is answered with HTTP 406.'
       operationId: 'MarketingPerformanceController::daily'
       parameters:
         -
-          name: propertyIDs
-          in: query
-          description: 'Comma-separated property IDs, at most 50. When omitted, defaults to every property the API key or app can access, provided it can access at most 50; otherwise propertyIDs is required (HTTP 400).'
-          required: false
+          name: x-property-id
+          in: header
+          description: 'Comma-separated IDs of the properties to export, at most 50. A missing or empty header is an HTTP 400, and so is a property ID sent in a query or body parameter alongside it.'
+          required: true
           schema:
             type: string
           example: '123,456'
@@ -3652,63 +3652,87 @@ paths:
         -
           name: endDate
           in: query
-          description: 'Last date (YYYY-MM-DD, property-local), at most 92 days after startDate.'
+          description: 'Last date (YYYY-MM-DD, property-local), at most 89 days after startDate.'
           required: true
           schema:
             type: string
             format: date
         -
-          name: campaignTypes
+          name: filters
           in: query
-          description: 'Comma-separated campaign types: metasearch, metasearch_managed, pmax, retargeting, ota_travel_ads. Defaults to every campaign type the property is subscribed to, plus any campaign type with activity in the date range (for example a product the property has since cancelled).'
+          description: 'Restricts the campaign types of the rows, with the field:operator:value syntax: campaignType:in:METASEARCH,RETARGETING or campaignType:equals:PMAX. Several ;-separated filters are ANDed, so campaignType:in:METASEARCH,PMAX;campaignType:equals:PMAX returns PMAX rows only. Campaign type values are case-sensitive. Defaults to every campaign type the property is subscribed to, plus any campaign type with activity in the date range (for example a product the property has since cancelled). Any other field or operator, or an unknown campaign type, is an HTTP 400.'
           required: false
           schema:
             type: string
-          example: 'metasearch,retargeting'
+          example: 'campaignType:in:METASEARCH,RETARGETING'
         -
-          name: format
+          name: limit
           in: query
-          description: 'csv returns the same rows as a CSV document with a header row (Content-Type: text/csv).'
+          description: 'The maximum number of rows to return in a JSON page. Default is 100, at most 1000. JSON only: sent with an Accept that resolves to CSV it is an HTTP 400.'
           required: false
           schema:
-            type: string
-            default: json
-            enum:
-              - json
-              - csv
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+          example: '100'
+        -
+          name: offset
+          in: query
+          description: 'The number of rows to skip, in the propertyId, date, campaignType order, before collecting the page. Default is 0. An offset past the last row returns an empty data list. JSON only: sent with an Accept that resolves to CSV it is an HTTP 400.'
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          example: '0'
+        -
+          name: includeTotal
+          in: query
+          description: 'Return total, the number of rows matching the request, ignoring limit and offset. Boolean values are accepted case-insensitively, so true, TRUE, True and 1 all enable it. JSON only: sent with an Accept that resolves to CSV it is an HTTP 400.'
+          required: false
+          schema:
+            type: boolean
+            default: false
+          example: true
       responses:
         '200':
           description: 'Daily marketing performance rows.'
           content:
             text/csv:
               schema:
-                description: 'The same rows as a CSV document with a header row.'
+                description: 'The rows as a CSV document with a header row; money fields are plain decimals in major currency units.'
                 type: string
             application/json:
               schema:
                 $ref: '#/components/schemas/MarketingPerformanceResponseSchema'
         '400':
-          description: 'Invalid query: bad or reversed dates, more than 93 days or 50 properties, unknown campaign type or format.'
+          description: 'Invalid query or header: a missing or empty x-property-id, bad or reversed dates, more than 90 days or 50 properties, a filter field, operator or value this endpoint does not support, an invalid limit, offset or includeTotal, or one of them sent for CSV.'
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema'
         '401':
-          description: 'Missing, invalid or expired access token.'
+          description: 'Missing, invalid or expired access token. The shared authentication layer answers this before the endpoint runs, so the body is application/json carrying message, not problem+json.'
           content:
             application/json:
               schema:
-                anyOf:
-                  - { $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema' }
-                  - { $ref: '#/components/schemas/MarketingPerformanceOAuthErrorResponseSchema' }
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
         '403':
-          description: 'The whole request is rejected: the token lacks read:marketingPerformance, or a requested property is not accessible, has an account status without API access, or does not have the export enabled. The body is {success, message}, plus rejectedPropertyIDs when the denial can be attributed to specific properties; a partner app or any other client type without the scope gets a body with only message.'
+          description: 'The whole request is rejected: the token lacks read:marketingPerformance, or a requested property is not accessible, has an account status without API access, or does not have the export enabled. The body carries a code (MISSING_SCOPE, ACCESS_DENIED, PROPERTY_ACCOUNT_INACTIVE or EXPORT_NOT_ENABLED), plus rejectedPropertyIds when the denial can be attributed to specific properties. A partner app or any other client type without the scope is refused earlier, by the shared layer, with application/json and a body that carries only message.'
           content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema'
             application/json:
               schema:
-                anyOf:
-                  - { $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema' }
-                  - { $ref: '#/components/schemas/ForbiddenResponseSchema' }
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
+        '406':
+          description: 'The Accept header asks for a representation this endpoint does not produce.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema'
         '429':
           description: 'Rate limit exceeded: more than 20 calls per minute for the API client.'
           headers:
@@ -3717,17 +3741,17 @@ paths:
               schema:
                 type: integer
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema'
         '502':
           description: 'The marketing data service failed or returned an invalid response; no partial data is returned.'
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: '#/components/schemas/MarketingPerformanceErrorResponseSchema'
         '500':
-          description: 'Unexpected server error.'
+          description: 'Unexpected server error. The shared exception handler answers it, so the body is application/json, not problem+json.'
           content:
             application/json:
               schema:
@@ -4162,6 +4186,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundResponseSchema'
+        '500':
+          description: 'Internal server error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponseSchema'
+      security:
+        -
+          default:
+            - 'write:rate'
+  /rates/v1/rate-plans/bulk-status:
+    post:
+      tags:
+        - 'Rate Plans'
+      summary: 'Activate or deactivate several Rate Plans in one request.'
+      description: 'Every id must belong to the property, otherwise the whole request is rejected. Rate plans already in the requested state are reported as `unchanged`. A rate plan cannot be deactivated while an allotment block uses it or a derived rate plan depends on it; those are reported as `blocked` with the reason. All activity-log entries written by the request share the returned `batchId`.'
+      operationId: 'RatePlanController::bulkStatus'
+      parameters:
+        -
+          name: x-property-id
+          in: header
+          description: 'A numeric, comma-separated string representing the property IDs, sent in the header.'
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatePlanBulkStatusRequestSchema'
+      responses:
+        '200':
+          description: 'Per-rate-plan outcomes.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatePlanBulkResponseSchema'
+        '400':
+          description: 'Bad request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponseSchema'
+        '403':
+          description: 'Forbidden response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponseSchema'
         '500':
           description: 'Internal server error.'
           content:
@@ -6297,161 +6372,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AmenityItemSchema'
-      type: object
-    DmsAttributedBookingsRequestSchema:
-      description: 'Request body for the attributed-bookings export.'
-      required:
-        - propertyIDs
-        - startDate
-        - endDate
-      properties:
-        propertyIDs:
-          description: 'Property IDs to export, as integers or integer strings.'
-          type: array
-          items:
-            anyOf:
-              -
-                type: integer
-              -
-                type: string
-          example:
-            - '123'
-            - 456
-        startDate:
-          description: 'First booking date (property-local).'
-          type: string
-          format: date
-          example: '2026-10-01'
-        endDate:
-          description: 'Last booking date (property-local), at most 92 days after startDate.'
-          type: string
-          format: date
-          example: '2026-10-14'
-      type: object
-    DmsEntitlementInputsRequestSchema:
-      description: 'Properties to export entitlement inputs for: 1 to 50 positive property IDs, as integers or integer strings. The limit counts duplicates; duplicate IDs are then returned once, and rows come back in request order. If any ID is not found, the whole request fails with 400.'
-      required:
-        - propertyIDs
-      properties:
-        propertyIDs:
-          description: 'Property IDs to export, as positive integers or integer strings.'
-          type: array
-          items:
-            anyOf:
-              -
-                type: integer
-              -
-                type: string
-          maxItems: 50
-          minItems: 1
-          example:
-            - '123'
-            - 456
-      type: object
-    DmsAttributedBookingRowSchema:
-      description: 'One attributed-bookings row.'
-      required:
-        - propertyID
-        - date
-        - campaignType
-        - bookings
-        - revenue
-        - currency
-      properties:
-        propertyID:
-          description: 'Property ID.'
-          type: string
-          example: '123'
-        date:
-          description: 'Local booking date.'
-          type: string
-          format: date
-          example: '2026-10-01'
-        campaignType:
-          description: 'Campaign type.'
-          type: string
-          example: metasearch
-        bookings:
-          description: 'Attributed bookings.'
-          type: integer
-          example: 2
-        revenue:
-          description: 'Attributed revenue in the property currency.'
-          type: number
-          example: 410.5
-        currency:
-          description: 'Property currency (ISO 4217).'
-          type: string
-          example: EUR
-      type: object
-    DmsAttributedBookingsResponseSchema:
-      description: 'Attributed bookings grouped by property, local date and campaign type. The rows array is always present and is empty when nothing is attributed.'
-      required:
-        - rows
-      properties:
-        rows:
-          description: 'Attributed bookings grouped by property, local booking date and campaign type.'
-          type: array
-          items:
-            $ref: '#/components/schemas/DmsAttributedBookingRowSchema'
-      type: object
-    DmsEntitlementFeaturesSchema:
-      description: 'Whether each product is enabled for the property. Every key is always present; a product that was never set is false.'
-      required:
-        - cb_demand_meta
-        - metasearch_ads
-        - retargeting
-        - hotel_pmax
-        - ota_travel_ads
-      properties:
-        cb_demand_meta:
-          description: 'True when CB Demand Meta is enabled for the property.'
-          type: boolean
-        metasearch_ads:
-          description: 'True when Metasearch Ads is enabled for the property.'
-          type: boolean
-        retargeting:
-          description: 'True when Retargeting is enabled for the property.'
-          type: boolean
-        hotel_pmax:
-          description: 'True when Hotel PMax is enabled for the property.'
-          type: boolean
-        ota_travel_ads:
-          description: 'True when OTA Travel Ads is enabled for the property.'
-          type: boolean
-      type: object
-    DmsEntitlementInputsResponseSchema:
-      description: 'Entitlement inputs for the requested properties, one row per property in request order.'
-      required:
-        - rows
-      properties:
-        rows:
-          description: 'Raw billing-package and property-feature inputs for each requested property.'
-          type: array
-          items:
-            $ref: '#/components/schemas/DmsEntitlementInputsRowSchema'
-      type: object
-    DmsEntitlementInputsRowSchema:
-      description: 'Entitlement inputs for one property: the billing package IDs enabled for it and which products are enabled. billingPackagesEnabled is empty when no billing package is enabled, including when the property''s billing-package settings are missing or cannot be read.'
-      required:
-        - propertyID
-        - billingPackagesEnabled
-        - features
-      properties:
-        propertyID:
-          description: 'Property ID.'
-          type: string
-          example: '123'
-        billingPackagesEnabled:
-          description: 'Billing package IDs enabled for the property.'
-          type: array
-          items:
-            type: integer
-          example:
-            - 7
-            - 11
-        features:
-          $ref: '#/components/schemas/DmsEntitlementFeaturesSchema'
       type: object
     ConnectedApplicationListRequestSchema:
       type: object
@@ -9302,7 +9222,7 @@ components:
           maxLength: 255
           example: 'Smith Wedding Reception'
         profileId:
-          description: 'GPS Profile ID to link to this event'
+          description: 'Positive numeric group profile ID to link to this event (not an event ID or group code)'
           type: string
           example: '987123456489'
           nullable: true
@@ -9522,7 +9442,7 @@ components:
           type: string
           example: '12345'
         profileId:
-          description: 'GPS Profile ID. Omit to keep unchanged, send null to clear, or send string to replace.'
+          description: 'Positive numeric group profile ID (not an event ID or group code). Omit to keep unchanged, send null to clear, or send a numeric string to replace.'
           type: string
           example: '987123456489'
           nullable: true
@@ -11792,78 +11712,62 @@ components:
           type: boolean
       type: object
     MarketingPerformanceErrorResponseSchema:
-      description: 'Error response. rejectedPropertyIDs is present only when the call was rejected for specific requested properties.'
+      description: 'Error response (application/problem+json). errors items carry the field and message of each failed request field; rejectedPropertyIds is present only when the call was rejected for specific requested properties.'
       required:
-        - success
+        - code
         - message
       properties:
-        success:
-          type: boolean
-          example: false
-        message:
-          type: string
-        rejectedPropertyIDs:
+        errors:
+          description: 'One item per failed request field.'
+          type: array
+          items:
+            $ref: '#/components/schemas/BadRequestErrorItemSchema'
+        rejectedPropertyIds:
           description: 'Requested property IDs the call was rejected for.'
           type: array
           items:
             type: string
-          nullable: true
-      type: object
-    MarketingPerformanceOAuthErrorResponseSchema:
-      description: 'Authentication error: the Authorization header is missing, or the access token is invalid or expired.'
-      required:
-        - error
-        - message
-      properties:
-        error:
-          description: 'OAuth error code.'
+        code:
+          description: 'Stable identifier of the problem, in UPPER_CASE form.'
           type: string
-          example: access_denied
+          example: BAD_REQUEST
         message:
-          description: 'Human-readable error description.'
+          description: 'Short summary of the problem, stable across occurrences.'
           type: string
-        error_description:
-          description: 'Human-readable error description.'
-          type: string
-          nullable: true
-        hint:
-          description: 'Additional detail about the error.'
-          type: string
-          nullable: true
       type: object
     MarketingPerformanceResponseSchema:
-      description: 'Daily marketing performance rows.'
+      description: 'A page of daily marketing performance rows. Rows sort by propertyId (as a number), date and campaignType; a page with fewer than limit rows is the last one.'
       required:
-        - success
         - data
+        - limit
+        - offset
       properties:
+        total:
+          description: 'Total number of rows matching the request; present only when includeTotal is requested.'
+          type: integer
         data:
           description: 'One row per property, date and campaign type.'
           type: array
           items:
             $ref: '#/components/schemas/MarketingPerformanceRowSchema'
-        success:
-          type: boolean
-          example: true
+        limit:
+          description: 'The limit the page was built with.'
+          type: integer
+        offset:
+          description: 'The offset the page was built with.'
+          type: integer
       type: object
     MarketingPerformanceRowSchema:
-      description: 'Marketing performance of one property, date and campaign type. Every field is always present; nullable fields are null when there is no value.'
+      description: 'Marketing performance of one property, date and campaign type. Fields are omitted when the source has no value for them (impressions, spendUsd, spend, exchangeRate, revenue, updatedAt).'
       required:
-        - propertyID
+        - propertyId
         - date
         - campaignType
-        - impressions
         - clicks
-        - spendUsd
-        - exchangeRate
-        - spend
-        - bookings
-        - revenue
-        - currency
+        - reservationsCount
         - dataStatus
-        - updatedAt
       properties:
-        propertyID:
+        propertyId:
           description: 'Property ID.'
           type: string
           example: '123'
@@ -11872,49 +11776,50 @@ components:
           type: string
           format: date
         campaignType:
-          description: 'Campaign type. Known values: metasearch (includes Search Booster), metasearch_managed, pmax, retargeting, ota_travel_ads. Other values may appear, so do not treat the list as closed.'
+          description: 'Campaign type. Known values: METASEARCH (self-serve, includes Search Booster), METASEARCH_MANAGED, PMAX (self-serve), PMAX_MANAGED, RETARGETING, OTA_TRAVEL_ADS. Other values may appear, so do not treat the list as closed. The managed types are commission-billed, so their rows carry no spendUsd or spend.'
           type: string
+          example: METASEARCH
         impressions:
-          description: 'Impressions (null when the platform does not report them).'
+          description: 'Impressions (omitted when the platform does not report them).'
           type: integer
-          nullable: true
         clicks:
           description: Clicks.
           type: integer
         spendUsd:
-          description: 'Spend in USD including the Cloudbeds markup (null when the campaign type has no spend).'
-          type: number
-          nullable: true
+          description: 'Spend in USD including the Cloudbeds markup (omitted when the campaign type has no spend). Sent alongside spend so the converted amount can be checked against its USD source.'
+          type: object
+          allOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
         exchangeRate:
-          description: 'USD to property currency rate of the date (null when no rate is available).'
-          type: number
-          nullable: true
+          description: 'Decimal string, USD → currencyCode: the exchange rate of the row''s date from USD to the property currency, the currencyCode of spend and revenue (omitted when no rate is available).'
+          type: string
+          example: '0.9321'
         spend:
-          description: 'Spend in the property currency, spendUsd × exchangeRate (null when either is null).'
-          type: number
-          nullable: true
-        bookings:
+          description: 'Spend in the property currency, spendUsd × exchangeRate (omitted when either is missing).'
+          type: object
+          allOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+        reservationsCount:
           description: 'Attributed reservations.'
           type: integer
         revenue:
-          description: 'Attributed revenue in the property currency (null only for ota_travel_ads rows when no exchange rate exists for the date).'
-          type: number
-          nullable: true
-        currency:
-          description: 'Property currency (ISO 4217; null when no currency is configured for the property and the row has no source data).'
-          type: string
-          nullable: true
+          description: 'Attributed revenue in the property currency (omitted only for OTA_TRAVEL_ADS rows when no exchange rate exists for the date).'
+          type: object
+          allOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
         dataStatus:
-          description: 'provisional for the last 14 days in the property''s time zone, otherwise final.'
+          description: 'PROVISIONAL for the last 14 days in the property''s time zone, otherwise FINAL.'
           type: string
           enum:
-            - provisional
-            - final
+            - PROVISIONAL
+            - FINAL
         updatedAt:
-          description: 'Latest source update for the row (null when the row has no source data).'
+          description: 'Latest source update for the row (omitted when the row has no source data).'
           type: string
           format: date-time
-          nullable: true
       type: object
     OrganizationAvailabilityRequestSchema:
       properties:
@@ -12043,6 +11948,34 @@ components:
           type: boolean
           example: false
       type: object
+    OrganizationDepositSchema:
+      required:
+        - type
+        - value
+        - includesTaxesAndFees
+      properties:
+        type:
+          type: string
+          enum:
+            - percent
+            - flat
+            - firstNight
+          example: percent
+        value:
+          description: 'Percentage of the reservation total when type is "percent"; Money (amount + currencyCode) charged per room per night when "flat"; null when "firstNight".'
+          nullable: true
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+            -
+              type: number
+              format: float
+              example: 30
+        includesTaxesAndFees:
+          description: 'For "percent" and "firstNight": true if the deposit also covers taxes and fees (grand total), false if it covers the subtotal only. Always false for "flat".'
+          type: boolean
+          example: false
+      type: object
     OrganizationDetailDataSchema:
       required:
         - id
@@ -12135,6 +12068,23 @@ components:
             -
               $ref: '#/components/schemas/OrganizationLateCheckoutSchema'
           nullable: true
+        cancellationPolicyText:
+          description: 'Legacy cancellation policy text; null when not configured or the property uses Smart Policies.'
+          type: string
+          nullable: true
+        deposit:
+          oneOf:
+            -
+              $ref: '#/components/schemas/OrganizationDepositSchema'
+          nullable: true
+          description: 'Legacy deposit; null when no deposit is charged or the property uses Smart Policies.'
+        termsText:
+          description: 'Terms and conditions (HTML) in the requested language; null when not configured.'
+          type: string
+          nullable: true
+        smartPoliciesEnabled:
+          description: 'True when the property uses Smart Policies: policies vary by rate plan, so no legacy cancellation text or deposit is sent.'
+          type: boolean
       type: object
     OrganizationPropertySchema:
       required:
@@ -12610,6 +12560,29 @@ components:
             - show_as_separate
           example: package_inclusive
       type: object
+    RatePlanBulkStatusRequestSchema:
+      required:
+        - ids
+        - isActive
+      properties:
+        ids:
+          description: 'Rate Plan IDs. Duplicates are collapsed; each id appears once in the response.'
+          type: array
+          items:
+            type: string
+            example: '123'
+          maxItems: 100
+          minItems: 1
+          example:
+            - '123'
+            - '456'
+          nullable: true
+        isActive:
+          description: 'Target status for every listed rate plan.'
+          type: boolean
+          example: false
+          nullable: true
+      type: object
     RatePlanCreateRequestSchema:
       required:
         - isActive
@@ -12755,7 +12728,6 @@ components:
       required:
         - startDate
         - endDate
-        - name
       properties:
         startDate:
           description: 'Start date of the interval.'
@@ -12768,9 +12740,10 @@ components:
           format: date
           example: '2025-02-27'
         name:
-          description: 'Name of the interval.'
+          description: 'Name of the interval. Optional: when omitted, null or empty, the interval is saved without a name and returned with an empty name.'
           type: string
           example: 'Winter Season'
+          nullable: true
         roomTypeId:
           description: 'Room type ID.'
           type: string
@@ -13139,8 +13112,53 @@ components:
           example: package_inclusive
           nullable: true
       type: object
+    RatePlanBulkOutcomeResponseSchema:
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: string
+          example: '1234567'
+        status:
+          description: 'Outcome for this rate plan.'
+          type: string
+          enum:
+            - updated
+            - unchanged
+            - blocked
+            - failed
+          example: updated
+        reasons:
+          description: 'Why the rate plan was blocked. Present only when status is `blocked`.'
+          type: array
+          items:
+            type: string
+            enum:
+              - USED_BY_ALLOTMENT_BLOCK
+              - HAS_DERIVED_RATE_PLANS
+            example: HAS_DERIVED_RATE_PLANS
+          nullable: true
+      type: object
+    RatePlanBulkResponseSchema:
+      required:
+        - batchId
+        - data
+      properties:
+        batchId:
+          description: 'Shared id stamped on every activity-log entry written by this request.'
+          type: string
+          format: uuid
+          example: 0f8fad5b-d9cb-469f-a165-70867728950e
+        data:
+          description: 'One outcome per distinct requested id, in request order.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanBulkOutcomeResponseSchema'
+      type: object
     RatePlanIntervalResponseSchema:
       required:
+        - name
         - ratePlanId
         - roomTypeId
         - startDate
@@ -13148,9 +13166,9 @@ components:
         - days
       properties:
         name:
+          description: 'Name of the interval. An empty string when the interval has no name.'
           type: string
           example: BaseRate1
-          nullable: true
         ratePlanId:
           type: integer
           example: 123
@@ -15290,7 +15308,7 @@ components:
           example: 0
           nullable: true
         exclusiveTaxesOnTotal:
-          description: 'Deprecated. Whether exclusive taxes are calculated on the net rate (after inclusive extraction). Defaults to true. Use per-row typeSettings.exclusiveBase instead, which always wins when set.'
+          description: 'Deprecated: each tax/fee''s own typeSettings.exclusiveBase decides. Only effect: false stamps gross on exclusive percentage rows that carry no exclusiveBase. For simulations use tax-fee-service.'
           type: boolean
           example: true
           deprecated: true
@@ -16126,6 +16144,7 @@ components:
             'write:allotmentBlocks': 'Write AllotmentBlock information'
             'read:allotmentBlocks': 'Read AllotmentBlock information'
             'delete:allotmentBlocks': 'Delete AllotmentBlock information'
+            'read:marketingPerformance': 'Read Digital Marketing performance'
 tags:
   -
     name: Addons
