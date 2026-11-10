@@ -3411,6 +3411,9 @@ paths:
             - `entityId:in` needs exactly one `entityType:in`; an ID list with
             no type or several types returns `400 AMBIGUOUS_ENTITY_FILTER`.
 
+            - A field, operator or entity type not listed above, or conditions
+            joined with `,` instead of `;`, returns `400 INVALID_FILTER_FORMAT`.
+
             - To look up several entity types in one request, use `POST
             /tags/query`.
 
