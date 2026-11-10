@@ -407,7 +407,7 @@ paths:
               format: int64
         - name: sourceIdentifiers
           in: query
-          description: source Identifiers.
+          description: Reservation identifiers or group profile codes. Not supported for HOUSE_ACCOUNT, use sourceIds.
           required: false
           schema:
             type: array
@@ -1827,6 +1827,23 @@ paths:
           required: true
           schema:
             $ref: "#/components/schemas/FiscalDocumentKind"
+        - name: sourceKind
+          in: query
+          required: false
+          description: >
+            Kind of the source the document will be created from. When given together with sourceId and an
+            eligible failed document holds a number for that source, the response includes the
+            reservedNumberDecision field.
+          schema:
+            $ref: "#/components/schemas/SourceKind"
+        - name: sourceId
+          in: query
+          required: false
+          description: Id of the source the document will be created from. See sourceKind.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
       responses:
         '200':
           description: List of field definitions for document creation
@@ -3970,6 +3987,13 @@ components:
             forces S01 at issuance time regardless of this value.
           type: string
           nullable: true
+        reuseNumberFromDocumentId:
+          description: >-
+            The failed document offered by the rules endpoint whose number the new invoice takes over.
+            Absent means a new number is issued.
+          type: integer
+          format: int64
+          nullable: true
     GetInvoicePreviewRequest:
       type: object
       required: [ transactionIds, sourceId, sourceKind, guestId ]
@@ -4580,6 +4604,16 @@ components:
           type: string
         failReason:
           type: string
+        numberReusedByDocumentId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Set when a newer document took over this document's reserved number.
+        numberReusedFromDocumentId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Set when this document took over the number of an earlier failed document.
         reason:
           type: string
           nullable: true
@@ -4660,6 +4694,16 @@ components:
           $ref: '#/components/schemas/GovernmentIntegration'
         linkedTo:
           type: string
+        numberReusedByDocumentId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Set when a newer document took over this document's reserved number.
+        numberReusedFromDocumentId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Set when this document took over the number of an earlier failed document.
 
     FiscalDocumentPaginated:
       type: object
@@ -5225,6 +5269,19 @@ components:
             type: integer
             format: int64
           nullable: true
+        userIds:
+          description: >
+            Filter by the user who created each transaction (its userId). Use 0 for the
+            system user. Each row matches on its own user: a void appears under the user
+            who voided it, not the original poster. Routed copies and adjustments can
+            carry the original poster's userId rather than the user who made them.
+            Mirrors the same filter on POST /accounting/v1.0/folios/transactions.
+          type: array
+          items:
+            type: integer
+            format: int64
+          nullable: true
+          example: [ 492301, 0 ]
         sort:
           description: >
             Optional ordering applied to the rendered transactions. Field names mirror
@@ -6720,6 +6777,13 @@ components:
           items:
             type: string
           description: Alternative accepted formats (e.g., CPF for CNPJ fields)
+        reuseNumberFromDocumentId:
+          type: integer
+          format: int64
+          description: Set only on the reservedNumberDecision field. The failed document whose number can be reused.
+        reservedNumber:
+          type: string
+          description: Set only on the reservedNumberDecision field. The number the failed document still holds.
 
     ArrayItemDefinition:
       type: object
