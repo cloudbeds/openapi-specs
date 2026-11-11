@@ -6440,14 +6440,16 @@
           "guest_count": 2,
           "items": [
             {
-              "base_unit_price": "4.50",
               "item_id": "1043",
-              "quantity": 2
+              "key": "row-1",
+              "quantity": 2,
+              "unit_price": "4.50"
             },
             {
-              "base_unit_price": "18.00",
               "item_id": "2211",
-              "quantity": 1
+              "key": "row-2",
+              "quantity": 1,
+              "unit_price": "18.00"
             }
           ],
           "order_discount_type": "percent",
@@ -8473,7 +8475,7 @@
     }
   },
   "info": {
-    "description": "The **Cloudbeds POS API** runs point of sale for a property's restaurants, bars, caf\u00e9s and other outlets: the menus and catalog an outlet sells, the floor plan it seats, the orders staff take, and how those orders are paid, discounted, split and posted to a guest's folio.\n\nIt is the API behind the Cloudbeds POS app and the POS settings in Cloudbeds PMS.\n\n**Key concepts**\n\n- **Outlet** \u2014 a place that sells: a restaurant, bar, spa or shop. Outlets own their menus, sections and tables, enabled catalog items, receipt branding and payment options.\n- **Catalog** \u2014 items and categories come from the property's Cloudbeds catalog. An outlet enables the subset it sells; prices, taxes and fees are resolved from Cloudbeds.\n- **Order** \u2014 a check in progress. It moves `open` \u2192 `sent` (fired to the kitchen) \u2192 `paid`, or ends `cancelled`. Splitting an order ends it as `split` and creates child orders.\n- **Payment** \u2014 a tender captured against an order. Several captures can settle one order; once they cover the total, the order becomes `paid`.\n- **Folio posting** \u2014 every paid order is posted to Cloudbeds as a POS check, with its items, taxes, discounts and gratuity: to the guest's folio for a room charge, to a house account otherwise.\n- **Staff, roles and permissions** \u2014 staff sign in on a terminal with a PIN. Their role decides what they can do; sensitive actions can be approved by a colleague who holds the permission.\n\n**Authentication**\n\nEvery request sends a bearer access token in `Authorization` and the property in `x-property-id`:\n\n- a **Cloudbeds user access token** \u2014 management access: outlets, menus, staff, roles and settings;\n- a **POS device token** \u2014 a paired POS terminal, for taking orders and payments.\n\nOperations that act on behalf of a person also send a **staff token** in `X-Staff-Token`, from `POST /pos/auth/staff/login`. See the Authentication guide.\n\n**Conventions**\n\n- Money is a decimal string or number in the property's currency, with up to three decimal places for currencies that use them. Totals are computed server-side.\n- Identifiers are UUIDs unless documented otherwise; catalog item ids are Cloudbeds ids.\n- Errors return `{\"detail\": ...}`: a message, or `{code, message, retryable}` on the charge endpoints. Validation errors (422) list each failing field.\n- Writes that must not happen twice take an `Idempotency-Key` header; retrying with the same key returns the original result.\n",
+    "description": "The **Cloudbeds POS API** runs point of sale for a property's restaurants, bars, caf\u00e9s and other outlets: the menus and catalog an outlet sells, the floor plan it seats, the orders staff take, and how those orders are paid, discounted, split and posted to a guest's folio.\n\nIt is the API behind the Cloudbeds POS app and the POS settings in Cloudbeds PMS.\n\n**Key concepts**\n\n- **Outlet** \u2014 a place that sells: a restaurant, bar, spa or shop. Outlets own their menus, sections and tables, enabled catalog items, receipt branding and payment options.\n- **Catalog** \u2014 items and categories come from the property's Cloudbeds catalog. An outlet enables the subset it sells. Orders carry the list price each item sold at; offers, taxes and fees are applied by the server.\n- **Order** \u2014 a check in progress. It moves `open` \u2192 `sent` (fired to the kitchen) \u2192 `paid`, or ends `cancelled`. Splitting an order ends it as `split` and creates child orders.\n- **Payment** \u2014 a tender captured against an order. Several captures can settle one order; once they cover the total, the order becomes `paid`.\n- **Folio posting** \u2014 a paid order is posted to Cloudbeds as a POS check, with its items, taxes, discounts and gratuity: to the guest's folio for a room charge, to a house account otherwise. Orders settled against a folio chosen in Cloudbeds (`folio`, `group_folio`) are not posted by the POS.\n- **Staff, roles and permissions** \u2014 staff sign in on a terminal with a PIN. Their role decides what they can do; sensitive actions can be approved by a colleague who holds the permission.\n\n**Authentication**\n\nEvery request sends a bearer access token in `Authorization` and the property in `x-property-id`:\n\n- a **Cloudbeds user access token** \u2014 management access: outlets, menus, staff, roles and settings;\n- a **POS device token** \u2014 a paired POS terminal, for taking orders and payments.\n\nOperations that act on behalf of a person also send a **staff token** in `X-Staff-Token`, from `POST /pos/auth/staff/login`. See the Authentication guide.\n\n**Conventions**\n\n- Money is a decimal string or number in the property's currency, with up to three decimal places for currencies that use them. Totals are computed server-side.\n- Identifiers are UUIDs unless documented otherwise; catalog item ids are Cloudbeds ids.\n- Errors return `{\"detail\": ...}`: a message, or `{code, message, retryable}` on the charge endpoints. Validation errors (422) list each failing field.\n- Writes that must not happen twice take an `Idempotency-Key` header; retrying with the same key returns the original result.\n",
     "title": "Cloudbeds POS API",
     "version": "v1"
   },
@@ -10447,7 +10449,7 @@
         ]
       },
       "post": {
-        "description": "Opens an order at an outlet, owned by the signed-in staff member. Send the items with their quantities, modifiers and any line discounts; totals, taxes and fees are computed server-side from the Cloudbeds catalog. Seat it by passing a `table_id`, or attach a guest with `reservation_id`.\n\nClients that work offline set `offline_id` so a replayed create returns the order it already made.\n\nRequires a staff token.",
+        "description": "Opens an order at an outlet, owned by the signed-in staff member.\n\nEach line names a Cloudbeds catalog `item_id` (validated against the catalog), its quantity and modifiers, and `base_unit_price`: the **list price** the item sold at, before modifiers and offers. That price is kept as sent, so a later catalog change never rewrites an existing order. Do not send a price with an offer already taken off: offers are applied by the server, and `claimed_offer_amount` / `claimed_offer_total` let it refuse a cart whose offers do not match what the guest was shown. Taxes, fees and totals are computed server-side.\n\nSeat the order by passing a `table_id`, or attach a guest with `reservation_id`.\n\nClients that work offline set `offline_id` so a replayed create returns the order it already made.\n\nRequires a staff token.",
         "operationId": "createOrder",
         "parameters": [
           {
@@ -12202,7 +12204,7 @@
         ]
       },
       "post": {
-        "description": "Records one payment against an order \u2014 use it to split a bill across several tenders or guests. When the captured amounts, tips included, reach the order total, the order becomes `paid`; a capture on a fully paid order is refused.\n\nWhen the order becomes `paid` it is posted to Cloudbeds the same way as `POST /pos/orders/{order_id}/pay`. Requires a staff token.",
+        "description": "Records one payment against an order \u2014 use it to split a bill across several tenders or guests. When the captured amounts, tips included, reach the order total, the order becomes `paid`; a capture on a fully paid order is refused.\n\nWhen the order becomes `paid` it is posted to Cloudbeds the same way as `POST /pos/orders/{order_id}/pay`, except an order settled with `folio` or `group_folio`, which names a folio chosen in Cloudbeds and is not posted by the POS (`folio_status: skipped`). Requires a staff token.",
         "operationId": "capturePayment",
         "parameters": [
           {
