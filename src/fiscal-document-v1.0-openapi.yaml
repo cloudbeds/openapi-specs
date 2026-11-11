@@ -1844,6 +1844,31 @@ paths:
             type: integer
             format: int64
             minimum: 1
+        - name: recipientType
+          in: query
+          required: false
+          description: >
+            The chosen Bill-to recipient. Supply together with recipientId. The reserved-number field is
+            offered only when the document would be fiscalized for this recipient, so without it the field
+            is never offered (a manually entered recipient has no stored record to point at).
+          schema:
+            $ref: "#/components/schemas/DocumentRulesRecipientType"
+        - name: recipientId
+          in: query
+          required: false
+          description: The chosen Bill-to recipient. Supply together with recipientType.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: simplified
+          in: query
+          required: false
+          description: >
+            Whether the document will be a simplified invoice, which can change whether it is fiscalized.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: List of field definitions for document creation
@@ -3508,6 +3533,20 @@ components:
         Which backing record a recipient id points at. Deliberately a separate schema from
         RecipientRequest.type even though the values match: $ref-ing that one would rename the
         generated RecipientRequest.TypeEnum and break every creation call site.
+      enum:
+        - GUEST
+        - CONTACT
+        - GROUP
+        - COMPANY
+        - GROUP_PROFILE
+        - GROUP_PROFILE_CONTACT
+
+    DocumentRulesRecipientType:
+      type: string
+      description: >
+        Which backing record the chosen Bill-to recipient id points at. Same values as
+        EmailSubjectRecipientType, kept as its own schema so neither operation's recipient kinds are
+        tied to the other's.
       enum:
         - GUEST
         - CONTACT
