@@ -1133,7 +1133,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DoorLockKeyResponseSchema'
         '202':
-          description: 'The key was created but the integration has not completed it within the wait. The body is the key with status processing; fetch it by keyId until it is completed or failed. Do not create it again.'
+          description: 'The key was created but the integration has not completed it within the 60 second wait, on a property that still keeps such keys processing. The body is the key with status processing; fetch it by keyId until it is completed or failed. Do not create it again.'
           content:
             application/json:
               schema:
@@ -1151,7 +1151,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NotFoundResponseSchema'
         '422':
-          description: 'The integration reported that it could not issue the key. message carries the integration''s errorMessage.'
+          description: 'The key could not be issued and is stored with status failed. message carries the integration''s errorMessage, or "The door lock partner did not confirm the key in time" when the integration did not confirm it within the 60 second wait. If the integration confirms such a key afterwards, it may be invalidated rather than made live (see the update endpoint), so check the key list before creating it again.'
           content:
             application/json:
               schema:
@@ -1301,7 +1301,7 @@ paths:
               $ref: '#/components/schemas/DoorLockKeyUpdateRequestSchema'
       responses:
         '200':
-          description: 'Updated key.'
+          description: 'Updated key. Completing a key that failed because the 60 second issuance wait expired may not make it live, because the caller was already told it failed: the key can instead move to status deleting and a doorLockKey/key_cancelled webhook asks the integration to cancel it on the lock. Confirm the cancellation with status deleted.'
           content:
             application/json:
               schema:
@@ -15845,6 +15845,17 @@ components:
           items:
             $ref: '#/components/schemas/FeeExternalIdSchema'
       type: object
+    UpdateTaxRoundingSettingsRequestSchema:
+      required:
+        - scope
+      properties:
+        scope:
+          description: 'row: every tax and fee line is rounded. reservation: a percentage tax or fee is rounded once over the reservation.'
+          type: string
+          enum:
+            - row
+            - reservation
+      type: object
     CalculateTotalsResponseSchema:
       required:
         - type
@@ -16079,6 +16090,25 @@ components:
             - tax
             - fee
           example: fee
+      type: object
+    TaxRoundingSettingsResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/TaxRoundingSettingsSchema'
+      type: object
+    TaxRoundingSettingsSchema:
+      required:
+        - scope
+      properties:
+        scope:
+          description: 'row: every tax and fee line is rounded. reservation: a percentage tax or fee is rounded once over the reservation. null: the property has not chosen yet and rounds as before.'
+          type: string
+          enum:
+            - row
+            - reservation
+          nullable: true
       type: object
     UpdateExternalIdsResponseSchema:
       required:
