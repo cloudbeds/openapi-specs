@@ -5199,6 +5199,7 @@ components:
             propertyCode:
               description: 'Opaque alphanumeric property short code, as published in the `@id` URL returned by the property metadata endpoint.'
               type: string
+              maxLength: 50
               example: N2FKyS
             checkIn:
               description: 'Arrival date in YYYY-MM-DD format. Today or later in the property''s time zone.'
@@ -7913,6 +7914,42 @@ components:
               example: SUB123
               nullable: true
           type: object
+    RefundCheckItemRequestSchema:
+      description: 'A line of the check to refund, named by the externalLineId it was posted with. The line is refunded whole, together with its taxes and fees.'
+      required:
+        - externalLineId
+      properties:
+        externalLineId:
+          description: 'The externalLineId an item or service charge was posted with on this check. A line posted without one cannot be refunded on its own.'
+          type: string
+          maxLength: 255
+          example: ABC8903421
+      type: object
+    RefundCheckRequestSchema:
+      required:
+        - checkId
+      properties:
+        checkId:
+          description: 'The check''s public checkId (partner-supplied or Cloudbeds-generated) returned by createCheck.'
+          type: string
+        items:
+          description: 'The lines to refund. Omitted or empty refunds everything left on the check. When items are refunded, each check-level discount gives back the refunded items'' share of what is left of it, in proportion to the amounts of the items not yet refunded and rounded to the minor unit; once no item is left, whatever is left of the discount goes. An item''s amount here is the one it was posted with, after its own item-level discounts. A line already refunded in full is rejected with REFUND_EXCEEDS_LINE; a line posted at zero adds nothing to the refund. A service charge is refunded only when named, and gratuities only when the whole check is refunded.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RefundCheckItemRequestSchema'
+        expectedTotal:
+          description: 'What the partner refunded for this request, taxes included, in the property currency. When supplied, it is checked against what the refund reverses, allowing one minor unit of rounding per reversed line; a larger difference is rejected with REFUND_TOTAL_MISMATCH and nothing is reversed.'
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '4.32'
+          nullable: true
+        externalRefundId:
+          description: 'The partner''s own id for this refund, carried with the refund for reconciliation.'
+          type: string
+          maxLength: 255
+          example: MJD5E74KPXD3Y
+          nullable: true
+      type: object
     CheckErrorCodeEnumSchema:
       description: 'Machine-readable error code returned in BadRequest / NotFound / Conflict responses for postCheck. Aligned with the structured error approach used by STS Gen2 and the Accounting API.'
       type: string
@@ -7939,6 +7976,12 @@ components:
         - MODIFIER_OPTION_NOT_ATTACHED
         - MODIFIER_QUANTITY_INVALID
         - MODIFIER_GROUP_SELECTION_INVALID
+        - CHECK_REFUND_FORBIDDEN
+        - CHECK_REFUND_UNAVAILABLE
+        - PAYMENT_REFUND_FAILED
+        - CHECK_LINE_NOT_FOUND
+        - REFUND_EXCEEDS_LINE
+        - REFUND_TOTAL_MISMATCH
     PostCheckResponseSchema:
       required:
         - data
@@ -7982,6 +8025,54 @@ components:
           type: string
           example: 'Duplicate Idempotency-Key — returning original posting.'
           nullable: true
+      type: object
+    RefundCheckResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/RefundedCheckResponseSchema'
+      type: object
+    RefundedCheckResponseSchema:
+      description: 'Result of a refundCheck call: every reversal now standing against the check.'
+      required:
+        - checkId
+        - refunds
+      properties:
+        checkId:
+          description: 'Public, partner-addressable check identifier the refund was applied to.'
+          type: string
+          example: CHK-9911283
+        refundId:
+          description: 'Cloudbeds id of the refund. A replay under the same Idempotency-Key returns the same id; null when the request reversed nothing.'
+          type: string
+          example: '9000000000000000100'
+          nullable: true
+        refunds:
+          description: 'One entry per refunded payment. A replay under the same Idempotency-Key returns the same entries as the original call.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RefundedPaymentResponseSchema'
+        notice:
+          description: 'Set when the request reversed nothing because the check had nothing left to refund.'
+          type: string
+          example: 'Nothing new was reversed; the check carries nothing left to refund.'
+          nullable: true
+      type: object
+    RefundedPaymentResponseSchema:
+      description: 'One reversal: the Refund payment recorded against an original check payment.'
+      required:
+        - paymentId
+        - refundPaymentId
+      properties:
+        paymentId:
+          description: 'Identifier of the original payment that was refunded.'
+          type: integer
+          example: 8812345
+        refundPaymentId:
+          description: 'Identifier of the Refund payment created to reverse it.'
+          type: integer
+          example: 8812999
       type: object
     ChecklistConfigUpdateRequestSchema:
       description: 'A full replacement of the property''s check-in checklist configuration. A replace rather than a patch, because the order of the items is part of the configuration. Sending both stages empty removes the configuration, leaving the property with no checklist.'
@@ -8442,6 +8533,10 @@ components:
       properties:
         message:
           type: string
+        code:
+          description: 'Error code identifying why access was refused, on endpoints that define one'
+          type: string
+          nullable: true
       type: object
     HttpErrorResponseSchema: {  }
     InternalServerErrorResponseSchema:
@@ -10392,6 +10487,7 @@ components:
           enum:
             - standard
             - high
+            - low
         fileStatus:
           type: string
         importStatus:
@@ -14217,6 +14313,35 @@ components:
           example: DL-8842
           nullable: true
       type: object
+    AddedItemPreviewInputSchema:
+      required:
+        - productId
+        - salePrice
+        - quantity
+        - isAutoDate
+        - dateTime
+      properties:
+        productId:
+          description: 'Id of the item that is added.'
+          type: string
+          example: '42'
+        salePrice:
+          oneOf:
+            -
+              $ref: '#/components/schemas/SmartPolicyMoneyInputSchema'
+          nullable: true
+          description: 'Price of one unit as entered in the drawer, including any inclusive taxes.'
+        quantity:
+          type: integer
+          example: 2
+          nullable: true
+        isAutoDate:
+          type: boolean
+          nullable: true
+        dateTime:
+          type: string
+          example: '2026-07-09 13:30'
+      type: object
     AddedRoomRevenuePreviewInputSchema:
       required:
         - amount
@@ -14562,7 +14687,7 @@ components:
           nullable: true
       type: object
     PreviewAdjustmentRequestSchema:
-      description: 'Provide exactly one of adjustment, addedRoomRevenue or addedTaxFee.'
+      description: 'Provide exactly one of adjustment, addedRoomRevenue, addedTaxFee or addedItem.'
       required:
         - reservationId
       properties:
@@ -14588,6 +14713,12 @@ components:
               $ref: '#/components/schemas/AddedTaxFeePreviewInputSchema'
           nullable: true
           description: 'Manual tax or fee preview input.'
+        addedItem:
+          oneOf:
+            -
+              $ref: '#/components/schemas/AddedItemPreviewInputSchema'
+          nullable: true
+          description: 'Added item preview input, for an item collected with the scheduled payments.'
       type: object
       example:
         reservationId: '12345'
