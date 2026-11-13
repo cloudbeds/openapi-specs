@@ -7147,6 +7147,9 @@ components:
                                     children:
                                         description: 'Number of children staying in the room'
                                         type: string
+                                    infants:
+                                        description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
+                                        type: string
                                     dailyRates:
                                         description: 'Array with rates detailed by day'
                                         type: array
@@ -7212,6 +7215,9 @@ components:
                                         type: string
                                     children:
                                         description: 'Number of children staying in the room'
+                                        type: string
+                                    infants:
+                                        description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
                                         type: string
                                     dailyRates:
                                         description: 'Array with rates detailed by day'
@@ -7786,6 +7792,9 @@ components:
                                         children:
                                             description: 'Number of children in the room'
                                             type: string
+                                        infants:
+                                            description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
+                                            type: string
                                         reservationRoomID:
                                             description: 'Reservation room ID'
                                             type: string
@@ -8288,6 +8297,9 @@ components:
                                             type: string
                                         children:
                                             description: 'Number of children in the room'
+                                            type: string
+                                        infants:
+                                            description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
                                             type: string
                                         reservationRoomID:
                                             description: 'Reservation room ID'
@@ -9302,6 +9314,9 @@ components:
                             type: integer
                         children:
                             description: 'Number of children registered to room (this does not mean there will be this number of guests in guests array)'
+                            type: integer
+                        infants:
+                            description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
                             type: integer
                         guests:
                             description: 'Array with all guests assigned to room'
