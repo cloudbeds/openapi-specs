@@ -12961,6 +12961,15 @@ components:
           type: integer
           example: 5
           nullable: true
+        chargeGuestsType:
+          description: 'Where the interval''s extra-guest prices come from. custom: the adultDays and childDays sent with the interval. base: the room type''s base rate. derived: the parent rate plan''s extra-guest prices, adjusted the way this derived rate plan adjusts its rates. Sending adultDays or childDays always saves custom, and derived on a rate plan that is not derived saves base. When omitted, the interval keeps the mode already saved for its dates; dates with no saved mode take custom when adultDays or childDays are sent and base otherwise. custom without adultDays or childDays keeps the extra-guest prices already saved for its dates, and saves base where there are none unless the rate is priced by age policy.'
+          type: string
+          enum:
+            - custom
+            - base
+            - derived
+          example: derived
+          nullable: true
       type: object
     RatePlanSingleRequestSchema:
       required:
@@ -13339,6 +13348,15 @@ components:
             additionalProperties:
               type: number
               format: float
+        chargeGuestsType:
+          description: 'Where the interval''s extra-guest prices come from. custom: adultDays and childDays, or agePolicyPricing on a rate priced by age policy. base: the room type''s base rate. derived: the parent rate plan''s extra-guest prices, adjusted the way this derived rate plan adjusts its rates.'
+          type: string
+          enum:
+            - custom
+            - base
+            - derived
+          example: base
+          nullable: true
         cutOff:
           description: 'Cut-off: minimum number of days in advance a booking must be made. 0 = no restriction.'
           type: integer

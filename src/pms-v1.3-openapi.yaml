@@ -10920,7 +10920,7 @@ paths:
                     required: false
                     in: query
                 -
-                    description: "When true, each interval's availability[] also includes the interval's shoulder dates, and every availability entry carries isShoulderDate. On a shoulder date blockAllotted and blockRemaining are 0 and blockConfirmed is the number of rooms picked up against the block for that night, so it may exceed blockAllotted. Requires the property's shoulder-dates feature to be enabled; when it is off, availability[] holds only the interval's own dates even if the param is true. Has no effect when forUpdate=true: that mode reads raw interval availability, which carries no shoulder dates."
+                    description: "When true, each interval's availability[] also includes the interval's shoulder dates, and every availability entry carries isShoulderDate. On a shoulder date blockAllotted and blockRemaining are 0 and blockConfirmed is the number of rooms picked up against the block for that night, so it may exceed blockAllotted. Applies to blocks whose allotmentType is allotment; for other block types availability[] holds only the interval's own dates even if the param is true. Has no effect when forUpdate=true: that mode reads raw interval availability, which carries no shoulder dates."
                     name: includeShoulderDates
                     schema:
                         type: boolean
