@@ -3255,7 +3255,7 @@ components:
         id: {type: string}
         code:
           type: string
-          enum: [invopop, fonoa, fiskaly, fiscaltrust, moloni, epson, protel, fact, hostkit]
+          enum: [invopop, fonoa, fiskaly, fiscaltrust, moloni, epson, protel, fact, hostkit, ephyr, digifact]
         name: {type: string}
         description: {type: string}
         channel:
@@ -5262,6 +5262,9 @@ components:
         revenueCompact:
           description: "Compact revenue transactions, valid only for sourceKind = RESERVATION"
           type: boolean
+        posCompact:
+          description: "Fold POS checks into one row per check (same rules as POST /accounting/v1.0/folios/transactions posCompact). Valid for every sourceKind."
+          type: boolean
         dateFrom:
           description: "Filter transactions with transaction datetime from this point (inclusive). Required for sourceKind = HOUSE_ACCOUNT, optional for others."
           type: string
@@ -6085,6 +6088,23 @@ components:
       enum:
         - PER_LINE
         - SUMMARY_ONLY
+    VatLineDisplay:
+      type: string
+      enum:
+        - ITEMISE_EVERY_POSTING
+        - ONE_LINE_PER_VAT_RATE
+    OtherTaxesLineDisplay:
+      type: string
+      enum:
+        - ITEMISE_EVERY_POSTING
+        - ONE_LINE_PER_TAX
+        - ONE_TAXES_LINE
+    FeesLineDisplay:
+      type: string
+      enum:
+        - ITEMISE_EVERY_POSTING
+        - ONE_LINE_PER_FEE
+        - ONE_FEES_LINE
     LineGroupingSettings:
       type: object
       description: New grouped line/POS rendering configuration. When absent on write the legacy boolean fields are used.
@@ -6107,6 +6127,12 @@ components:
           type: boolean
         vatDisplay:
           $ref: '#/components/schemas/VatDisplay'
+        defaultVatLineDisplay:
+          $ref: '#/components/schemas/VatLineDisplay'
+        defaultOtherTaxesLineDisplay:
+          $ref: '#/components/schemas/OtherTaxesLineDisplay'
+        defaultFeesLineDisplay:
+          $ref: '#/components/schemas/FeesLineDisplay'
       required:
         - defaultLineGrouping
         - allowedLineGroupings
