@@ -55,7 +55,6 @@ components:
                         'write:housekeeping': 'write:housekeeping'
                         'write:item': 'write:item'
                         'write:payment': 'write:payment'
-                        'write:rate': 'write:rate'
                         'write:reservation': 'write:reservation'
                         'write:room': 'write:room'
                         'write:roomblock': 'write:roomblock'
@@ -13271,10 +13270,10 @@ paths:
             security:
                 -
                     api_key:
-                        - 'write:item'
+                        - 'read:item'
                 -
                     OAuth2:
-                        - 'write:item'
+                        - 'read:item'
             requestBody:
                 content:
                     application/x-www-form-urlencoded:
@@ -13874,10 +13873,10 @@ paths:
             security:
                 -
                     api_key:
-                        - 'write:rate'
+                        - 'read:rate'
                 -
                     OAuth2:
-                        - 'write:rate'
+                        - 'read:rate'
             requestBody:
                 content:
                     application/x-www-form-urlencoded:
@@ -13899,10 +13898,10 @@ paths:
             security:
                 -
                     api_key:
-                        - 'write:rate'
+                        - 'read:rate'
                 -
                     OAuth2:
-                        - 'write:rate'
+                        - 'read:rate'
             requestBody:
                 content:
                     application/x-www-form-urlencoded:
@@ -14570,7 +14569,7 @@ paths:
             tags:
                 - Reservation
             summary: putReservation
-            description: 'Updates a reservation, such as custom fields, estimated arrival time, room configuration and reservation status.'
+            description: 'Updates a reservation, such as custom fields, estimated arrival time, room configuration and reservation status. Also requires the `read:reservation` scope.'
             responses:
                 200:
                     description: '200 Response'
