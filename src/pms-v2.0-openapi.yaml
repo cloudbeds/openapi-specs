@@ -2302,7 +2302,7 @@ paths:
         -
           name: search
           in: query
-          description: 'Returns only events whose objectId, description or details contain this text.'
+          description: 'Returns only events matching every word of this text in their id, objectId, system, description or details. Text in double quotes is matched as one phrase.'
           required: false
           schema:
             type: string
@@ -4773,6 +4773,84 @@ components:
           $ref: '#/components/schemas/LimitOffsetPaginationSchema'
         -
           $ref: '#/components/schemas/QueryParameterDynamicFilterSchema'
+    AddonDayPriceResponseSchema:
+      required:
+        - dayOfWeek
+        - available
+        - adultPrice
+        - childPrice
+        - infantPrice
+      properties:
+        dayOfWeek:
+          description: 'Day of the week these prices apply to, from 0 (Sunday) to 6 (Saturday)'
+          type: integer
+          maximum: 6
+          minimum: 0
+          example: 1
+        available:
+          description: 'Whether the add-on can be sold on this day of the week within the interval'
+          type: boolean
+          example: true
+        adultPrice:
+          description: 'Price charged per adult. For charge types that are not per guest, this is the price of one unit, night, accommodation or reservation. Includes inclusive taxes and fees; exclusive taxes and fees are added on top. This is a unit price: booking rounds the add-on''s total with the property''s rounding rules, so a total computed from unit prices can differ by a few cents.'
+          type: object
+          allOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+        childPrice:
+          description: 'Price charged per child. Charged only when the add-on''s `chargeForChildren` is true; otherwise children are not charged. Includes inclusive taxes and fees; exclusive taxes and fees are added on top. This is a unit price: booking rounds the add-on''s total with the property''s rounding rules, so a total computed from unit prices can differ by a few cents.'
+          type: object
+          allOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+        infantPrice:
+          oneOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
+          nullable: true
+          description: 'Price charged per infant when the property''s Age Policy prices this add-on by age group. Charged only when the add-on''s `chargeForChildren` is true, the same setting that governs children. Null when the add-on is not priced by age group; infants are then not charged separately. Includes inclusive taxes and fees; exclusive taxes and fees are added on top. This is a unit price: booking rounds the add-on''s total with the property''s rounding rules, so a total computed from unit prices can differ by a few cents.'
+      type: object
+    AddonIntervalResponseSchema:
+      required:
+        - roomTypeId
+        - startDate
+        - endDate
+        - minNights
+        - maxNights
+        - days
+      properties:
+        roomTypeId:
+          description: 'Room type the interval''s prices apply to'
+          type: string
+          example: '123456'
+        startDate:
+          description: 'First date the interval applies to'
+          type: string
+          format: date
+          example: '2026-12-01'
+        endDate:
+          description: 'Last date the interval applies to, inclusive'
+          type: string
+          format: date
+          example: '2027-03-31'
+        minNights:
+          description: 'Shortest stay this interval applies to, counted as the reservation''s total nights (check-out minus check-in), not the nights that fall inside the interval. A shorter stay is not offered or charged this interval. Null when there is no minimum.'
+          type: integer
+          minimum: 1
+          example: 3
+          nullable: true
+        maxNights:
+          description: 'Longest stay this interval applies to, counted as the reservation''s total nights (check-out minus check-in), not the nights that fall inside the interval. A longer stay is not offered or charged this interval. Null when there is no maximum.'
+          type: integer
+          minimum: 1
+          example: 14
+          nullable: true
+        days:
+          description: 'Prices for each day of the week, Sunday first'
+          type: array
+          items:
+            $ref: '#/components/schemas/AddonDayPriceResponseSchema'
+      type: object
     AddonResponseSchema:
       required:
         - id
@@ -4780,6 +4858,10 @@ components:
         - description
         - productId
         - price
+        - chargeType
+        - chargeForChildren
+        - isFixedPrice
+        - intervals
       properties:
         id:
           description: 'Unique identifier of the add-on'
@@ -4798,7 +4880,11 @@ components:
           type: string
           example: '12345'
         price:
-          $ref: '#/components/schemas/MoneySchema'
+          description: 'Price of the underlying product this add-on is based on. This is not what the add-on charges on a reservation; see `chargeType` and `intervals` for that.'
+          type: object
+          allOf:
+            -
+              $ref: '#/components/schemas/MoneySchema'
         availabilityWindow:
           description: 'Dates a nightly add-on is charged for. `all` charges each stay night; `all_except_arrival` charges the day after each stay night, ending on the checkout date. Always `all` for charge types that are not nightly.'
           type: string
@@ -4806,6 +4892,32 @@ components:
             - all
             - all_except_arrival
           example: all
+        chargeType:
+          description: 'How the add-on is charged on a reservation. `per_guest_per_night`: each charged guest, each night. `per_guest`: each charged guest, once. `per_accommodation_per_night`: each room, each night. `per_accommodation`: each room, once. `per_night`: once per night. `quantity`: per unit ordered. `per_reservation`: once per reservation. `n/a`: no charge type is set.'
+          type: string
+          enum:
+            - n/a
+            - per_guest_per_night
+            - per_guest
+            - per_accommodation_per_night
+            - per_accommodation
+            - per_night
+            - quantity
+            - per_reservation
+          example: per_guest_per_night
+        chargeForChildren:
+          description: 'Whether children and infants are charged for the add-on. When false, only adults are charged and `childPrice` and `infantPrice` do not apply.'
+          type: boolean
+          example: true
+        isFixedPrice:
+          description: 'Whether the add-on keeps its own price when it is included in a rate plan''s package. When false, booking rescales an included add-on''s price, together with the room''s, so that room plus included add-ons equal the package rate for each night.'
+          type: boolean
+          example: false
+        intervals:
+          description: 'Current and future date ranges the add-on is priced for, one entry per room type and date range, with the adult, child and infant price for each day of the week. These are the add-on''s own prices, before a rate plan''s package allocation: when the add-on is included in a package, booking can rescale them (see `isFixedPrice`) or include them at no charge. An interval applies to a reservation only when the stay''s total nights fit its `minNights` and `maxNights`. When two date ranges of the same room type overlap, which one applies to a shared date is not defined. Empty when the add-on has no current or future prices, or is not active.'
+          type: array
+          items:
+            $ref: '#/components/schemas/AddonIntervalResponseSchema'
       type: object
     AddonsResponseSchema:
       required:
@@ -9210,6 +9322,14 @@ components:
           type: boolean
           default: false
           example: false
+        invalidationScope:
+          description: 'How the lock system cancels keys. `key`: each key can be cancelled on its own. `room`: cancelling a key invalidates every key for its rooms.'
+          type: string
+          default: key
+          enum:
+            - key
+            - room
+          example: key
       type: object
     DoorLockSettingsDeleteRequestSchema: {  }
     DoorLockSettingsEncoderRequestSchema:
@@ -9285,6 +9405,7 @@ components:
         - encoders
         - commonRooms
         - awaitInvalidationConfirmation
+        - invalidationScope
       properties:
         keyTypes:
           description: $keyTypes
@@ -9304,6 +9425,14 @@ components:
         awaitInvalidationConfirmation:
           description: 'Wait for the door lock partner to confirm key invalidation before removing the key.'
           type: boolean
+        invalidationScope:
+          description: 'How the lock system cancels keys. `key`: each key can be cancelled on its own. `room`: cancelling a key invalidates every key for its rooms.'
+          type: string
+          default: key
+          enum:
+            - key
+            - room
+          example: key
       type: object
     EventCreateRequestSchema:
       description: 'Request body for creating a new event'
@@ -10706,7 +10835,7 @@ components:
         -
           properties:
             search:
-              description: 'Text to look for in the objectId, description and details of each event.'
+              description: 'Words to look for in the id, objectId, system, description and details of each event; every word must match. Text in double quotes is matched as one phrase.'
               type: string
               maxLength: 255
               nullable: true
@@ -13861,6 +13990,16 @@ components:
           type: integer
           example: 12345
       type: object
+    GetRoomTypeRequestSchema:
+      required:
+        - id
+      properties:
+        id:
+          description: 'Room type ID'
+          type: string
+          pattern: '^[0-9]+$'
+          example: '4242'
+      type: object
     GetUnitRequestSchema: {  }
     GetUnitsRequestSchema: {  }
     OutOfServiceRequestSchema:
@@ -14164,6 +14303,61 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BathroomItemResponseSchema'
+      type: object
+    GetRoomTypeResponseSchema:
+      description: 'Response for GET /rooms/v1/room-types/{id}'
+      required:
+        - id
+        - name
+        - shortName
+        - description
+        - maxGuests
+        - adultsIncluded
+        - childrenIncluded
+        - isPrivate
+        - unitCount
+      properties:
+        id:
+          description: 'ID of the room type.'
+          type: string
+          example: '4242'
+        name:
+          description: 'Room type name, in the language that Content-Language names.'
+          type: string
+          example: 'Standard Double'
+        shortName:
+          description: 'Short name.'
+          type: string
+          example: STD
+        description:
+          description: 'Room type description, in the language that Content-Language names. Blank when the description has no value in that language.'
+          type: string
+          example: 'A quiet room at the back of the property.'
+        maxGuests:
+          description: 'Maximum number of guests in one unit.'
+          type: integer
+          example: 2
+        adultsIncluded:
+          description: 'Adults included in the base price.'
+          type: integer
+          example: 2
+        childrenIncluded:
+          description: 'Children included in the base price.'
+          type: integer
+          example: 0
+        isPrivate:
+          description: 'True for a private room type, false for a shared one.'
+          type: boolean
+          example: true
+        unitCount:
+          description: 'Number of units.'
+          type: integer
+          example: 3
+        bedsPerUnit:
+          description: 'Beds in one unit of a shared room type. Not sent for a private one.'
+          type: integer
+          example: 4
+          nullable: true
       type: object
     GetUnitsResponseSchema:
       description: 'Response for GET /rooms/v1/units'
@@ -14943,7 +15137,7 @@ components:
             - NON_REFUNDABLE
           example: FULLY_REFUNDABLE
         fullyRefundableUntilDaysBeforeCheckIn:
-          description: 'Days before check-in midnight until which the reservation is fully refundable (floored, legacy field); null when not applicable.'
+          description: 'Days before check-in midnight until which the reservation is fully refundable (floored, legacy field); -1 when the deadline is the end of the arrival day; null when not applicable.'
           type: integer
           example: 3
           nullable: true
@@ -14959,7 +15153,7 @@ components:
           example: '2026-11-08T15:00:00+00:00'
           nullable: true
         fullyRefundableUntilMinutesBeforeCheckIn:
-          description: 'Minutes before check-in date midnight (not check-in time) of the refund deadline; null when not applicable.'
+          description: 'Minutes before check-in date midnight (not check-in time) of the refund deadline; negative when a deadline set from the check-in date is after that midnight; null when not applicable.'
           type: integer
           example: 4320
           nullable: true
