@@ -3255,7 +3255,7 @@ components:
         id: {type: string}
         code:
           type: string
-          enum: [invopop, fonoa, fiskaly, fiscaltrust, moloni, epson, protel, fact, hostkit, ephyr, digifact]
+          enum: [invopop, fonoa, fiskaly, fiscaltrust, moloni, epson, protel, fact, hostkit, fiscobridge, ephyr, digifact]
         name: {type: string}
         description: {type: string}
         channel:
