@@ -7171,7 +7171,7 @@ components:
           example: 8f3k2
       type: object
     GetViewLayoutRequestSchema:
-      description: "Parameters for resolving a view into a layout.\n\n`filters` and `date` travel together: a day-scoped filter (`busy`) needs the day it is\nevaluated against, while a structural one (`kind`) does not. `revision` selects a\nspecific revision instead of the published resolution."
+      description: "Parameters for resolving a view into a layout.\n\n`filters` and `date` travel together: a day-scoped filter (`busy`) needs the day it is\nevaluated against, while a structural one (`kind`, `attributeIds`) does not. `revision` selects a\nspecific revision instead of the published resolution."
       required:
         - viewId
       type: object
@@ -7190,7 +7190,7 @@ components:
               example: '5'
               nullable: true
             date:
-              description: 'The day day-scoped filters are evaluated against, `yyyy-MM-dd`. Required when such a filter is present (`busy`), ignored otherwise — `kind` is structural and needs no date.'
+              description: 'The day day-scoped filters are evaluated against, `yyyy-MM-dd`. Required when such a filter is present (`busy`), ignored otherwise — `kind` and `attributeIds` are structural and need no date.'
               type: string
               format: date
               example: '2026-08-12'
@@ -10326,6 +10326,16 @@ components:
         propertyId:
           type: integer
           example: 276
+        propertyCode:
+          description: 'Booking Engine code, as the agent endpoints take it: `propertyCode` on the availability endpoint and `property_code` on the metadata endpoint. Null when another island hosts the property, its Booking Engine is off, the property is inactive, it is not available for agent pricing or another property has the same code. Never empty.'
+          type: string
+          example: N2FKyS
+          nullable: true
+        island:
+          description: 'Island that hosts the property: `us1` or `us2`. Null when not known.'
+          type: string
+          example: us1
+          nullable: true
         propertyName:
           type: string
           example: 'Seaside Inn San Diego'
@@ -10759,6 +10769,34 @@ components:
         uploadUrl:
           description: 'A temporary URL, valid for 10 minutes, used to upload the import file.'
           type: string
+      type: object
+    ImportThrottleStatusResponseSchema:
+      required:
+        - enabled
+        - level
+        - drivenBy
+        - standardBatchSize
+        - highPriorityBatchSize
+        - pauseStandardDispatches
+      properties:
+        enabled:
+          type: boolean
+        level:
+          type: string
+          enum:
+            - NORMAL
+            - MEDIUM
+            - HIGH
+            - CRITICAL
+        drivenBy:
+          type: string
+          nullable: true
+        standardBatchSize:
+          type: integer
+        highPriorityBatchSize:
+          type: integer
+        pauseStandardDispatches:
+          type: boolean
       type: object
     IntegrationEventCreateRequestSchema:
       required:
