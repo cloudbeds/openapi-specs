@@ -4024,7 +4024,7 @@ components:
                     type: string
                     nullable: true
                 removeAll:
-                    description: 'If set true, will remove all guests assigned to roomID before assigning guests sent in guestIDs parameter. Main Guest is never removed.'
+                    description: 'Boolean. If true, removes all guests assigned to roomID before assigning the guests sent in guestIDs parameter. These guests are removed from the reservation, not only from the room. true, 1, yes and on count as true. false, 0, no, off, an empty value or omitting the parameter count as false. Main Guest is never removed.'
                     type: boolean
                     nullable: true
                 mainGuestId:
@@ -7349,7 +7349,7 @@ components:
                                     type: string
                                     nullable: true
                                 canceled_by_type:
-                                    description: 'Type of actor who canceled the reservation (e.g. user, guest, customer, person_version)'
+                                    description: 'Type of actor who canceled the reservation (e.g. user, guest, customer, person_version, myallocator_channel)'
                                     type: string
                                     nullable: true
                                 origin:
