@@ -1,6 +1,60 @@
 {
   "components": {
     "schemas": {
+      "AppliedServiceChargeResponse": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "charge_type": {
+            "title": "Charge Type",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "service_charge_id": {
+            "format": "uuid",
+            "title": "Service Charge Id",
+            "type": "string"
+          },
+          "tax_amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Tax Amount",
+            "type": "string"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "value": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_charge_id",
+          "name",
+          "charge_type",
+          "value",
+          "amount",
+          "tax_id",
+          "tax_amount"
+        ],
+        "title": "AppliedServiceChargeResponse",
+        "type": "object"
+      },
       "ApprovalAction": {
         "description": "The sensitive actions an approval PIN can authorise.\n\nA closed set, not free text: the action selects which permission the approver\nmust hold (``APPROVAL_REQUIRED_PERMISSION``) and is baked into the issued\ntoken, so an approval granted for one action cannot be replayed against\nanother. Adding a member here without adding it to the map below is a\nstartup-time error, by design.",
         "enum": [
@@ -293,6 +347,92 @@
           "name"
         ],
         "title": "CategoryResult",
+        "type": "object"
+      },
+      "ChargeRefundRequest": {
+        "additionalProperties": false,
+        "description": "The Clover REFUND extras, relayed verbatim; pos-service decides what to reverse.",
+        "properties": {
+          "amount": {
+            "description": "EXTRA_AMOUNT in minor units of currency, gross of tax.",
+            "minimum": 0.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "currency": {
+            "description": "EXTRA_CURRENCY: the ISO 4217 code of amount.",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "lineItemIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 255,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 500,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "EXTRA_LINE_ITEM_IDS; null or empty is Refund Payment.",
+            "title": "Lineitemids"
+          },
+          "paymentId": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paymentid"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "title": "ChargeRefundRequest",
+        "type": "object"
+      },
+      "ChargeRefundResponse": {
+        "properties": {
+          "notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notice"
+          },
+          "refundId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refundid"
+          }
+        },
+        "required": [
+          "refundId",
+          "notice"
+        ],
+        "title": "ChargeRefundResponse",
         "type": "object"
       },
       "ChargeRequest": {
@@ -621,6 +761,69 @@
           "items"
         ],
         "title": "CreateOrderRequest",
+        "type": "object"
+      },
+      "CreateReservationRequest": {
+        "description": "A new booking. ``state`` is absent by design \u2014 see the module docstring.",
+        "properties": {
+          "duration_minutes": {
+            "default": 90,
+            "title": "Duration Minutes",
+            "type": "integer"
+          },
+          "guest_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guest Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 140,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "party_size": {
+            "default": 2,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Party Size",
+            "type": "integer"
+          },
+          "reserved_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reserved Date"
+          },
+          "start_time": {
+            "format": "time",
+            "title": "Start Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_time"
+        ],
+        "title": "CreateReservationRequest",
         "type": "object"
       },
       "DailySalesResponse": {
@@ -1850,10 +2053,16 @@
       "GratuityRequest": {
         "properties": {
           "amount": {
-            "description": "Gratuity amount in minor currency units.",
+            "description": "Gratuity amount in minor units of currency.",
             "minimum": 0.0,
             "title": "Amount",
             "type": "integer"
+          },
+          "currency": {
+            "description": "EXTRA_CURRENCY: the ISO 4217 code of amount.",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
           },
           "employeeId": {
             "title": "Employeeid",
@@ -1866,6 +2075,7 @@
         },
         "required": [
           "amount",
+          "currency",
           "recipientName",
           "employeeId"
         ],
@@ -4214,6 +4424,13 @@
             ],
             "title": "Alias"
           },
+          "applied_service_charges": {
+            "items": {
+              "$ref": "#/components/schemas/AppliedServiceChargeResponse"
+            },
+            "title": "Applied Service Charges",
+            "type": "array"
+          },
           "can_undo_split": {
             "anyOf": [
               {
@@ -4462,6 +4679,17 @@
             "title": "Property Id",
             "type": "string"
           },
+          "receipt_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipt Type"
+          },
           "reservation_id": {
             "anyOf": [
               {
@@ -4500,6 +4728,12 @@
             "default": "0",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Service Charge",
+            "type": "string"
+          },
+          "service_charge_tax_total": {
+            "default": "0",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Service Charge Tax Total",
             "type": "string"
           },
           "settled_at": {
@@ -6555,6 +6789,13 @@
       "QuoteResponse": {
         "description": "What a cart would cost if it were ordered now.\n\nSame money semantics as ``OrderResponse``: ``exclusive_tax_fee_total`` was\nadded on top of the item prices, ``inclusive_tax_fee_total`` was already inside\nthem, and those totals \u2014 not a per-charge ``treatment`` label \u2014 are the\nauthority on the split.\n\n``offers_applied`` is already inside ``discount_total``; it is the breakdown, not\nan extra charge. ``offers_available`` names offers that are live and eligible but\ndo NOT auto-apply \u2014 a cashier chooses those \u2014 so a client can present them\nwithout evaluating any offer rules itself. ``offers_blocked`` names the ones\nthat did not qualify and why, so the same client can explain a locked offer\n(\"spend 50.00 to unlock\") \u2014 again without evaluating any rule itself.\n\n``order_discount_requires_approval`` (and ``requires_approval`` per line) report\na discount above the property's ceiling. The figures still include it \u2014 the\nquote prices what the cashier rang \u2014 but the order will accept it only through\nits guarded endpoint with a manager's approval token. Reported rather than\nrefused because a preview cannot be approved: the token is scoped to an order\nor line id that exists only once the order is created, so a 422 here left the\nclient with a cart it could neither price nor take payment for.",
         "properties": {
+          "applied_service_charges": {
+            "items": {
+              "$ref": "#/components/schemas/AppliedServiceChargeResponse"
+            },
+            "title": "Applied Service Charges",
+            "type": "array"
+          },
           "basis": {
             "title": "Basis",
             "type": "string"
@@ -6623,6 +6864,12 @@
           "service_charge": {
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Service Charge",
+            "type": "string"
+          },
+          "service_charge_tax_total": {
+            "default": "0",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Service Charge Tax Total",
             "type": "string"
           },
           "subtotal": {
@@ -6747,6 +6994,16 @@
             "title": "Metadata",
             "type": "boolean"
           },
+          "paper_receipt_enabled": {
+            "default": true,
+            "title": "Paper Receipt Enabled",
+            "type": "boolean"
+          },
+          "paperless_receipt_enabled": {
+            "default": false,
+            "title": "Paperless Receipt Enabled",
+            "type": "boolean"
+          },
           "policy": {
             "title": "Policy",
             "type": "boolean"
@@ -6821,6 +7078,28 @@
             ],
             "title": "Metadata"
           },
+          "paper_receipt_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paper Receipt Enabled"
+          },
+          "paperless_receipt_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paperless Receipt Enabled"
+          },
           "policy": {
             "anyOf": [
               {
@@ -6881,6 +7160,43 @@
         "title": "ReceiptSettingsUpdateRequest",
         "type": "object"
       },
+      "ReceiptTypeRequest": {
+        "properties": {
+          "receipt_type": {
+            "enum": [
+              "paper",
+              "paperless",
+              "none"
+            ],
+            "title": "Receipt Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "receipt_type"
+        ],
+        "title": "ReceiptTypeRequest",
+        "type": "object"
+      },
+      "ReceiptTypeResponse": {
+        "properties": {
+          "order_id": {
+            "format": "uuid",
+            "title": "Order Id",
+            "type": "string"
+          },
+          "receipt_type": {
+            "title": "Receipt Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_id",
+          "receipt_type"
+        ],
+        "title": "ReceiptTypeResponse",
+        "type": "object"
+      },
       "RefundRequest": {
         "description": "Payload for refunding (part of) a captured payment.",
         "example": {
@@ -6905,6 +7221,93 @@
           "amount"
         ],
         "title": "RefundRequest",
+        "type": "object"
+      },
+      "ReservationListResponse": {
+        "properties": {
+          "evaluated_at": {
+            "format": "date-time",
+            "title": "Evaluated At",
+            "type": "string"
+          },
+          "holds_enabled": {
+            "title": "Holds Enabled",
+            "type": "boolean"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/ReservationPolicyResponse"
+          },
+          "reservations": {
+            "items": {
+              "$ref": "#/components/schemas/TableReservationRef"
+            },
+            "title": "Reservations",
+            "type": "array"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          }
+        },
+        "required": [
+          "reservations",
+          "policy",
+          "evaluated_at",
+          "timezone",
+          "holds_enabled"
+        ],
+        "title": "ReservationListResponse",
+        "type": "object"
+      },
+      "ReservationPolicyResponse": {
+        "description": "The server's reservation constants, echoed on every payload.\n\nThe app renders \"Table holds as Reserved from 13:30\" and the Late chip from\nthese numbers rather than its own copies. A client-side constant would drift\nfrom the server's hold derivation the moment either changed, and the visible\nresult would be a table whose text and colour disagree about whether it is\nheld.",
+        "properties": {
+          "default_duration_minutes": {
+            "title": "Default Duration Minutes",
+            "type": "integer"
+          },
+          "duration_step_minutes": {
+            "title": "Duration Step Minutes",
+            "type": "integer"
+          },
+          "hold_window_minutes": {
+            "title": "Hold Window Minutes",
+            "type": "integer"
+          },
+          "late_threshold_minutes": {
+            "title": "Late Threshold Minutes",
+            "type": "integer"
+          },
+          "max_duration_minutes": {
+            "title": "Max Duration Minutes",
+            "type": "integer"
+          },
+          "max_notes_length": {
+            "title": "Max Notes Length",
+            "type": "integer"
+          },
+          "min_duration_minutes": {
+            "title": "Min Duration Minutes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hold_window_minutes",
+          "late_threshold_minutes",
+          "default_duration_minutes",
+          "min_duration_minutes",
+          "max_duration_minutes",
+          "duration_step_minutes",
+          "max_notes_length"
+        ],
+        "title": "ReservationPolicyResponse",
         "type": "object"
       },
       "RevenueBreakdownItem": {
@@ -7082,6 +7485,71 @@
         "title": "RoleUpdateRequest",
         "type": "object"
       },
+      "SeatReservationRequest": {
+        "description": "Seating opens an order; this is what the order needs beyond the booking.",
+        "properties": {
+          "order_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Type"
+          },
+          "party_size": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Size"
+          }
+        },
+        "title": "SeatReservationRequest",
+        "type": "object"
+      },
+      "SeatReservationResponse": {
+        "properties": {
+          "order_id": {
+            "format": "uuid",
+            "title": "Order Id",
+            "type": "string"
+          },
+          "order_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Number"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/ReservationPolicyResponse"
+          },
+          "reservation": {
+            "$ref": "#/components/schemas/TableReservationRef"
+          }
+        },
+        "required": [
+          "reservation",
+          "order_id",
+          "order_number",
+          "policy"
+        ],
+        "title": "SeatReservationResponse",
+        "type": "object"
+      },
       "SectionCreateRequest": {
         "description": "Payload for creating a new section.",
         "properties": {
@@ -7201,6 +7669,270 @@
           }
         },
         "title": "SendOrderRequest",
+        "type": "object"
+      },
+      "SignatureRequest": {
+        "properties": {
+          "email": {
+            "default": "",
+            "maxLength": 320,
+            "title": "Email",
+            "type": "string"
+          },
+          "image_base64": {
+            "maxLength": 699180,
+            "title": "Image Base64",
+            "type": "string"
+          },
+          "image_format": {
+            "enum": [
+              "png",
+              "svg"
+            ],
+            "title": "Image Format",
+            "type": "string"
+          },
+          "payment_count": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Count"
+          },
+          "payment_index": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Index"
+          },
+          "signature_id": {
+            "format": "uuid",
+            "title": "Signature Id",
+            "type": "string"
+          },
+          "signed_at": {
+            "format": "date-time",
+            "title": "Signed At",
+            "type": "string"
+          },
+          "tip_percentage": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1000.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,4}|(?=[\\d.]{1,7}0*$)\\d{0,4}\\.\\d{0,2}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tip Percentage"
+          }
+        },
+        "required": [
+          "signature_id",
+          "image_base64",
+          "image_format",
+          "signed_at"
+        ],
+        "title": "SignatureRequest",
+        "type": "object"
+      },
+      "SignedPayment": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "payment_id": {
+            "format": "uuid",
+            "title": "Payment Id",
+            "type": "string"
+          },
+          "tip": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Tip",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment_id",
+          "amount",
+          "method",
+          "tip"
+        ],
+        "title": "SignedPayment",
+        "type": "object"
+      },
+      "SignedReceiptResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "device_id": {
+            "format": "uuid",
+            "title": "Device Id",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "image_content_type": {
+            "title": "Image Content Type",
+            "type": "string"
+          },
+          "image_url": {
+            "title": "Image Url",
+            "type": "string"
+          },
+          "is_split_payment": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Split Payment"
+          },
+          "order_id": {
+            "format": "uuid",
+            "title": "Order Id",
+            "type": "string"
+          },
+          "payment_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Count"
+          },
+          "payment_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Id"
+          },
+          "payment_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Index"
+          },
+          "seal_algorithm": {
+            "const": "sha256",
+            "default": "sha256",
+            "title": "Seal Algorithm",
+            "type": "string"
+          },
+          "seal_sha256": {
+            "title": "Seal Sha256",
+            "type": "string"
+          },
+          "signature_id": {
+            "format": "uuid",
+            "title": "Signature Id",
+            "type": "string"
+          },
+          "signed_at": {
+            "format": "date-time",
+            "title": "Signed At",
+            "type": "string"
+          },
+          "signed_payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignedPayment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "snapshot": {
+            "additionalProperties": true,
+            "title": "Snapshot",
+            "type": "object"
+          },
+          "snapshot_version": {
+            "title": "Snapshot Version",
+            "type": "integer"
+          },
+          "staff_id": {
+            "format": "uuid",
+            "title": "Staff Id",
+            "type": "string"
+          },
+          "tip_percentage": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tip Percentage"
+          }
+        },
+        "required": [
+          "signature_id",
+          "order_id",
+          "payment_id",
+          "email",
+          "snapshot",
+          "snapshot_version",
+          "seal_sha256",
+          "image_content_type",
+          "image_url",
+          "staff_id",
+          "device_id",
+          "signed_at",
+          "created_at"
+        ],
+        "title": "SignedReceiptResponse",
         "type": "object"
       },
       "SortDirection": {
@@ -7724,6 +8456,113 @@
         "title": "TableOrderRef",
         "type": "object"
       },
+      "TableReservationRef": {
+        "description": "A booking, with the times the client would otherwise have to recompute.\n\n``ends_at_time``, ``hold_start_time``, ``is_holding`` and ``is_late`` are\nderived server-side from the same predicates that resolve the table's floor\nstatus, so the row's tag and the table's colour can never tell different\nstories.",
+        "properties": {
+          "duration_minutes": {
+            "title": "Duration Minutes",
+            "type": "integer"
+          },
+          "ends_at_time": {
+            "format": "time",
+            "title": "Ends At Time",
+            "type": "string"
+          },
+          "guest_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guest Name"
+          },
+          "hold_start_time": {
+            "format": "time",
+            "title": "Hold Start Time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_holding": {
+            "title": "Is Holding",
+            "type": "boolean"
+          },
+          "is_late": {
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "party_size": {
+            "title": "Party Size",
+            "type": "integer"
+          },
+          "reserved_date": {
+            "format": "date",
+            "title": "Reserved Date",
+            "type": "string"
+          },
+          "start_time": {
+            "format": "time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "table_id": {
+            "format": "uuid",
+            "title": "Table Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "table_id",
+          "guest_name",
+          "reserved_date",
+          "start_time",
+          "duration_minutes",
+          "ends_at_time",
+          "hold_start_time",
+          "party_size",
+          "notes",
+          "state",
+          "order_id",
+          "is_holding",
+          "is_late"
+        ],
+        "title": "TableReservationRef",
+        "type": "object"
+      },
       "TableResponse": {
         "description": "A table within an outlet, including its floor-plan geometry.\n\n``x`` / ``y`` / ``width`` / ``height`` are unpacked from the stored\n``grid_position`` JSON and ``kind`` comes from the table's ``format``, using\nthe same names as {@link FloorPlanTableResponse} so a client can read\ngeometry from either route. A table that was never positioned (no\n``grid_position``) reports zeros rather than null, so consumers can render it\nwithout null checks; ``section_id`` tells the caller which section it sits in.\n\n``section_id`` is the ONLY grouping key \u2014 resolve it against\n``GET /outlets/{id}/sections`` for a display name. A free-text ``zone`` label\nused to ride along here from the pre-sections schema; nothing ever wrote it,\nso it was NULL on every row and clients that grouped by it collapsed the whole\nfloor into one nameless section. Dropped in revision 026.",
         "properties": {
@@ -7752,6 +8591,11 @@
             "title": "Height",
             "type": "number"
           },
+          "holds_enabled": {
+            "default": false,
+            "title": "Holds Enabled",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -7768,6 +8612,21 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "next_reservation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TableReservationRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "other_reservations_today": {
+            "default": 0,
+            "title": "Other Reservations Today",
+            "type": "integer"
           },
           "outlet_id": {
             "format": "uuid",
@@ -8188,6 +9047,85 @@
           }
         },
         "title": "UpdateOrderRequest",
+        "type": "object"
+      },
+      "UpdateReservationRequest": {
+        "description": "A partial edit.\n\nRead with ``exclude_unset`` so an omitted field keeps its value while an\nexplicit null clears ``guest_name`` or ``notes`` \u2014 the two fields where\n\"remove this\" is a legitimate edit.",
+        "properties": {
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Minutes"
+          },
+          "guest_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guest Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 140,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "party_size": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Size"
+          },
+          "reserved_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reserved Date"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          }
+        },
+        "title": "UpdateReservationRequest",
         "type": "object"
       },
       "UpdateTableStatusRequest": {
@@ -8898,7 +9836,7 @@
     },
     "/pos/charges": {
       "post": {
-        "description": "Posts an order completed on a connected POS provider's terminal, such as Clover, to a reservation's or group's folio, with its items, taxes, discounts and service charges. The terminal's merchant must be connected to the property; otherwise `403` (`integration_disconnected`).\n\n`Idempotency-Key` is required: retrying with the same key returns the original result, and reusing a key with a different payload returns `409`. A failed post writes nothing to the folio. To correct a charge, void it and charge again with a new key.\n\nErrors return `detail` as `{code, message, retryable}`.",
+        "description": "Posts an order completed on a connected POS provider's terminal, such as Clover, to a reservation's or group's folio, with its items, taxes, discounts and service charges, scaled by the order's own `currency`. The terminal's merchant must be connected to the property; otherwise `403` (`integration_disconnected`).\n\n`Idempotency-Key` is required: retrying with the same key returns the original result, and reusing a key with a different payload returns `409`. A failed post writes nothing to the folio. A charge cannot be voided; reverse it with a refund.\n\nErrors return `detail` as `{code, message, retryable}`.",
         "operationId": "createCharge",
         "parameters": [
           {
@@ -8999,7 +9937,8 @@
     },
     "/pos/charges/{order_id}": {
       "delete": {
-        "description": "Reverses a charged order on the folio, including its gratuities and payments. Voiding again returns `204`; `404` if the order was never charged.",
+        "deprecated": true,
+        "description": "Always refused with `409` (`app_update_required`), and nothing is reversed. Reverse a charge with a refund instead.",
         "operationId": "voidCharge",
         "parameters": [
           {
@@ -9029,9 +9968,6 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
           "401": {
             "content": {
               "application/json": {
@@ -9062,6 +9998,16 @@
             },
             "description": "Not found at this property."
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Refused with `app_update_required`; nothing is reversed."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -9078,7 +10024,7 @@
             "DeviceToken": []
           }
         ],
-        "summary": "Void a charge",
+        "summary": "Void a charge (retired)",
         "tags": [
           "Charge to Room"
         ]
@@ -9086,7 +10032,7 @@
     },
     "/pos/charges/{order_id}/gratuities": {
       "post": {
-        "description": "Adds a gratuity to an order already charged to a folio. `404` if the order was never charged.",
+        "description": "Adds a gratuity to an order already charged to a folio. `amount` is in minor units of `currency`. `404` if the order was never charged.",
         "operationId": "addChargeGratuity",
         "parameters": [
           {
@@ -9181,6 +10127,126 @@
           }
         ],
         "summary": "Add a gratuity",
+        "tags": [
+          "Charge to Room"
+        ]
+      }
+    },
+    "/pos/charges/{order_id}/refunds": {
+      "post": {
+        "description": "Reverses lines of a charged order on the folio. `lineItemIds` names the terminal's lines to refund; null or empty refunds everything still on the check. `amount` is the terminal's refund total in minor units of `currency`, gross of tax; when the folio would reverse a different sum, the refund is refused and nothing is reversed. The check stays on the folio.\n\n`Idempotency-Key` is required: retrying with the same key returns the original refund. The terminal's merchant must be connected to the property; otherwise `403` (`integration_disconnected`). `404` if the order was never charged.\n\nErrors return `detail` as `{code, message, retryable}`.",
+        "operationId": "refundCharge",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "title": "Order Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargeRefundRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeRefundResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": []
+          }
+        ],
+        "summary": "Refund a charge",
         "tags": [
           "Charge to Room"
         ]
@@ -12424,6 +13490,112 @@
         ]
       }
     },
+    "/pos/orders/{order_id}/receipt-type": {
+      "put": {
+        "description": "Chooses paper, paperless or no receipt for a paid order. Requires a staff token. Returns 404 when paperless receipts are disabled. Validation errors omit submitted values.",
+        "operationId": "setOrderReceiptType",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": [],
+            "StaffToken": []
+          }
+        ],
+        "summary": "Choose an order's receipt type",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
     "/pos/orders/{order_id}/send": {
       "post": {
         "description": "Fires an order to the kitchen and marks it `sent`. Send `item_ids` to fire only those lines; omit it to fire every active line. Sent lines can only be removed by voiding them. Requires a staff token.",
@@ -12532,6 +13704,330 @@
           }
         ],
         "summary": "Send to the kitchen",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/pos/orders/{order_id}/signed-receipt": {
+      "get": {
+        "description": "Returns the stored signed receipt, including the tip percentage and signed payment it was sealed with (null on receipts saved before they were recorded). Requires management access or a staff token with receipts.view_signed permission. Returns 404 when paperless receipts are disabled.",
+        "operationId": "getSignedReceipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-staff-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Staff-Token"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedReceiptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": []
+          }
+        ],
+        "summary": "Read a signed receipt",
+        "tags": [
+          "Orders"
+        ]
+      },
+      "post": {
+        "description": "Stores a sanitized signature image and a server-built sealed snapshot for a paid order. Send the tip percentage the guest chose and, for a split check, which payment of how many was signed, so the receipt can be rebuilt exactly; omitted fields are stored as null. Reusing its signature id returns the existing record. Requires a staff token. Returns 404 when paperless receipts are disabled. Validation errors omit submitted values.",
+        "operationId": "createSignedReceipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignatureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedReceiptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": [],
+            "StaffToken": []
+          }
+        ],
+        "summary": "Save a signed receipt",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/pos/orders/{order_id}/signed-receipt/image": {
+      "get": {
+        "description": "Returns the sanitized PNG or SVG signature image with private caching. Requires management access or a staff token with receipts.view_signed permission. Returns 404 when paperless receipts are disabled.",
+        "operationId": "getSignedReceiptImage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-staff-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Staff-Token"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": []
+          }
+        ],
+        "summary": "Read a receipt signature image",
         "tags": [
           "Orders"
         ]
@@ -14927,7 +16423,7 @@
     },
     "/pos/outlets/{outlet_id}/receipt-logo/{variant}": {
       "get": {
-        "description": "Returns the logo image for a `variant`: the original upload, or a thermal-printer bitmap (`image/png`). `404` when the outlet has no logo or the property has receipt logos turned off. Responses can be cached: the URL changes when the logo does.",
+        "description": "Returns the logo image for a `variant`: the original upload, or a thermal-printer bitmap (`image/png`). `404` when the outlet has no logo. Served whether or not the property prints receipt logos (`logo_enabled` in the receipt settings), which you apply when printing. Responses can be cached: the URL changes when the logo does.",
         "operationId": "getReceiptLogo",
         "parameters": [
           {
@@ -19559,6 +21055,553 @@
           "Floor Plan"
         ]
       }
+    },
+    "/pos/tables/{table_id}/reservations": {
+      "get": {
+        "description": "The bookings still to come on this table for the current day, earliest first, with the property's reservation policy. Pass `include_cancelled=true` to get the day's seated and cancelled bookings as well.\n\nA booking from the previous day that nobody seated or cancelled is listed too, first, because it is still holding the table. Tell it apart by its `reserved_date`.\n\nEach booking carries the values the server derives from it: when its hold opens (`hold_start_time`), when the seating is expected to end (`ends_at_time`), and whether it is holding the table or running late right now. Derive none of these yourself \u2014 the hold window is a property setting and can change without a client release.\n\nTimes are the property's wall clock, as `HH:MM:SS`. A booking that runs past midnight reports an `ends_at_time` earlier than its `start_time`.",
+        "operationId": "listTableReservations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "table_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Table Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_cancelled",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Cancelled",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": []
+          }
+        ],
+        "summary": "List a table's bookings for today",
+        "tags": [
+          "Floor Plan"
+        ]
+      },
+      "post": {
+        "description": "Takes a booking on this table for today.\n\nA table may hold several bookings in a day and overlapping ones are accepted deliberately: the host decides whether a clash matters, so warn rather than refuse. `guest_name` is optional \u2014 a booking with no name is how a table is blocked off.\n\n`duration_minutes` must fall within the policy's range and land on its step; `start_time` must be on a 15-minute boundary. Requires a staff token.",
+        "operationId": "createTableReservation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "table_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Table Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReservationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableReservationRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": [],
+            "StaffToken": []
+          }
+        ],
+        "summary": "Book a table",
+        "tags": [
+          "Floor Plan"
+        ]
+      }
+    },
+    "/pos/tables/{table_id}/reservations/{reservation_id}": {
+      "patch": {
+        "description": "Changes only the fields sent. An omitted field is left alone; sending `null` for `guest_name` or `notes` clears it.\n\nA cancelled or already-seated booking cannot be edited and returns `409`. Requires a staff token.",
+        "operationId": "updateTableReservation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "table_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Table Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reservation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Reservation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReservationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableReservationRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": [],
+            "StaffToken": []
+          }
+        ],
+        "summary": "Edit a booking",
+        "tags": [
+          "Floor Plan"
+        ]
+      }
+    },
+    "/pos/tables/{table_id}/reservations/{reservation_id}/cancel": {
+      "post": {
+        "description": "Marks the booking cancelled and releases any hold it had on the table. The row is kept rather than deleted, so the day's history stays intact.\n\nCancelling a booking whose party is already seated returns `409`: cancel the order instead. Requires a staff token.",
+        "operationId": "cancelTableReservation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "table_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Table Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reservation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Reservation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableReservationRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": [],
+            "StaffToken": []
+          }
+        ],
+        "summary": "Cancel a booking",
+        "tags": [
+          "Floor Plan"
+        ]
+      }
+    },
+    "/pos/tables/{table_id}/reservations/{reservation_id}/seat": {
+      "post": {
+        "description": "Opens an order on the table and marks the booking seated, in one call. The table reads as occupied from that order, as it does for any other check.\n\nThe order is created empty \u2014 the register fills it. `party_size` overrides the booking's own count for the order's covers.\n\nSafe to retry: a booking that already names an order returns that order rather than opening a second one. Returns `409` if the booking is cancelled, or if another live order already holds the table. Requires a staff token.",
+        "operationId": "seatTableReservation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "table_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Table Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reservation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Reservation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-property-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Property-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeatReservationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeatReservationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token or staff token."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated, but not allowed: the property is not in the token, the staff and device tokens belong to different properties, or the operation needs management access."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found at this property."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "DeviceToken": [],
+            "StaffToken": []
+          }
+        ],
+        "summary": "Seat a booking's party",
+        "tags": [
+          "Floor Plan"
+        ]
+      }
     }
   },
   "servers": [
@@ -19596,7 +21639,7 @@
       "name": "Payments"
     },
     {
-      "description": "For connected POS providers such as Clover: post an order completed on their terminal to a reservation's or group's folio, add a gratuity, or void it.",
+      "description": "For connected POS providers such as Clover: post an order completed on their terminal to a reservation's or group's folio, add a gratuity, or refund it.",
       "name": "Charge to Room"
     },
     {
