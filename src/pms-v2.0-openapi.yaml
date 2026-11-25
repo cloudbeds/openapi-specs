@@ -991,7 +991,7 @@ paths:
       tags:
         - Checks
       summary: 'Void a posted check end-to-end (ledger + payments + its gratuities) by its checkId'
-      description: 'Voids the whole check: reverses each line (item / service charge / discount) and its tax/fee children on both CDC and DOMAIN, cascade-voids every gratuity linked to the check (each with its own tax children), and voids the anchored payments via the payments service. Idempotent — voiding an already-voided check returns 204.'
+      description: 'Voids the whole check: reverses each line (item / service charge / discount) and its tax/fee children on both CDC and DOMAIN, cascade-voids every gratuity linked to the check (each with its own tax children), and voids the anchored payments via the payments service. Idempotent — voiding an already-voided check returns 204. A check with a refund recorded against it is not voided: the request is refused with 409 CHECK_ALREADY_REFUNDED and nothing is reversed.'
       operationId: 'CheckController::deleteCheck'
       parameters:
         -
@@ -1035,7 +1035,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BadRequestResponseSchema'
         '409':
-          description: 'Conflict — the check''s folio target was never persisted (pre-feature posting) (CHECK_VOID_UNAVAILABLE).'
+          description: 'Conflict — the check cannot be voided: a refund has already been recorded against it (CHECK_ALREADY_REFUNDED), or its folio target was never persisted (pre-feature posting) (CHECK_VOID_UNAVAILABLE).'
           content:
             application/json:
               schema:
@@ -8081,6 +8081,7 @@ components:
         - SUBRESERVATION_NOT_FOUND
         - CHECK_NOT_FOUND
         - CHECK_VOID_UNAVAILABLE
+        - CHECK_ALREADY_REFUNDED
         - PAYMENT_VOID_FAILED
         - MODIFIERS_NOT_ENABLED
         - MODIFIER_OPTION_NOT_FOUND
@@ -12264,6 +12265,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OrganizationPropertySchema'
+        defaultDisplayCurrency:
+          description: 'ISO 4217 code for the configured Group Booking Engine display currency. Null when unset or unavailable.'
+          type: string
+          pattern: '^[A-Z]{3}$'
+          example: CAD
+          nullable: true
+        displayCurrencies:
+          description: 'ISO 4217 display currency codes with active Group Booking Engine rates. Null when the feature is disabled.'
+          type: array
+          items:
+            type: string
+            pattern: '^[A-Z]{3}$'
+            example: CAD
+          nullable: true
       type: object
     OrganizationDetailResponseSchema:
       required:
@@ -14112,6 +14127,12 @@ components:
           type: string
           example: DL-8842
           nullable: true
+        unitLength:
+          description: 'Physical length of the unit in meters, whatever the property''s measurement unit; null clears it. Rounded to two decimals; must be above 0 and at most 9999.99.'
+          type: number
+          format: float
+          example: 9.91
+          nullable: true
       type: object
     PlaceRoomsOutOfServiceRequest:
       properties:
@@ -14508,6 +14529,7 @@ components:
         - nameLangs
         - descriptionLangs
         - doorlockId
+        - unitLength
       properties:
         id:
           description: 'Unit ID'
@@ -14561,6 +14583,12 @@ components:
           description: 'Door lock integration identifier.'
           type: string
           example: DL-8842
+          nullable: true
+        unitLength:
+          description: 'Physical length of the unit in meters, whatever the property''s measurement unit. Null when the property has not set one.'
+          type: number
+          format: float
+          example: 9.91
           nullable: true
       type: object
     AddedItemPreviewInputSchema:
@@ -14758,6 +14786,15 @@ components:
           type: string
           example: en-US
           nullable: true
+      type: object
+    GetExcludedItemsRequestSchema:
+      required:
+        - reservationId
+      properties:
+        reservationId:
+          description: 'Reservation ID.'
+          type: string
+          example: '900001'
       type: object
     GetPaymentScheduleRequestSchema:
       required:
@@ -15142,6 +15179,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EligibleRateItemSchema'
+      type: object
+    ExcludedItemsResponseSchema:
+      required:
+        - itemIds
+      properties:
+        itemIds:
+          description: 'IDs of the sold items staff kept out of the scheduled payments. Smart Policy does not collect these items or the taxes and fees posted for them.'
+          type: array
+          items:
+            type: string
+            example: '42'
       type: object
     PaymentScheduleResponseSchema:
       required:

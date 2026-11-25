@@ -5901,6 +5901,23 @@ components:
                                     isVoided:
                                         description: 'Whether the payment was voided'
                                         type: boolean
+        GetCustomItemsResponse:
+            type: object
+            properties:
+                success:
+                    description: 'Returns if the request could be completed'
+                    type: boolean
+                data:
+                    description: 'Postings, each with the fields of the getCustomItem data object'
+                    type: array
+                    items:
+                        type: object
+                count:
+                    description: 'Number of postings in this page'
+                    type: integer
+                nextPageToken:
+                    description: 'Token for the next page of a sale date range; null on the last page and for an id lookup'
+                    type: string
         PostVoidItemRequest:
             type: object
             properties:
@@ -7153,6 +7170,12 @@ components:
                                     infants:
                                         description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
                                         type: string
+                                    ages:
+                                        description: 'Ages of the children and infants in the room, children first. Present only for properties with Age Policy enabled. The field is null, not a list with null entries, when any child or infant in the room has no recorded age, so a list always holds every one of them and can be sent back as rooms.ages unchanged'
+                                        type: array
+                                        items:
+                                            type: integer
+                                        nullable: true
                                     dailyRates:
                                         description: 'Array with rates detailed by day'
                                         type: array
@@ -7222,6 +7245,12 @@ components:
                                     infants:
                                         description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
                                         type: string
+                                    ages:
+                                        description: 'Ages of the children and infants in the room, children first. Present only for properties with Age Policy enabled. The field is null, not a list with null entries, when any child or infant in the room has no recorded age, so a list always holds every one of them and can be sent back as rooms.ages unchanged'
+                                        type: array
+                                        items:
+                                            type: integer
+                                        nullable: true
                                     dailyRates:
                                         description: 'Array with rates detailed by day'
                                         type: array
@@ -7356,6 +7385,10 @@ components:
                                     description: 'Delivery channel the cancellation was received through (e.g. Dashboard, Booking.com)'
                                     type: string
                                     nullable: true
+                                performed_by_user_id:
+                                    description: "Identifier of the user who performed the cancellation on behalf of the actor, such as a staff user who canceled for the guest. Null when the actor performed it. Also null for every cancellation recorded before this field was added, including those performed on the guest's behalf."
+                                    type: string
+                                    nullable: true
                                 by_employee:
                                     description: 'Whether the actor who canceled the reservation is a Cloudbeds employee. Null when it cannot be determined.'
                                     type: boolean
@@ -7484,6 +7517,12 @@ components:
                             roomID:
                                 description: 'ID of the individual room'
                                 type: string
+                                nullable: true
+                            ages:
+                                description: "Ages of the children on this line, one per child, so its length must equal children.quantity; the same ages apply to every room of the line. Used only by properties with Age Policy enabled, where each age is placed in its age group and children of an infant age are priced and recorded as infants. An age outside every child and infant age group is rejected. Without it, the children are placed in the property's OTA fallback age group."
+                                type: array
+                                items:
+                                    type: integer
                                 nullable: true
                 paymentMethod:
                     description: 'Payment Method of choice.'
@@ -7798,6 +7837,12 @@ components:
                                         infants:
                                             description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
                                             type: string
+                                        ages:
+                                            description: 'Ages of the children and infants in the room, children first. Present only for properties with Age Policy enabled. The field is null, not a list with null entries, when any child or infant in the room has no recorded age, so a list always holds every one of them and can be sent back as rooms.ages unchanged'
+                                            type: array
+                                            items:
+                                                type: integer
+                                            nullable: true
                                         reservationRoomID:
                                             description: 'Reservation room ID'
                                             type: string
@@ -8304,6 +8349,12 @@ components:
                                         infants:
                                             description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
                                             type: string
+                                        ages:
+                                            description: 'Ages of the children and infants in the room, children first. Present only for properties with Age Policy enabled. The field is null, not a list with null entries, when any child or infant in the room has no recorded age, so a list always holds every one of them and can be sent back as rooms.ages unchanged'
+                                            type: array
+                                            items:
+                                                type: integer
+                                            nullable: true
                                         reservationRoomID:
                                             description: 'Reservation room ID'
                                             type: string
@@ -8952,6 +9003,12 @@ components:
                                 description: 'Number of children for the room. Mandatory if rooms are sent.'
                                 type: integer
                                 nullable: true
+                            ages:
+                                description: "Ages of the room's children and infants, one per guest. Its length must equal rooms.children, which then counts the infants too, or rooms.children must count only the ages outside the infant age groups, as getReservation reports a room. Used only by properties with Age Policy enabled, where each age is placed in its age group and children of an infant age are priced and recorded as infants. An age outside every child and infant age group is rejected. Without it, a room whose children count is unchanged (as getReservation reports it, or with its infants added) keeps the ages already recorded; otherwise its children are placed in the property's OTA fallback age group."
+                                type: array
+                                items:
+                                    type: integer
+                                nullable: true
                             rateID:
                                 description: 'Rate ID for the room. Optional.'
                                 type: string
@@ -9321,6 +9378,12 @@ components:
                         infants:
                             description: 'Number of infants staying in the room, not counted in children. Present only for properties with Age Policy enabled; 0 when no infants were recorded for the room'
                             type: integer
+                        ages:
+                            description: 'Ages of the children and infants in the room, children first. Present only for properties with Age Policy enabled. The field is null, not a list with null entries, when any child or infant in the room has no recorded age, so a list always holds every one of them and can be sent back as rooms.ages unchanged'
+                            type: array
+                            items:
+                                type: integer
+                            nullable: true
                         guests:
                             description: 'Array with all guests assigned to room'
                             type: array
@@ -9385,7 +9448,7 @@ components:
                     type: string
                     nullable: true
                 lengthOfHoldInHours:
-                    description: 'Length of hold in hours - for courtesy hold updates'
+                    description: 'Length of hold in hours (maximum 8760 hours) - for courtesy holds'
                     type: integer
                     nullable: true
                 email:
@@ -9590,7 +9653,7 @@ components:
                     type: string
                     nullable: true
                 lengthOfHoldInHours:
-                    description: 'Length of hold in hours - for courtesy hold updates'
+                    description: 'Length of hold in hours (maximum 8760 hours) - for courtesy hold updates'
                     type: integer
                     nullable: true
                 email:
@@ -13375,6 +13438,79 @@ paths:
                         type: string
                     required: false
                     in: query
+    /getCustomItems:
+        get:
+            tags:
+                - Item
+            summary: getCustomItems
+            description: 'Returns the postings made with [postCustomItem](#api-Item-postCustomItem), with every item and payment, in one call: the batch form of [getCustomItem](#api-Item-getCustomItem). Send exactly one filter: soldProductIDs, paymentIDs, or startDate with endDate.<br> An id lookup returns every matching posting in one page. A sale date range returns every posting with an item sold in the range, in sale date order, each posting once; follow nextPageToken until it is null.'
+            responses:
+                200:
+                    description: '200 Response'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetCustomItemsResponse'
+            security:
+                -
+                    api_key:
+                        - 'read:item'
+                -
+                    OAuth2:
+                        - 'read:item'
+            parameters:
+                -
+                    description: 'Property ID'
+                    name: propertyID
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Comma-separated sold product identifiers (with or without the `p_` prefix), up to 100'
+                    name: soldProductIDs
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'Comma-separated payment identifiers, up to 100'
+                    name: paymentIDs
+                    schema:
+                        type: string
+                    required: false
+                    in: query
+                -
+                    description: 'First sale date of the range (YYYY-MM-DD), inclusive. Requires endDate'
+                    name: startDate
+                    schema:
+                        type: string
+                        format: date
+                    required: false
+                    in: query
+                -
+                    description: 'Last sale date of the range (YYYY-MM-DD), inclusive. The range may span at most 7 days'
+                    name: endDate
+                    schema:
+                        type: string
+                        format: date
+                    required: false
+                    in: query
+                -
+                    description: 'Sold items read per page of a sale date range, from 1 to 100; a page holds at most this many postings'
+                    name: pageSize
+                    schema:
+                        type: integer
+                        default: 100
+                    required: false
+                    in: query
+                -
+                    description: 'nextPageToken of the previous page of the same sale date range'
+                    name: pageToken
+                    schema:
+                        type: string
+                    required: false
+                    in: query
     /postVoidItem:
         post:
             tags:
@@ -13763,7 +13899,7 @@ paths:
             tags:
                 - Rate
             summary: getRatePlans
-            description: "Returns the rates of the room type or promo code selected, based on the provided parameters. If no parameters are provided, then the method will return all publicly available rate plans. Rate plans attached to an allotment block are never returned by this endpoint, even when their IDs are passed in `rateIDs`. Allotment-block rates are group inventory, not publicly sellable inventory. Their IDs do appear elsewhere (for example the `rateID` of a room on a group reservation), so an ID that cannot be resolved here is not a mapping error: use `/getAllotmentBlocks`, which returns the block's rate plan ID as `ratePlanId` and the rate IDs that reservations carry as `allotmentIntervals[].rateId`, together with `allotmentBlockCode`, `allotmentBlockName`, `allotmentBlockStatus` and the per-interval rates. Deleted rate plans are not returned by this endpoint and `/getAllotmentBlocks` omits deleted blocks, so an ID that resolves in neither endpoint belongs to a deleted rate plan or a deleted (archived) allotment block. ### Group account support"
+            description: 'Returns the rates of the room type or promo code selected, based on the provided parameters. If no parameters are provided, then the method will return all publicly available rate plans. Rate plans attached to an allotment block are never returned by this endpoint, even when their IDs are passed in `rateIDs`. Allotment-block rates are group inventory, not publicly sellable inventory. Their IDs do appear elsewhere (for example the `rateID` of a room on a group reservation), so an ID that cannot be resolved here is not a mapping error: use `/getAllotmentBlocks`, which returns the block''s rate plan ID as `ratePlanId` and the rate IDs that reservations carry as `allotmentIntervals[].rateId`, together with `allotmentBlockCode`, `allotmentBlockName`, `allotmentBlockStatus` and the per-interval rates. Deleted rate plans are not returned by this endpoint and `/getAllotmentBlocks` omits deleted blocks, so an ID that resolves in neither endpoint belongs to a deleted rate plan or a deleted (archived) allotment block. The `success: false` message "We are sorry but we could not accommodate your request. No rate found. Please verify roomTypeID or choose fewer number of guests." is also returned when the requested window holds no night the property has priced, for example when rates are not configured that far out; a window with no rate data at all can instead return `success: true` with an empty `data`. Inside a window that does hold priced nights, a night with no rate configured is listed on a room type''s base rate plan in `roomRateDetailed` with `rate` 0 and `roomsAvailable` 0, while package and derived rate plans leave that night out. A base-rate night priced at 0 whose rooms are sold out reads the same as an unconfigured one, and nothing in the response tells the two apart. `minLos` is not a signal either: priced nights can carry `minLos` 0. ### Group account support'
             responses:
                 200:
                     description: '200 Response'
