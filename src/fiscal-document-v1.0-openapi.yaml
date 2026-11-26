@@ -152,6 +152,28 @@ paths:
           application/json:
             schema:
               "$ref": "#/components/schemas/FiscalDocumentPatchRequest"
+            examples:
+              completedWithMainPdfAndXml:
+                summary: Completed integration with the main PDF and an XML file
+                value:
+                  status: COMPLETED_INTEGRATION
+                  governmentIntegration:
+                    number: "INV-123456"
+                    series: "SERIES-2024"
+                    officialId: "OFF-789"
+                    status: "REGISTERED"
+                    pdfFileBase64: "JVBERi0xLjYKJfbk/N8KMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovVmVyc2lvbiAvMS42Ci9QYWdlcyAyIDAgUgo+PgplbmRvYmoKNCAwIG9iago8PAovTGVuZ3RoIDk3Ci9UeXBlIC9PYmpTdG0KL04gMgovRmlsdGVyIC9GbGF0ZURlY29kZQovRmlyc3QgOQo+PgpzdHJlYW0NCnicM1IwUDBWMDFSsLHRD6ksSFXQD0hMTy1W0PfOTClWiDYGSgcpxCroO+eX5pUoGCrY2aGqVND3TU3JTHTKr1CINtAzUABhM0MjIGluCSJjQcqKUoF6jcBGAfUDANDyHZENCmVuZHN0cmVhbQplbmRvYmoKNSAwIG9iago8PAovTGVuZ3RoIDIxCi9Sb290IDEgMCBSCi9JRCBbPDM0NDRFNTBENUI1QjE3RTBGNUI0MEI2QjNGQzkzMTNFNEU0MEMwMDY4RTRFQUM1MDM4RDU0RDdFOThDNDIxMDM+IDwzNDQ0RTUwRDVCNUIxN0UwRjVCNDBCNkIzRkM5MzEzRTRFNDBDMDA2OEU0RUFDNTAzOEQ1NEQ3RTk4QzQyMTAzPl0KL1R5cGUgL1hSZWYKL1NpemUgNgovSW5kZXggWzAgNV0KL1cgWzEgMSAxXQovRmlsdGVyIC9GbGF0ZURlY29kZQo+PgpzdHJlYW0NCnicY2D4z8jPwMQCRIyMfgwADqgBbA0KZW5kc3RyZWFtCmVuZG9iagpzdGFydHhyZWYKMjc2CiUlRU9GCg=="
+                    files:
+                      - category: XML
+                        fileBase64: "PGludm9pY2UvPg=="
+              cancellationWithAcknowledgement:
+                summary: Cancellation confirmation with only the acknowledgement file
+                value:
+                  status: CANCELED
+                  governmentIntegration:
+                    files:
+                      - category: CANCELLATION_ACK
+                        fileBase64: "PGFjdXNlLz4="
         required: true
       responses:
         '200':
@@ -5192,6 +5214,13 @@ components:
         lineGroupingSettings:
           $ref: '#/components/schemas/LineGroupingSettings'
           nullable: true
+        blockCheckOutWithoutFiscalDocument:
+          type: boolean
+          nullable: true
+          description: |
+            Block check-out while folio charges are not on a fiscal document. Stored on the INVOICE kind only;
+            ignored for other kinds. Omit to keep the stored value. Always stored as false when the trigger
+            events include `at_check_out`, since that invoice is only created by the check-out.
         simplifiedEnabled:
           type: boolean
           nullable: true
@@ -5568,7 +5597,25 @@ components:
         pdfFileBase64:
           type: string
           format: byte
-          description: Base64-encoded PDF file content. Only allowed when status is COMPLETED_INTEGRATION.
+          description: >
+            Base64-encoded PDF of the document. It is the document's main file, listed in the document's
+            `files` as PRIMARY. Only allowed when status is COMPLETED_INTEGRATION.
+        files:
+          type: array
+          writeOnly: true
+          description: >
+            Additional files to store with the document, each an object with a `category` and a
+            base64-encoded `fileBase64`. Accepted categories: XML (well-formed XML), DUPLICATE (PDF) and
+            CANCELLATION_ACK (PDF or XML, detected from the content). XML and DUPLICATE are only accepted with
+            status COMPLETED_INTEGRATION on a document in PENDING_INTEGRATION; CANCELLATION_ACK is only accepted
+            with status CANCELED, confirming a document in CANCEL_REQUESTED. At most one XML and one DUPLICATE
+            per request; several CANCELLATION_ACK files are allowed. At most 5 files per request. Each file is
+            limited to 5 MB and all files of one request to 10 MB, decoded. On a cancellation confirmation (status CANCELED), a
+            `governmentIntegration` that carries only `files` leaves the document's stored integration data
+            unchanged, so partners can send just the acknowledgement. The main PDF goes in `pdfFileBase64`, not here. Uploaded
+            files appear in the document's `files` list.
+          items:
+            $ref: '#/components/schemas/GovernmentIntegrationFile'
         handwritten:
           type: boolean
           description: Indicates this is a handwritten receipt created during POS unavailability.
@@ -5605,6 +5652,18 @@ components:
             channel are those of the connection. Read-only — a partner reporting an outcome cannot
             change where the document was routed, and uses this to confirm the document was
             addressed to it before acting on it.
+    GovernmentIntegrationFile:
+      type: object
+      required: [category, fileBase64]
+      properties:
+        category:
+          allOf:
+            - $ref: "#/components/schemas/FiscalDocumentFileCategory"
+          description: Accepted values are XML, DUPLICATE and CANCELLATION_ACK.
+        fileBase64:
+          type: string
+          format: byte
+          description: Base64-encoded file content.
     IntegrationSignature:
       type: object
       description: A semantic signature/response item from a government integration.
@@ -5723,6 +5782,9 @@ components:
         simplifiedSupported:
           type: boolean
           description: Whether simplified invoices are supported for this property's country (INVOICE kind)
+        blockCheckOutWithoutFiscalDocument:
+          type: boolean
+          description: Whether check-out is blocked while folio charges are not on a fiscal document (INVOICE kind)
         simplifiedEnabled:
           type: boolean
           description: Whether simplified invoices are enabled for this property (INVOICE kind)
