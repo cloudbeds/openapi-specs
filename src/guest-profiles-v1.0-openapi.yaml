@@ -12,8 +12,13 @@ info:
     *Note: The API returns application/json*
   version: "v1"
 servers:
-  -
-    url: '/guest-profiles/v1'
+  - url: https://api.{environment}.com/guest-profiles/v1
+    variables:
+      environment:
+        default: cloudbeds
+        enum:
+          - cloudbeds
+          - cloudbeds-stage
 paths:
   /profiles:
     get:
