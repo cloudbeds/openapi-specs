@@ -7025,9 +7025,10 @@ components:
                             description: 'Reservation identifier'
                             type: string
                         dateCreated:
-                            description: ''
+                            description: 'Date the reservation was made. Null when the reservation has no booking date.'
                             type: string
                             format: date-time
+                            nullable: true
                         dateModified:
                             description: ''
                             type: string
@@ -7685,9 +7686,10 @@ components:
                                 description: "Reservation's unique identifier"
                                 type: string
                             dateCreated:
-                                description: ''
+                                description: 'Date the reservation was made. Null when the reservation has no booking date.'
                                 type: string
                                 format: date-time
+                                nullable: true
                             dateModified:
                                 description: ''
                                 type: string
@@ -8189,13 +8191,15 @@ components:
                                 description: 'Whether the reservation was created through an import process.'
                                 type: boolean
                             dateCreated:
-                                description: ''
+                                description: 'Date the reservation was made. Null when the reservation has no booking date.'
                                 type: string
                                 format: date-time
+                                nullable: true
                             dateCreatedUTC:
-                                description: ''
+                                description: 'Date the reservation was made, in UTC. Null when the reservation has no booking date.'
                                 type: string
                                 format: date-time
+                                nullable: true
                             dateModified:
                                 description: ''
                                 type: string
@@ -8340,6 +8344,19 @@ components:
                                         rateName:
                                             description: 'Name of the rate used for the booking room'
                                             type: string
+                                        ratePlanNamePrivate:
+                                            description: 'Private name of the rate plan used for the booking room, null when the room is booked on a base rate'
+                                            type: string
+                                        ratePlanNamePublic:
+                                            description: 'Public name of the rate plan used for the booking room, null when the room is booked on a base rate'
+                                            type: string
+                                        rateBasis:
+                                            description: 'Whether the booking room is on the room type''s base rate or on a rate plan. "unknown" when the rate was deleted and its type can no longer be determined'
+                                            type: string
+                                            enum:
+                                                - base_rate
+                                                - rate_plan
+                                                - unknown
                                         adults:
                                             description: 'Number of adults in the room'
                                             type: string
@@ -9788,6 +9805,21 @@ components:
                             infantsIncluded:
                                 description: 'Number of infants included on the basic room rate'
                                 type: integer
+                            maxAdults:
+                                description: 'Max adults the room type permits; `null` if not configured (only maxGuests applies). Advisory; not enforced on shared room types.'
+                                type: integer
+                                nullable: true
+                            maxChildren:
+                                description: 'Max children the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types.'
+                                type: integer
+                                nullable: true
+                            maxInfants:
+                                description: 'Max infants the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types. Applies only when the property uses age policies.'
+                                type: integer
+                                nullable: true
+                            infantsCountTowardMaxOccupancy:
+                                description: 'Whether infants count toward maxGuests together with adults and children. When false, only maxInfants limits infants. Applies only when the property uses age policies.'
+                                type: boolean
                             occupancyBeds:
                                 description: 'The number of beds for per-bed occupancy calculations'
                                 type: integer
@@ -9891,6 +9923,21 @@ components:
                                         childrenIncluded:
                                             description: 'Number of children included on the basic room rate'
                                             type: integer
+                                        maxAdults:
+                                            description: 'Max adults the room type permits; `null` if not configured (only maxGuests applies). Advisory; not enforced on shared room types.'
+                                            type: integer
+                                            nullable: true
+                                        maxChildren:
+                                            description: 'Max children the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types.'
+                                            type: integer
+                                            nullable: true
+                                        maxInfants:
+                                            description: 'Max infants the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types. Applies only when the property uses age policies.'
+                                            type: integer
+                                            nullable: true
+                                        infantsCountTowardMaxOccupancy:
+                                            description: 'Whether infants count toward maxGuests together with adults and children. When false, only maxInfants limits infants. Applies only when the property uses age policies.'
+                                            type: boolean
                                         roomTypePhotos:
                                             description: 'List of photos for the room type'
                                             type: array
@@ -9920,6 +9967,12 @@ components:
                                         ratePlanNamePrivate:
                                             description: 'Rate plan private name'
                                             type: string
+                                        rateBasis:
+                                            description: 'Whether the rate is the room type''s base rate or belongs to a rate plan. Use it rather than the "default" rate plan names to identify a base rate'
+                                            type: string
+                                            enum:
+                                                - base_rate
+                                                - rate_plan
                                         roomsAvailable:
                                             description: 'Number of rooms available, based on the parameters provided'
                                             type: integer
@@ -10038,6 +10091,13 @@ components:
                                             description: 'Max children the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types.'
                                             type: integer
                                             nullable: true
+                                        maxInfants:
+                                            description: 'Max infants the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types. Applies only when the property uses age policies.'
+                                            type: integer
+                                            nullable: true
+                                        infantsCountTowardMaxOccupancy:
+                                            description: 'Whether infants count toward maxGuests together with adults and children. When false, only maxInfants limits infants. Applies only when the property uses age policies.'
+                                            type: boolean
                                         isPrivate:
                                             description: 'If room is private (true) or shared (false)'
                                             type: boolean
@@ -10144,6 +10204,13 @@ components:
                                             description: 'Max children the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types.'
                                             type: integer
                                             nullable: true
+                                        maxInfants:
+                                            description: 'Max infants the room type permits (`0` = none permitted); `null` if not configured. Advisory; not enforced on shared room types. Applies only when the property uses age policies.'
+                                            type: integer
+                                            nullable: true
+                                        infantsCountTowardMaxOccupancy:
+                                            description: 'Whether infants count toward maxGuests together with adults and children. When false, only maxInfants limits infants. Applies only when the property uses age policies.'
+                                            type: boolean
                                         isPrivate:
                                             description: 'If room is private (true) or shared (false)'
                                             type: boolean
@@ -13351,7 +13418,7 @@ paths:
             tags:
                 - Item
             summary: postCustomItem
-            description: 'Adds single, or multiple, custom items and their associated payments to a Reservation or House Account as a single transaction.'
+            description: 'Adds single, or multiple, custom items and their associated payments to a Reservation or House Account as a single transaction. A 503 response with the message "The item could not be added to the catalog. Retry the request." means nothing was posted, so the same request can be retried.'
             responses:
                 200:
                     description: '200 Response'
@@ -13376,7 +13443,7 @@ paths:
             tags:
                 - Item
             summary: appendCustomItem
-            description: 'Append single, or multiple, custom items and their associated payments to an existing one in a Reservation, House Account, or Group.'
+            description: 'Append single, or multiple, custom items and their associated payments to an existing one in a Reservation, House Account, or Group. A 503 response with the message "The item could not be added to the catalog. Retry the request." means nothing was posted, so the same request can be retried.'
             responses:
                 200:
                     description: '200 Response'
