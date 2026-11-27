@@ -3879,6 +3879,7 @@ paths:
       tags:
         - 'Rate Plans'
       summary: 'Get a list of Rates Plans.'
+      description: 'The search parameter and the name sort read the name of a rate plan in one language: the language that Accept-Language asks for, else the default language of the property, else English. A regional variant falls back to its sibling (es-es to es, pt-pt to pt-br, and the reverse). The response always returns the names in every language.'
       operationId: 'RatePlanController::index'
       parameters:
         -
@@ -3889,6 +3890,14 @@ paths:
           schema:
             type: string
             example: '1,2,3'
+        -
+          name: Accept-Language
+          in: header
+          description: 'RFC 5646 language preferences used for negotiation (e.g. es-ES, en;q=0.8).'
+          required: false
+          schema:
+            type: string
+            example: 'es-ES, en;q=0.8'
         -
           name: offset
           in: query
@@ -3913,15 +3922,25 @@ paths:
         -
           name: filters
           in: query
-          description: 'Filter the list. Each clause is written field:operator:value, and multiple clauses are separated by a semicolon (;) — not a comma, which the sort parameter uses. Clauses are combined with AND; grouping and OR are not supported here. Supported fields: isActive (equals), isDerived (equals), promoCode (contains), code (contains), category (equals, in), status (equals, in), policyId (equals, in), segmentId (equals, in), derivedRatePlanId (equals, in, is_null, is_not_null). A status filter takes one of active, expired, no-intervals, disabled; with `in`, several separated by a comma. It is applied before limit and offset, so a page and its total both describe the rate plans in those statuses. The in operator takes a comma-separated list of up to 100 IDs (policyId:in:1,2,3); is_null and is_not_null take no value (derivedRatePlanId:is_null). derivedRatePlanId takes 0 for the property base rate, alone or in a list (derivedRatePlanId:in:0,12), and 0 matches plans with no parent plan. derivedRatePlanId:is_null matches plans with no parent plan, which includes plans derived from the base rate; derivedRatePlanId:is_not_null matches plans whose parent is another rate plan. None of these checks isDerived, so add isDerived:equals:true to keep derived plans only. policyId, segmentId and derivedRatePlanId are filters only and cannot be sorted on.'
+          description: 'Filter the list. Each clause is written field:operator:value, and multiple clauses are separated by a semicolon (;) — not a comma, which the sort parameter uses. Clauses are combined with AND; grouping and OR are not supported here. Supported fields: isActive (equals), isDerived (equals), promoCode (contains), code (contains), category (equals, in), status (equals, in), policyId (equals, in), segmentId (equals, in), derivedRatePlanId (equals, in, is_null, is_not_null), sources (in), addonId (equals, in). A status filter takes one of active, expired, no-intervals, disabled; with `in`, several separated by a comma. It is applied before limit and offset, so a page and its total both describe the rate plans in those statuses. sources takes source codes and matches the rate plans that have any of them (sources:in:s-1,s-2), not the rate plans that have all of them. addonId matches the rate plans that have any of the add-ons, each rate plan once. The in operator takes a comma-separated list of up to 100 values (policyId:in:1,2,3); is_null and is_not_null take no value (derivedRatePlanId:is_null). derivedRatePlanId takes 0 for the property base rate, alone or in a list (derivedRatePlanId:in:0,12), and 0 matches plans with no parent plan. derivedRatePlanId:is_null matches plans with no parent plan, which includes plans derived from the base rate; derivedRatePlanId:is_not_null matches plans whose parent is another rate plan. None of these checks isDerived, so add isDerived:equals:true to keep derived plans only. policyId, segmentId, derivedRatePlanId, sources and addonId are filters only and cannot be sorted on.'
           required: false
           schema:
             type: string
           example: 'isActive:equals:true;status:in:active,expired;policyId:in:1,2;derivedRatePlanId:is_null'
         -
+          name: search
+          in: query
+          description: 'Return only the rate plans with this text in the name, the internal name, the promo code or the code, without regard to case or accents. The two names are read in one language (see the description of the operation). The text is not a filter clause: write it as it is, with no operator. It is combined with filters by AND and applied before limit and offset, so a page and its total both describe the rate plans that match.'
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+            minLength: 1
+          example: summer
+        -
           name: sort
           in: query
-          description: 'Sort the list. Supported fields: createdAt, updatedAt, isActive, code, category, status. Multiple fields are separated by a comma (,), and each may carry a direction written as field:asc or field:desc; a field given on its own sorts ascending. status sorts in the order active, expired, no-intervals, disabled (reversed for desc). category sorts alphabetically by its value. When omitted, the list is returned newest first (createdAt descending).'
+          description: 'Sort the list. Supported fields: createdAt, updatedAt, isActive, code, category, status, name. Multiple fields are separated by a comma (,), and each may carry a direction written as field:asc or field:desc; a field given on its own sorts ascending. status sorts in the order active, expired, no-intervals, disabled (reversed for desc). category sorts alphabetically by its value. name sorts by the name in one language (see the description of the operation), without regard to case; the rate plans with no name come last in both directions. When omitted, the list is returned newest first (createdAt descending).'
           required: false
           schema:
             type: string
@@ -10229,6 +10248,11 @@ components:
           type: string
           example: 'San Diego'
           nullable: true
+        name:
+          description: 'Words of the hotel or business name: every word must match, except a standalone "or", which means either side; the last word may be partial, and accents must match exactly. Send it alone, or with city, or with coordinates; coordinates filter results only together with radiusKm.'
+          type: string
+          example: 'Seaside Inn'
+          nullable: true
         latitude:
           description: 'Latitude for geo-based search'
           type: number
@@ -10628,6 +10652,7 @@ components:
             - standard
             - high
             - low
+            - express
         fileStatus:
           type: string
         importStatus:
@@ -12821,6 +12846,61 @@ components:
           items:
             $ref: '#/components/schemas/SystemFeatureResponseSchema'
       type: object
+    UpdateQuoteDefaultsRequestSchema:
+      description: 'A full replacement of the property''s default quote text. A field that is null, omitted or blank has no default. Each value is sanitized as HTML before it is saved.'
+      properties:
+        paymentTerms:
+          description: 'Default payment terms, as rich text HTML.'
+          type: string
+          maxLength: 16000
+          nullable: true
+        cancellationPolicy:
+          description: 'Default cancellation policy, as rich text HTML.'
+          type: string
+          maxLength: 16000
+          nullable: true
+        termsAndConditions:
+          description: 'Default terms and conditions, as rich text HTML.'
+          type: string
+          maxLength: 16000
+          nullable: true
+        additionalInfo:
+          description: 'Default additional information, as rich text HTML.'
+          type: string
+          maxLength: 16000
+          nullable: true
+      type: object
+    QuoteDefaultsResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/QuoteDefaultsSchema'
+      type: object
+    QuoteDefaultsSchema:
+      required:
+        - paymentTerms
+        - cancellationPolicy
+        - termsAndConditions
+        - additionalInfo
+      properties:
+        paymentTerms:
+          description: 'Default payment terms as HTML. Null when there is none.'
+          type: string
+          nullable: true
+        cancellationPolicy:
+          description: 'Default cancellation policy as HTML. Null when there is none.'
+          type: string
+          nullable: true
+        termsAndConditions:
+          description: 'Default terms and conditions as HTML. Null when there is none.'
+          type: string
+          nullable: true
+        additionalInfo:
+          description: 'Default additional information as HTML. Null when there is none.'
+          type: string
+          nullable: true
+      type: object
     RatePlanAddonRequestSchema:
       required:
         - addonId
@@ -12901,6 +12981,12 @@ components:
             es: 'Estándar Interno'
           additionalProperties:
             type: string
+        internalNotes:
+          description: 'Notes for the staff of the property, up to 2,000 characters. They are never shown to guests. Characters outside the Basic Multilingual Plane, such as emoji, are not accepted. An empty string is stored as null.'
+          type: string
+          maxLength: 2000
+          example: 'Corporate contract. Renew in March.'
+          nullable: true
         allotmentBlockId:
           description: 'The allotment block''s ID this rate belongs to.'
           type: string
@@ -12961,6 +13047,12 @@ components:
           enum:
             - fixed
             - percentage
+        derivationRules:
+          description: 'Adjustments of a derived rate plan per day of the week. Every day of the week must be in exactly one rule. When sent, the rules win over derivedType and derivedValue, which then hold the first rule. Omitted or null gives the rate plan the one adjustment of derivedType and derivedValue for every day.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanDerivationRuleRequestSchema'
+          nullable: true
         terms:
           description: 'Terms and conditions in multiple languages.'
           type: object
@@ -13001,6 +13093,39 @@ components:
           description: 'Rate Plan ID.'
           type: string
           example: '123'
+      type: object
+    RatePlanDerivationRuleRequestSchema:
+      required:
+        - type
+        - value
+        - daysOfWeek
+      properties:
+        type:
+          description: 'How the rule adjusts the rate of the parent rate plan.'
+          type: string
+          enum:
+            - fixed
+            - percentage
+          example: percentage
+        value:
+          description: 'Signed adjustment. A negative value lowers the parent rate. A percentage is from -100 to 100 with up to 2 decimals. A fixed amount uses the decimals of the property currency.'
+          type: number
+          format: float
+          example: 10
+          nullable: true
+        daysOfWeek:
+          description: 'Days of the week the rule applies to (0=Sunday, 1=Monday, etc.).'
+          type: array
+          items:
+            type: integer
+            maximum: 6
+            minimum: 0
+          example:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
       type: object
     RatePlanIntervalRequestSchema:
       required:
@@ -13152,6 +13277,12 @@ components:
             - derived
           example: derived
           nullable: true
+        derivationRules:
+          description: 'Adjustments per day of the week that this interval of a derived rate plan uses in place of those of the rate plan. Every day of the week must be in exactly one rule. Null or omitted: the interval keeps its stored rules. An empty list: the interval goes back to the rules of the rate plan.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanDerivationRuleRequestSchema'
+          nullable: true
       type: object
     RatePlanSingleRequestSchema:
       required:
@@ -13234,6 +13365,12 @@ components:
           enum:
             - fixed
             - percentage
+        derivationRules:
+          description: 'Adjustments of a derived rate plan per day of the week. The list replaces the stored rules, and every day of the week must be in exactly one rule. When sent, the rules win over derivedType and derivedValue, which then hold the first rule. Omitted or null leaves the stored rules unchanged, unless derivedType or derivedValue change: the rate plan then has that one adjustment for every day.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanDerivationRuleRequestSchema'
+          nullable: true
         name:
           description: 'Name in multiple languages.'
           type: object
@@ -13261,6 +13398,12 @@ components:
           nullable: true
           additionalProperties:
             type: string
+        internalNotes:
+          description: 'Notes for the staff of the property, up to 2,000 characters. They are never shown to guests. Characters outside the Basic Multilingual Plane, such as emoji, are not accepted. Null or an empty string removes the notes; omit the field to keep them.'
+          type: string
+          maxLength: 2000
+          example: 'Corporate contract. Renew in March.'
+          nullable: true
         terms:
           description: 'Terms and conditions in multiple languages.'
           type: object
@@ -13443,6 +13586,31 @@ components:
           items:
             $ref: '#/components/schemas/RatePlanBulkOutcomeResponseSchema'
       type: object
+    RatePlanDerivationRuleResponseSchema:
+      properties:
+        type:
+          type: string
+          enum:
+            - fixed
+            - percentage
+          example: percentage
+        value:
+          description: 'Signed adjustment. A negative value lowers the parent rate.'
+          type: number
+          format: float
+          example: 10
+        daysOfWeek:
+          description: 'Days of the week the rule applies to (0=Sunday, 1=Monday, etc.).'
+          type: array
+          items:
+            type: integer
+          example:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+      type: object
     RatePlanIntervalResponseSchema:
       required:
         - name
@@ -13605,6 +13773,12 @@ components:
                   type: object
             type: object
           nullable: true
+        derivationRules:
+          description: 'Adjustments per day of the week that this interval uses in place of those of its derived rate plan. Null when the interval uses the rules of the rate plan.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanDerivationRuleResponseSchema'
+          nullable: true
       type: object
     RatePlanListResponseSchema:
       required:
@@ -13752,6 +13926,11 @@ components:
           example:
             - breakfast
             - dinner
+        internalNotes:
+          description: 'Notes for the staff of the property. They are never shown to guests.'
+          type: string
+          example: 'Corporate contract. Renew in March.'
+          nullable: true
         code:
           type: string
           example: BAR1
@@ -13769,6 +13948,11 @@ components:
             - COMP
             - HOUSE
           nullable: true
+        derivationRules:
+          description: 'Adjustments of a derived rate plan per day of the week. A rate plan with one adjustment for every day returns one rule with all seven days. Empty for a rate plan that is not derived.'
+          type: array
+          items:
+            $ref: '#/components/schemas/RatePlanDerivationRuleResponseSchema'
       type: object
     RatePlanAvailabilityDayResponseSchema:
       required:
@@ -14025,6 +14209,42 @@ components:
           minimum: 1
           example: 1
       type: object
+    CreateLocationBuildingRequestSchema:
+      required:
+        - name
+      properties:
+        name:
+          description: 'Trimmed, 1 to 64 characters, unique in the property, case-insensitive.'
+          type: string
+          maxLength: 64
+          example: Main
+      type: object
+    CreateLocationFloorRequestSchema:
+      required:
+        - label
+      properties:
+        label:
+          description: 'Trimmed, 1 to 12 characters, unique in its building, case-insensitive.'
+          type: string
+          maxLength: 12
+          example: '2'
+        buildingId:
+          description: 'The building; omitted or null means "No building".'
+          type: string
+          example: '800000000000201'
+          nullable: true
+      type: object
+    CreateLocationSectionRequestSchema:
+      required:
+        - label
+      properties:
+        label:
+          description: 'Trimmed, 1 to 32 characters, unique on the floor, case-insensitive.'
+          type: string
+          maxLength: 32
+          example: 'East wing'
+      type: object
+    GetRoomLabelsRequestSchema: {  }
     GetRoomTypeAreasRequestSchema:
       required:
         - roomTypeId
@@ -14055,6 +14275,36 @@ components:
       type: object
     GetUnitRequestSchema: {  }
     GetUnitsRequestSchema: {  }
+    LocationUnitTargetSchema:
+      description: 'One item of a bulk unit-location PATCH: the unit and its full target location. Documents the shape only.'
+      required:
+        - unitId
+      properties:
+        unitId:
+          example: 4501-0
+          nullable: true
+        buildingId:
+          description: 'The building; with primaryFloorId it must be that floor''s building and can be omitted.'
+          type: string
+          example: '800000000000201'
+          nullable: true
+        primaryFloorId:
+          type: string
+          example: '800000000000101'
+          nullable: true
+        additionalFloorIds:
+          description: 'Other floors of the primary floor''s building, each once, never the primary floor.'
+          type: array
+          items:
+            type: string
+          maxItems: 100
+          nullable: true
+        sectionId:
+          description: 'A section of the primary floor.'
+          type: string
+          example: '800000000000301'
+          nullable: true
+      type: object
     OutOfServiceRequestSchema:
       required:
         - fromDate
@@ -14074,6 +14324,18 @@ components:
           description: 'Wny is the room out of service?'
           type: string
           example: 'Flooding in the room.'
+      type: object
+    PatchLocationUnitsRequestSchema:
+      required:
+        - data
+      properties:
+        data:
+          description: '1 to 500 units, each once, with their full target location. All or nothing.'
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationUnitTargetSchema'
+          maxItems: 500
+          minItems: 1
       type: object
     PatchUnitRequestSchema:
       properties:
@@ -14142,6 +14404,31 @@ components:
           items:
             $ref: '#/components/schemas/OutOfServiceRequestSchema'
       type: object
+    PutLocationUnitRequestSchema:
+      description: 'The full location of one unit; an omitted or null field is unassigned.'
+      properties:
+        buildingId:
+          description: 'The building; with primaryFloorId it must be that floor''s building and can be omitted.'
+          type: string
+          example: '800000000000201'
+          nullable: true
+        primaryFloorId:
+          type: string
+          example: '800000000000101'
+          nullable: true
+        additionalFloorIds:
+          description: 'Other floors of the primary floor''s building, each once, never the primary floor.'
+          type: array
+          items:
+            type: string
+          maxItems: 100
+          nullable: true
+        sectionId:
+          description: 'A section of the primary floor.'
+          type: string
+          example: '800000000000301'
+          nullable: true
+      type: object
     PutRoomTypeAreasRequestSchema:
       required:
         - layoutTypeCode
@@ -14171,6 +14458,62 @@ components:
           items:
             $ref: '#/components/schemas/BathroomItemSchema'
           maxItems: 50
+      type: object
+    ReorderLocationFloorsRequestSchema:
+      required:
+        - floorIds
+      properties:
+        floorIds:
+          description: 'Every live floor of the property, each once, in the new order.'
+          type: array
+          items:
+            type: string
+            example: '800000000000101'
+      type: object
+    ReorderLocationSectionsRequestSchema:
+      required:
+        - sectionIds
+      properties:
+        sectionIds:
+          description: 'Every live section of the floor, each once, in the new order.'
+          type: array
+          items:
+            type: string
+            example: '800000000000301'
+      type: object
+    UpdateLocationBuildingRequestSchema:
+      required:
+        - name
+      properties:
+        name:
+          description: 'Trimmed, 1 to 64 characters, unique in the property, case-insensitive.'
+          type: string
+          maxLength: 64
+          example: Main
+      type: object
+    UpdateLocationFloorRequestSchema:
+      description: 'Absent fields stay unchanged, so the schema tracks which fields the body carried.'
+      properties:
+        label:
+          description: 'Absent: unchanged; null is rejected. Trimmed, 1 to 12 characters, unique in the target building, case-insensitive.'
+          type: string
+          maxLength: 12
+          example: '2'
+        buildingId:
+          description: 'The target building; null moves the floor to "No building". Absent: unchanged.'
+          type: string
+          example: '800000000000201'
+          nullable: true
+      type: object
+    UpdateLocationSectionRequestSchema:
+      required:
+        - label
+      properties:
+        label:
+          description: 'Trimmed, 1 to 32 characters, unique on the floor, case-insensitive.'
+          type: string
+          maxLength: 32
+          example: 'East wing'
       type: object
     AreaItemResponseSchema:
       description: 'Room type area in response'
@@ -14326,6 +14669,33 @@ components:
           format: date-time
           example: '2026-01-01T01:00:00+00:00'
       type: object
+    GetLocationLayoutResponseSchema:
+      description: 'The layout as one document: buildings and floors with their sections, no units.'
+      required:
+        - buildings
+        - floors
+      properties:
+        buildings:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationLayoutBuildingResponseSchema'
+        floors:
+          description: 'Floors in display order across all buildings.'
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationLayoutFloorResponseSchema'
+        version:
+          description: 'The layout version, the same value as the ETag. Live reads only.'
+          type: integer
+          example: 7
+          nullable: true
+        asOf:
+          description: 'The instant read, in UTC with microseconds. asOf reads only.'
+          type: string
+          format: date-time
+          example: '2026-11-01T09:30:00.000000+00:00'
+          nullable: true
+      type: object
     GetRoomLabelsResponseSchema:
       required:
         - labels
@@ -14428,6 +14798,232 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UnitItemResponseSchema'
+      type: object
+    LocationLayoutBuildingListResponseSchema:
+      description: 'Every building, in display order; bounded per property, so not paginated.'
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationLayoutBuildingResponseSchema'
+      type: object
+    LocationLayoutBuildingResponseSchema:
+      description: 'A building; also the body of a single-building response.'
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          example: '800000000000201'
+        name:
+          type: string
+          maxLength: 64
+          example: Main
+      type: object
+    LocationLayoutErrorResponseSchema:
+      description: 'Either `INVALID_REQUEST` with one item per request problem, or one layout rule code repeated in `errors[0]`.'
+      required:
+        - code
+        - message
+        - errors
+      properties:
+        code:
+          type: string
+          enum:
+            - INVALID_REQUEST
+            - INVALID_TYPE
+            - INVALID_ID
+            - DUPLICATE_ID
+            - LIST_EMPTY
+            - LIST_TOO_LONG
+            - PRIMARY_FLOOR_REPEATED
+            - INVALID_DATE_TIME
+            - INVALID_IF_MATCH
+            - MULTIPLE_PROPERTIES
+            - INVALID_PAGE_TOKEN
+            - INVALID_LIMIT
+            - FLOOR_LABEL_REQUIRED
+            - FLOOR_LABEL_TOO_LONG
+            - FLOOR_LABEL_DUPLICATE
+            - FLOOR_LABEL_CONFLICT
+            - BUILDING_NAME_REQUIRED
+            - BUILDING_NAME_TOO_LONG
+            - BUILDING_NAME_RESERVED
+            - BUILDING_NAME_DUPLICATE
+            - FLOOR_BUILDING_MISMATCH
+            - PRIMARY_FLOOR_REQUIRED
+            - FLOOR_IN_USE
+            - SECTION_LABEL_REQUIRED
+            - SECTION_LABEL_TOO_LONG
+            - SECTION_LABEL_DUPLICATE
+            - SECTION_FLOOR_MISMATCH
+            - SECTION_IN_USE
+            - UNIT_NOT_IN_PROPERTY
+            - FLOOR_NOT_IN_PROPERTY
+            - BUILDING_NOT_IN_PROPERTY
+            - SECTION_NOT_IN_PROPERTY
+            - BUILDING_NOT_FOUND
+            - FLOOR_NOT_FOUND
+            - SECTION_NOT_FOUND
+            - UNIT_NOT_FOUND
+            - REORDER_MISMATCH
+            - BULK_LIMIT_EXCEEDED
+            - LAYOUT_VERSION_CONFLICT
+            - LAYOUT_AS_OF_IN_FUTURE
+            - HISTORY_NOT_CAUGHT_UP
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: 'The request is not valid.'
+        errors:
+          description: 'Every request problem, or the one failed rule. `details` is an object, for example `unitIds`, `labels`, `currentVersion` or `pendingEvents`.'
+          type: array
+          items:
+            $ref: '#/components/schemas/BadRequestErrorItemSchema'
+      type: object
+    LocationLayoutFloorListResponseSchema:
+      description: 'Floors in display order across all buildings; bounded per property, so not paginated.'
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationLayoutFloorResponseSchema'
+      type: object
+    LocationLayoutFloorResponseSchema:
+      description: 'A floor with its sections; also the body of a single-floor response.'
+      required:
+        - id
+        - label
+        - unitCount
+        - sections
+      properties:
+        id:
+          type: string
+          example: '800000000000101'
+        label:
+          type: string
+          maxLength: 12
+          example: '2'
+        unitCount:
+          description: 'Physical units with this as their primary or an additional floor.'
+          type: integer
+          example: 2
+        sections:
+          description: 'In display order.'
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationLayoutSectionResponseSchema'
+        buildingId:
+          description: 'Omitted when the floor is in "No building".'
+          type: string
+          example: '800000000000201'
+          nullable: true
+      type: object
+    LocationLayoutSectionListResponseSchema:
+      description: 'A floor''s sections in display order; bounded per floor, so not paginated.'
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationLayoutSectionResponseSchema'
+      type: object
+    LocationLayoutSectionResponseSchema:
+      description: 'A section; also the body of a single-section response.'
+      required:
+        - id
+        - label
+        - unitCount
+      properties:
+        id:
+          type: string
+          example: '800000000000301'
+        label:
+          type: string
+          maxLength: 32
+          example: 'East wing'
+        unitCount:
+          description: 'Physical units in this section.'
+          type: integer
+          example: 1
+      type: object
+    LocationLayoutUnitListResponseSchema:
+      description: 'The units whose location a bulk PATCH changed, ordered by unit ID.'
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationLayoutUnitLocationResponseSchema'
+      type: object
+    LocationLayoutUnitLocationResponseSchema:
+      description: 'The location of one physical unit; absent IDs are omitted.'
+      required:
+        - unit
+        - additionalFloorIds
+      properties:
+        unit:
+          $ref: '#/components/schemas/LocationLayoutUnitResponseSchema'
+        additionalFloorIds:
+          description: 'Other floors the unit spans, in ascending ID order.'
+          type: array
+          items:
+            type: string
+        buildingId:
+          description: 'Omitted when the unit has no building.'
+          type: string
+          example: '800000000000201'
+          nullable: true
+        primaryFloorId:
+          description: 'Omitted when the unit has no floor.'
+          type: string
+          example: '800000000000101'
+          nullable: true
+        sectionId:
+          description: 'Omitted when the unit has no section.'
+          type: string
+          example: '800000000000301'
+          nullable: true
+      type: object
+    LocationLayoutUnitPageResponseSchema:
+      description: 'One page of unit locations, ordered by unit ID.'
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationLayoutUnitLocationResponseSchema'
+        nextPageToken:
+          description: 'Send as pageToken for the next page. Omitted on the last page.'
+          type: string
+          example: eyJhZnRlciI6IjQ1MDItMCJ9
+          nullable: true
+      type: object
+    LocationLayoutUnitResponseSchema:
+      description: 'The unit a location belongs to; read only.'
+      required:
+        - id
+        - name
+        - roomTypeId
+      properties:
+        id:
+          type: string
+          example: 4501-0
+        name:
+          description: 'On an asOf read, the name at that instant.'
+          type: string
+          example: '101'
+        roomTypeId:
+          type: string
+          example: '312'
       type: object
     OutOfServiceResponseItemSchema:
       required:
@@ -14974,7 +15570,7 @@ components:
           nullable: true
       type: object
     PreviewAdjustmentRequestSchema:
-      description: 'Provide exactly one of adjustment, addedRoomRevenue, addedTaxFee or addedItem.'
+      description: 'Provide exactly one of adjustment, addedRoomRevenue, addedTaxFee, addedItem or addedItems.'
       required:
         - reservationId
       properties:
@@ -15006,6 +15602,14 @@ components:
               $ref: '#/components/schemas/AddedItemPreviewInputSchema'
           nullable: true
           description: 'Added item preview input, for an item collected with the scheduled payments.'
+        addedItems:
+          description: 'Several items added together, as the Add products drawer saves them.'
+          type: array
+          items:
+            $ref: '#/components/schemas/AddedItemPreviewInputSchema'
+          maxItems: 50
+          minItems: 1
+          nullable: true
       type: object
       example:
         reservationId: '12345'
@@ -15815,6 +16419,58 @@ components:
             - fee_from_total
           example: fee_on_top
       type: object
+    CreateTaxExemptionRequestSchema:
+      required:
+        - name
+        - share
+        - category
+        - status
+        - taxIds
+      properties:
+        name:
+          description: 'Unique among the property''s active exemptions, ignoring case.'
+          type: string
+          maxLength: 255
+        share:
+          description: 'The share taken off each covered tax: a plain decimal above 0 and up to 100, at most 5 decimals.'
+          type: string
+          example: '100'
+        category:
+          description: 'Free text the exemption is filed under for reporting, labelled "Reason" on the settings screen.'
+          type: string
+          maxLength: 100
+          example: 'Diplomatic / consular'
+        legalText:
+          description: 'Printed on invoices next to the exempted amounts.'
+          type: string
+          maxLength: 2000
+          nullable: true
+        regulatoryCode:
+          description: 'The code the tax authority uses for this exemption.'
+          type: string
+          maxLength: 100
+          nullable: true
+        fiscalProviderCode:
+          description: 'The code the property''s fiscal or e-invoicing provider expects. Unique among the property''s active exemptions, ignoring case.'
+          type: string
+          maxLength: 100
+          nullable: true
+        status:
+          description: 'inactive: the exemption can''t be applied to new reservations.'
+          type: string
+          enum:
+            - active
+            - inactive
+        taxIds:
+          description: 'IDs of the property''s taxes the exemption covers, any version of each. Fees cannot be exempted.'
+          type: array
+          items:
+            type: integer
+        requiresDocumentUpload:
+          description: 'Whether staff must upload a supporting document when they apply the exemption.'
+          type: boolean
+          example: false
+      type: object
     DateRangeSchema:
       required:
         - range
@@ -16077,6 +16733,17 @@ components:
           items:
             $ref: '#/components/schemas/AddonSchema'
           nullable: true
+      type: object
+    SetTaxExemptionStatusRequestSchema:
+      required:
+        - status
+      properties:
+        status:
+          description: 'inactive: the exemption can''t be applied to new reservations.'
+          type: string
+          enum:
+            - active
+            - inactive
       type: object
     TaxExternalIdSchema:
       required:
@@ -16438,6 +17105,83 @@ components:
           $ref: '#/components/schemas/MoneySchema'
         taxesAndFeesFirstNight:
           $ref: '#/components/schemas/MoneySchema'
+      type: object
+    TaxExemptionListResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxExemptionSchema'
+      type: object
+    TaxExemptionResponseSchema:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/TaxExemptionSchema'
+      type: object
+    TaxExemptionSchema:
+      required:
+        - id
+        - name
+        - share
+        - category
+        - legalText
+        - regulatoryCode
+        - fiscalProviderCode
+        - status
+        - taxIds
+        - requiresDocumentUpload
+        - createdByUserId
+        - updatedByUserId
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        share:
+          description: 'The share taken off each covered tax, a plain decimal.'
+          type: string
+          example: '12.5'
+        category:
+          description: 'Free text the exemption is filed under for reporting, labelled "Reason" on the settings screen.'
+          type: string
+        legalText:
+          type: string
+          nullable: true
+        regulatoryCode:
+          type: string
+          nullable: true
+        fiscalProviderCode:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+        taxIds:
+          description: 'IDs of the covered taxes, each the newest version of its tax.'
+          type: array
+          items:
+            type: integer
+        requiresDocumentUpload:
+          description: 'Whether staff must upload a supporting document when they apply the exemption.'
+          type: boolean
+        createdByUserId:
+          type: integer
+        updatedByUserId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       type: object
     TaxExternalIdResponseSchema:
       required:
